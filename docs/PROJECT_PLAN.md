@@ -1,14 +1,18 @@
 # Dossier Project Plan
 
+**Project Status: EXPERIMENTAL**
+
 ## Overview
 
-**Your AI agents are brilliant. They're also amnesiac, uncoordinated, and completely unaccountable.**
+Agents can be briliant wrecking balls if the lack the appropriate context. We can throw a markdown file
+into the project root and hope for the best or we can build systems that help agents coordinate, pick
+up where they left off, and record insights for future use as they work. 
 
-Dossier fixes that.
+*That's Dossier*
 
-It's the missing infrastructure layer between your AI agents and sanity. Memory that persists. Coordination that prevents chaos. Observability that shows you what actually happened.
+It's the missing infrastructure layer between your AI agents and sanity: memory, coordination (via tasks and locks), observability.
 
-### The Deal
+### Dossier's Focus
 
 | What Dossier Does | What It Doesn't Do |
 |-------------------|-------------------|
@@ -16,20 +20,17 @@ It's the missing infrastructure layer between your AI agents and sanity. Memory 
 | Prevents agents from colliding | Execute code or write files |
 | Tracks what happened and what it cost | Orchestrate workflows |
 | Works with Claude Code, Cursor, Cline | Replace your agents |
-
-**Dossier remembers and coordinates. The agents do the work.**
-
 ---
 
 ## Quick Start (< 5 Minutes)
 
-Five minutes from now, your AI agents will have memory, coordination, and accountability.
+Five minutes from now, your AI agents will have memory, coordination, and (some) accountability.
 
 Here's how:
 
 ```bash
 # 1. Clone and start (30 seconds)
-git clone https://github.com/yourorg/dossier.git
+git clone https://github.com/MixTapeSoftware/dossier.git
 cd dossier
 docker compose up -d
 
@@ -58,8 +59,6 @@ docker compose up -d
 | Context dies when window fills | `stash` and `pop` — nothing lost |
 
 **Try it now:** Ask Claude to "start a task on the auth module." Watch it automatically check for conflicts, load relevant context, and acquire locks.
-
-*That's not magic. That's infrastructure.*
 
 ---
 
@@ -1489,53 +1488,59 @@ Call `stash` to save your current state.
 
 ## Build Phases
 
-### Phase 1: Foundation (Week 1)
-- [ ] Project setup, dependencies, config
-- [ ] Ecto schemas and migrations
-- [ ] PostgreSQL + pgvector setup (docker-compose)
-- [ ] Basic supervision tree
-- [ ] Tests for schemas
+### Phase 1: MCP Foundation
+- [ ] Project setup, dependencies, basic config
+- [ ] **MCP protocol implementation (stdio transport)**
+- [ ] **Basic supervision tree (MCP server + stdio handler)**
+- [ ] **Implement `list_tools` and `call_tool` handlers**
+- [ ] **First tool: `ping` (returns "pong" - validates end-to-end)**
+- [ ] Manual testing with MCP inspector/Claude Code
+- [ ] Tests for MCP protocol layer
 
-### Phase 2: Memory (Week 1-2)
-- [ ] Memory context (stash, pop, note)
-- [ ] Nx/Bumblebee embeddings GenServer
-- [ ] Semantic search with pgvector (recall)
-- [ ] Tests
+### Phase 2: Memory Foundation + Tools
+- [ ] PostgreSQL setup (docker-compose, basic tables only)
+- [ ] Ecto schemas: stashes, notes (no embeddings yet)
+- [ ] Simple in-memory storage (GenServer) as placeholder
+- [ ] **MCP tools: `stash`, `pop` (by name only), `note`, `recall` (exact key match)**
+- [ ] Test with real MCP client
+- [ ] Upgrade to Ecto persistence when working
 
-### Phase 3: Coordination (Week 2-3)
-- [ ] Coordination context (agents, locks, decisions)
+### Phase 3: Coordination + Tools
+- [ ] Ecto schemas: agents, locks, sessions, decisions
 - [ ] Agent.Connection GenServer
-- [ ] Lock manager with expiry
+- [ ] Lock manager (acquire/release, basic expiry)
+- [ ] **MCP tools: `start_task`, `end_task`, `acquire`, `release`, `decide`, `who_is_working`**
+- [ ] Test multi-agent scenarios with Claude Code
 - [ ] PubSub for real-time updates
-- [ ] Tests
 
-### Phase 4: MCP Server (Week 3-4)
-- [ ] MCP protocol implementation
-- [ ] stdio transport
-- [ ] All tools: start_task, end_task, stash, pop, note, recall, acquire, release, decide, who_is_working, report_cost, timeline
-- [ ] Integration tests
+### Phase 4: Semantic Search
+- [ ] pgvector setup
+- [ ] Nx/Bumblebee embeddings GenServer
+- [ ] Upgrade `pop` to semantic search
+- [ ] Upgrade `recall` to semantic search
+- [ ] Upgrade `decide` queries to semantic search
+- [ ] Performance testing
 
-### Phase 5: Observability (Week 4)
-- [ ] Activity logging
-- [ ] Cost tracking
-- [ ] Timeline queries
-- [ ] Session summaries
-- [ ] OpenTelemetry instrumentation for all storage events
-- [ ] SigNoz integration and dashboard setup
+### Phase 5: Observability + Tools
+- [ ] Activity logging schema + context
+- [ ] Cost tracking calculations
+- [ ] **MCP tools: `report_cost`, `timeline`, `session_summary`**
+- [ ] OpenTelemetry instrumentation
+- [ ] SigNoz integration (optional, graceful degradation)
 
-### Phase 6: Developer Experience (Week 5)
-- [ ] "5-minute quickstart" validated with real users
-- [ ] Error messages reviewed for helpfulness
-- [ ] All tools documented with input/output examples
-- [ ] Graceful degradation tested (DB-only mode)
-- [ ] `dossier doctor` command for setup validation
+### Phase 6: Developer Experience
+- [ ] "5-minute quickstart" validation
+- [ ] Error messages with remediation
+- [ ] All MCP tools documented with examples
+- [ ] `dossier doctor` health check
+- [ ] Lock cleanup background job
 
-### Phase 7: Polish (Week 6)
-- [ ] CLI (`dossier status` — see agents, locks, costs)
-- [ ] Lock expiry / cleanup jobs
-- [ ] Error handling edge cases
+### Phase 7: Polish
+- [ ] CLI (`dossier status`)
+- [ ] Edge case handling
+- [ ] End-to-end integration tests
+- [ ] Production hardening
 - [ ] Documentation
-- [ ] End-to-end tests with real Claude Code
 
 ---
 

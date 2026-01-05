@@ -1,9 +1,9 @@
-defmodule Genx.MixProject do
+defmodule Dossier.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :genx,
+      app: :dossier,
       version: "0.1.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
@@ -21,6 +21,12 @@ defmodule Genx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      #  Dev, Test, QA
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:mimic, "~> 1.10", only: :test},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:tidewave, "~> 0.1", only: :dev}
+
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
