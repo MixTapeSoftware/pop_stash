@@ -21,3 +21,4 @@ pop_stash-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+.claude/.DS_Store
