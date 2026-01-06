@@ -1771,15 +1771,16 @@ Call `stash` to save your current state.
 - [x] Tests for project scoping
 
 ### Phase 2: Memory Foundation + Tools
-**Completed from Phase 1.5:**
 - [x] PostgreSQL setup with docker-compose (pgvector extension enabled)
 - [x] PopStash.Schema base module (UUID primary keys, UTC timestamps)
 - [x] Projects schema, context, migrations, and Mix tasks
 - [x] MCP router updated with project validation
-
-**Remaining:**
-- [ ] Ecto schemas: stashes, insights (no embeddings yet, include project_id FK)
+- [ ] Ecto schema: agents (with project_id FK) - **MUST come first, stashes/insights reference agents**
+- [ ] Agents context module with changesets
+- [ ] Database migration for agents table
+- [ ] Ecto schemas: stashes, insights (no embeddings yet, include project_id and created_by/agent_id FKs)
 - [ ] Stashes and Insights context modules with changesets
+- [ ] Database migrations for stashes and insights tables
 - [ ] **MCP tools: `stash`, `pop` (by name only), `insight`, `recall` (exact key match)**
 - [ ] Test with real MCP client (Claude Code)
 - [ ] All queries scoped by project_id
