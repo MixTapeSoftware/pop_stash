@@ -1,0 +1,9 @@
+---
+description:
+globs: *.ex,*.exs,*.heex
+alwaysApply: false
+---
+Instruciton on what Elixir Hex Packages to Use in Certain Circumstances
+
+- Always Use Mimic for Mocking, Never Mox
+- Prefer Req for http requests

@@ -1,0 +1,12 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Best Practices for Testing
+
+## Consult these rules before making test suggestions or writing tests:
+
+- Always Write comprehensive unit tests using ExUnit
+- Ensure there are no nested describe blocks in the test code
+- Always Use Mimic for Mocking, Never Mox or :meck
