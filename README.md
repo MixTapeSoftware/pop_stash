@@ -1,4 +1,4 @@
-# Dossier Project Plan
+# PopStash Project Plan
 
 **Project Status: EXPERIMENTAL**
 
@@ -8,13 +8,13 @@ Agents can be briliant wrecking balls if the lack the appropriate context. We ca
 into the project root and hope for the best or we can build systems that help agents coordinate, pick
 up where they left off, and record insights for future use as they work. 
 
-*That's Dossier*
+*That's PopStash*
 
 It's the missing infrastructure layer between your AI agents and sanity: memory, coordination (via tasks and locks), observability.
 
-### Dossier's Focus
+### PopStash's Focus
 
-| What Dossier Does | What It Doesn't Do |
+| What PopStash Does | What It Doesn't Do |
 |-------------------|-------------------|
 | Remembers context across sessions | Call LLMs (agents do that) |
 | Prevents agents from colliding | Execute code or write files |
@@ -30,18 +30,18 @@ Here's how:
 
 ```bash
 # 1. Clone and start (30 seconds)
-git clone https://github.com/MixTapeSoftware/dossier.git
-cd dossier
+git clone https://github.com/MixTapeSoftware/pop_stash.git
+cd pop_stash
 docker compose up -d
 
 # 2. Add to your MCP config (60 seconds)
 # ~/.config/claude/claude_desktop_config.json
 {
   "mcpServers": {
-    "dossier": {
+    "pop_stash": {
       "command": "mix",
       "args": ["run", "--no-halt"],
-      "cwd": "/path/to/dossier"
+      "cwd": "/path/to/pop_stash"
     }
   }
 }
