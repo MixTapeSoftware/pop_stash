@@ -22,7 +22,15 @@ defmodule PopStash.MCP.Router do
 
     case PopStash.Projects.get(project_id) do
       {:ok, project} ->
-        case PopStash.MCP.Server.handle_message(conn.body_params, project) do
+        {:ok, agent} = get_or_create_agent(project.id)
+
+        context = %{
+          project_id: project.id,
+          project_name: project.name,
+          agent_id: agent.id
+        }
+
+        case PopStash.MCP.Server.handle_message(conn.body_params, context) do
           {:ok, :notification} -> send_resp(conn, 204, "")
           {:ok, response} -> json(conn, 200, response)
           {:error, response} -> json(conn, 200, response)
@@ -43,6 +51,11 @@ defmodule PopStash.MCP.Router do
         }
         json(conn, 404, error_response)
     end
+  end
+
+  # Temporary: Phase 3 will replace with session-based agent management
+  defp get_or_create_agent(project_id) do
+    PopStash.Agents.connect(project_id, name: "mcp-client")
   end
 
   # Helpful messages for GET requests to MCP endpoints

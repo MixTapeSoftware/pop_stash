@@ -1779,19 +1779,18 @@ Call `stash` to save your current state.
 - [x] PopStash.Schema base module (UUID primary keys, UTC timestamps)
 - [x] Projects schema, context, migrations, and Mix tasks
 - [x] MCP router updated with project validation
-
-**Remaining (dependency order: agents → stashes/insights → tools → tests):**
-- [ ] Agents schema, migration, context (required by stashes/insights)
-- [ ] Stashes schema, migration (with project_id + created_by FKs)
-- [ ] Insights schema, migration (with project_id + created_by FKs)
-- [ ] Memory context module (stash/insight CRUD)
-- [ ] MCP tools: `stash`, `pop`, `insight`, `recall` (exact match only)
-- [ ] Wire tools to server, inject agent context in router
-- [ ] Tests for agents, memory, and MCP integration
-- [ ] Manual test with Claude Code
+- [x] Agents schema, migration, context
+- [x] Stashes schema, migration (with project_id + created_by FKs)
+- [x] Insights schema, migration (with project_id + created_by FKs)
+- [x] Memory context module (stash/insight CRUD)
+- [x] MCP tools: `stash`, `pop`, `insight`, `recall` (exact match only)
+- [x] Wire tools to server, inject agent context in router
+- [x] Tests for agents, memory, and MCP integration
+- [x] Manual test with Claude Code
 
 **Future enhancements (post Phase 2):**
 - [ ] MCP tool: `list_insights` with optional search param (ILIKE on key/content)
+- [ ] Telemetry for memory operations (stash create/pop, insight create/recall)
 
 **Technical debt (acceptable for Phase 2):**
 - Agent created per request (Phase 3 adds session management)

@@ -8,10 +8,12 @@ defmodule PopStash.MCP.Server do
 
   require Logger
 
-  alias PopStash.Projects.Project
-
   @tool_modules [
-    PopStash.MCP.Tools.Ping
+    PopStash.MCP.Tools.Ping,
+    PopStash.MCP.Tools.Stash,
+    PopStash.MCP.Tools.Pop,
+    PopStash.MCP.Tools.Insight,
+    PopStash.MCP.Tools.Recall
   ]
 
   @type message :: map()
@@ -31,29 +33,28 @@ defmodule PopStash.MCP.Server do
   Handles a JSON-RPC 2.0 message.
 
   Returns `{:ok, response}`, `{:error, response}`, or `{:ok, :notification}`.
-  The project struct is passed from the router after validation.
+  Context map must include :project_id and :agent_id.
   """
-  @spec handle_message(message(), Project.t()) :: {:ok, response() | :notification} | {:error, response()}
-  def handle_message(message, %Project{} = project) do
+  def handle_message(message, %{project_id: project_id} = context) do
     start_time = System.monotonic_time()
 
     result =
       with {:ok, msg} <- validate_jsonrpc(message) do
-        route(msg, project)
+        route(msg, context)
       end
 
-    emit_telemetry(message, result, start_time, project.id)
+    emit_telemetry(message, result, start_time, project_id)
     result
   end
 
   ## Routing
-  # All routes receive project for current/future use
+  # All routes receive context map with project_id, agent_id, and project
 
-  defp route(%{"method" => "ping", "id" => id}, _project) do
+  defp route(%{"method" => "ping", "id" => id}, _context) do
     {:ok, success(id, %{})}
   end
 
-  defp route(%{"method" => "initialize", "id" => id, "params" => params}, project) do
+  defp route(%{"method" => "initialize", "id" => id, "params" => params}, context) do
     version = protocol_version()
 
     case validate_protocol_version(params["protocolVersion"]) do
@@ -63,8 +64,8 @@ defmodule PopStash.MCP.Server do
            protocolVersion: version,
            capabilities: %{tools: %{listChanged: false}},
            serverInfo: %{name: "PopStash", version: app_version()},
-           projectId: project.id,
-           projectName: project.name,
+           projectId: context.project_id,
+           projectName: context.project_name,
            tools: tools()
          })}
 
@@ -73,32 +74,32 @@ defmodule PopStash.MCP.Server do
     end
   end
 
-  defp route(%{"method" => "tools/list", "id" => id}, _project) do
+  defp route(%{"method" => "tools/list", "id" => id}, _context) do
     {:ok, success(id, %{tools: tools()})}
   end
 
-  defp route(%{"method" => "tools/call", "id" => id, "params" => params}, project) do
-    call_tool(id, params, project)
+  defp route(%{"method" => "tools/call", "id" => id, "params" => params}, context) do
+    call_tool(id, params, context)
   end
 
-  defp route(%{"method" => method, "id" => id}, _project) do
+  defp route(%{"method" => method, "id" => id}, _context) do
     {:error, error(id, -32_601, "Method not found: #{method}")}
   end
 
-  defp route(%{"method" => _method}, _project) do
+  defp route(%{"method" => _method}, _context) do
     {:ok, :notification}
   end
 
   ## Tool Dispatch
 
-  defp call_tool(id, %{"name" => name, "arguments" => args}, project) do
+  defp call_tool(id, %{"name" => name, "arguments" => args}, context) do
     case find_tool(name) do
-      {:ok, callback} -> execute_tool(id, name, callback, args, project)
+      {:ok, callback} -> execute_tool(id, name, callback, args, context)
       :error -> {:error, error(id, -32_601, "Unknown tool: #{name}")}
     end
   end
 
-  defp call_tool(id, _, _project) do
+  defp call_tool(id, _, _context) do
     {:error, error(id, -32_602, "Missing 'name' or 'arguments'")}
   end
 
@@ -112,14 +113,14 @@ defmodule PopStash.MCP.Server do
     end
   end
 
-  defp execute_tool(id, name, callback, args, project) do
+  defp execute_tool(id, name, callback, args, context) do
     result =
       try do
-        # Tool callbacks receive (args, project)
+        # Tool callbacks receive (args, context)
         # For backward compatibility, check callback arity
         case Function.info(callback, :arity) do
           {:arity, 1} -> callback.(args)
-          {:arity, 2} -> callback.(args, project)
+          {:arity, 2} -> callback.(args, context)
         end
       catch
         kind, reason ->
