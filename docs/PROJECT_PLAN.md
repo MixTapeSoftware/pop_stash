@@ -1771,22 +1771,31 @@ Call `stash` to save your current state.
 - [x] Tests for project scoping
 
 ### Phase 2: Memory Foundation + Tools
+
+**See [PHASE_2_IMPLEMENTATION_PLAN.md](./PHASE_2_IMPLEMENTATION_PLAN.md) for detailed implementation.**
+
+**Completed:**
 - [x] PostgreSQL setup with docker-compose (pgvector extension enabled)
 - [x] PopStash.Schema base module (UUID primary keys, UTC timestamps)
 - [x] Projects schema, context, migrations, and Mix tasks
 - [x] MCP router updated with project validation
-- [ ] Ecto schema: agents (with project_id FK) - **MUST come first, stashes/insights reference agents**
-- [ ] Agents context module with changesets
-- [ ] Database migration for agents table
-- [ ] Ecto schemas: stashes, insights (no embeddings yet, include project_id and created_by/agent_id FKs)
-- [ ] Stashes and Insights context modules with changesets
-- [ ] Database migrations for stashes and insights tables
-- [ ] **MCP tools: `stash`, `pop` (by name only), `insight`, `recall` (exact key match)**
-- [ ] Test with real MCP client (Claude Code)
-- [ ] All queries scoped by project_id
+
+**Remaining (dependency order: agents → stashes/insights → tools → tests):**
+- [ ] Agents schema, migration, context (required by stashes/insights)
+- [ ] Stashes schema, migration (with project_id + created_by FKs)
+- [ ] Insights schema, migration (with project_id + created_by FKs)
+- [ ] Memory context module (stash/insight CRUD)
+- [ ] MCP tools: `stash`, `pop`, `insight`, `recall` (exact match only)
+- [ ] Wire tools to server, inject agent context in router
+- [ ] Tests for agents, memory, and MCP integration
+- [ ] Manual test with Claude Code
+
+**Technical debt (acceptable for Phase 2):**
+- Agent created per request (Phase 3 adds session management)
+- No agent cleanup (Phase 3 adds lifecycle management)
 
 ### Phase 3: Coordination + Tools
-- [ ] Ecto schemas: agents, locks, sessions, decisions (all with project_id FK)
+- [ ] Ecto schemas: locks, sessions, decisions (all with project_id FK)
 - [ ] Agent.Connection GenServer
 - [ ] Lock manager (acquire/release, basic expiry)
 - [ ] **MCP tools: `start_task`, `end_task`, `acquire`, `release`, `decide`, `who_is_working`**
