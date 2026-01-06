@@ -1789,7 +1789,6 @@ Call `stash` to save your current state.
 - [x] Manual test with Claude Code
 
 **Future enhancements (post Phase 2):**
-- [ ] MCP tool: `list_insights` with optional search param (ILIKE on key/content)
 - [ ] Telemetry for memory operations (stash create/pop, insight create/recall)
 
 **Technical debt (acceptable for Phase 2):**
@@ -1814,6 +1813,7 @@ Call `stash` to save your current state.
 - [ ] Upgrade `pop` to semantic search with vector similarity
 - [ ] Upgrade `recall` to semantic search
 - [ ] Upgrade `decide` queries to semantic search
+- [ ] Upgrade `insight` queries to semantic search
 - [ ] Performance testing and indexing
 
 ### Phase 5: Observability + Tools
