@@ -10,7 +10,8 @@ defmodule PopStash.Memory do
   import Ecto.Query
 
   alias PopStash.Repo
-  alias PopStash.Memory.{Stash, Insight}
+  alias PopStash.Memory.Stash
+  alias PopStash.Memory.Insight
 
   ## Stashes
 
