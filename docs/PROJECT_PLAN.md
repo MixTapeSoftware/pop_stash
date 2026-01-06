@@ -4,13 +4,7 @@
 
 ## Overview
 
-Agents can be briliant wrecking balls if the lack the appropriate context. We can throw a markdown file
-into the project root and hope for the best or we can build systems that help agents coordinate, pick
-up where they left off, and record insights for future use as they work. 
-
-*That's PopStash*
-
-It's the missing infrastructure layer between your AI agents and sanity: memory, coordination (via tasks and locks), observability.
+Memory, coordination (via tasks and locks), observability, and human feedback for your Agents.
 
 ### PopStash's Focus
 
@@ -819,6 +813,94 @@ Get recent activity across all agents. Great for understanding what happened.
 ---
 
 ## PostgreSQL Schema
+
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    agents ||--o{ stashes : "creates"
+    agents ||--o{ insights : "creates"
+    agents ||--o{ decisions : "creates"
+    agents ||--o{ locks : "holds"
+    agents ||--o{ sessions : "runs"
+    agents ||--o{ activities : "generates"
+    sessions ||--o{ activities : "contains"
+
+    agents {
+        text id PK
+        text name
+        text current_task
+        text status
+        timestamptz connected_at
+        timestamptz last_seen_at
+        jsonb metadata
+    }
+
+    stashes {
+        text id PK
+        text name
+        text summary
+        vector summary_embedding
+        text[] files
+        jsonb metadata
+        text created_by FK
+        timestamptz created_at
+        timestamptz expires_at
+    }
+
+    insights {
+        text id PK
+        text key
+        text content
+        vector embedding
+        text created_by FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    decisions {
+        text id PK
+        text topic
+        text decision
+        text reasoning
+        vector embedding
+        text created_by FK
+        timestamptz created_at
+    }
+
+    locks {
+        text id PK
+        text pattern
+        text agent_id FK
+        timestamptz acquired_at
+        timestamptz expires_at
+    }
+
+    sessions {
+        text id PK
+        text agent_id FK
+        text task
+        text status
+        text[] files_touched
+        integer tokens_in
+        integer tokens_out
+        decimal cost_usd
+        timestamptz started_at
+        timestamptz ended_at
+    }
+
+    activities {
+        bigserial id PK
+        text agent_id FK
+        text session_id FK
+        text type
+        text description
+        jsonb metadata
+        timestamptz created_at
+    }
+```
+
+### SQL Schema
 
 ```sql
 -- Enable extensions
