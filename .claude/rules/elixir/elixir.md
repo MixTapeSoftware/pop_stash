@@ -42,6 +42,10 @@ alwaysApply: true
 - Elixir's builtin OTP primitives like `DynamicSupervisor` and `Registry`, require names in the child spec, such as `{DynamicSupervisor, name: MyApp.MyDynamicSup}`, then you can use `DynamicSupervisor.start_child(MyApp.MyDynamicSup, child_spec)`
 - Use `Task.async_stream(collection, callback, options)` for concurrent enumeration with back-pressure. The majority of times you will want to pass `timeout: :infinity` as option
 
+### Types and TypeSpecs
+
+Elixir is moving away from Typespecs in favor of it's own formal [type system](https://hexdocs.pm/elixir/1.19.4/gradual-set-theoretic-types.html). Therefore, never add typespecs. 
+
 ## Mix guidelines
 
 - Read the docs and options before using tasks (by using `mix help task_name`)
