@@ -1790,6 +1790,9 @@ Call `stash` to save your current state.
 - [ ] Tests for agents, memory, and MCP integration
 - [ ] Manual test with Claude Code
 
+**Future enhancements (post Phase 2):**
+- [ ] MCP tool: `list_insights` with optional search param (ILIKE on key/content)
+
 **Technical debt (acceptable for Phase 2):**
 - Agent created per request (Phase 3 adds session management)
 - No agent cleanup (Phase 3 adds lifecycle management)

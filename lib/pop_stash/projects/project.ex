@@ -12,6 +12,8 @@ defmodule PopStash.Projects.Project do
     field :description, :string
     field :metadata, :map, default: %{}
 
+    has_many :agents, PopStash.Agents.Agent
+
     timestamps()
   end
 end
