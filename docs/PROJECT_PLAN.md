@@ -1762,24 +1762,30 @@ Call `stash` to save your current state.
 - [x] Tests for MCP protocol layer
 
 ### Phase 1.5: Projects Foundation
-- [ ] PostgreSQL setup with pgvector
-- [ ] Ecto schemas: `projects` table
-- [ ] **Update router: `/mcp/:project_id` routing**
-- [ ] **Validate project exists on every request**
-- [ ] **Mix tasks: `mix pop_stash.project.new`, `list`, `delete`**
-- [ ] Pass project context to all tool handlers
-- [ ] Tests for project scoping
+- [x] PostgreSQL setup with pgvector
+- [x] Ecto schemas: `projects` table
+- [x] **Update router: `/mcp/:project_id` routing**
+- [x] **Validate project exists on every request**
+- [x] **Mix tasks: `mix pop_stash.project.new`, `list`, `delete`**
+- [x] Pass project context to all tool handlers
+- [x] Tests for project scoping
 
 ### Phase 2: Memory Foundation + Tools
-- [ ] PostgreSQL setup (docker-compose, basic tables only)
-- [ ] Ecto schemas: stashes, insights (no embeddings yet)
-- [ ] Simple in-memory storage (GenServer) as placeholder
+**Completed from Phase 1.5:**
+- [x] PostgreSQL setup with docker-compose (pgvector extension enabled)
+- [x] PopStash.Schema base module (UUID primary keys, UTC timestamps)
+- [x] Projects schema, context, migrations, and Mix tasks
+- [x] MCP router updated with project validation
+
+**Remaining:**
+- [ ] Ecto schemas: stashes, insights (no embeddings yet, include project_id FK)
+- [ ] Stashes and Insights context modules with changesets
 - [ ] **MCP tools: `stash`, `pop` (by name only), `insight`, `recall` (exact key match)**
-- [ ] Test with real MCP client
-- [ ] Upgrade to Ecto persistence when working
+- [ ] Test with real MCP client (Claude Code)
+- [ ] All queries scoped by project_id
 
 ### Phase 3: Coordination + Tools
-- [ ] Ecto schemas: agents, locks, sessions, decisions
+- [ ] Ecto schemas: agents, locks, sessions, decisions (all with project_id FK)
 - [ ] Agent.Connection GenServer
 - [ ] Lock manager (acquire/release, basic expiry)
 - [ ] **MCP tools: `start_task`, `end_task`, `acquire`, `release`, `decide`, `who_is_working`**
@@ -1787,12 +1793,16 @@ Call `stash` to save your current state.
 - [ ] PubSub for real-time updates
 
 ### Phase 4: Semantic Search
-- [ ] pgvector setup
+**Foundation ready:**
+- [x] pgvector extension enabled in migration
+
+**Remaining:**
 - [ ] Nx/Bumblebee embeddings GenServer
-- [ ] Upgrade `pop` to semantic search
+- [ ] Add embedding columns (vector type) to stashes, insights, decisions
+- [ ] Upgrade `pop` to semantic search with vector similarity
 - [ ] Upgrade `recall` to semantic search
 - [ ] Upgrade `decide` queries to semantic search
-- [ ] Performance testing
+- [ ] Performance testing and indexing
 
 ### Phase 5: Observability + Tools
 - [ ] Activity logging schema + context
