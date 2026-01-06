@@ -8,6 +8,8 @@ defmodule PopStash.MCP.Server do
 
   require Logger
 
+  alias PopStash.Projects.Project
+
   @tool_modules [
     PopStash.MCP.Tools.Ping
   ]
@@ -29,29 +31,29 @@ defmodule PopStash.MCP.Server do
   Handles a JSON-RPC 2.0 message.
 
   Returns `{:ok, response}`, `{:error, response}`, or `{:ok, :notification}`.
-  The project_id is passed from the router (/mcp/:project_id).
+  The project struct is passed from the router after validation.
   """
-  @spec handle_message(message(), String.t()) :: {:ok, response() | :notification} | {:error, response()}
-  def handle_message(message, project_id) do
+  @spec handle_message(message(), Project.t()) :: {:ok, response() | :notification} | {:error, response()}
+  def handle_message(message, %Project{} = project) do
     start_time = System.monotonic_time()
 
     result =
       with {:ok, msg} <- validate_jsonrpc(message) do
-        route(msg, project_id)
+        route(msg, project)
       end
 
-    emit_telemetry(message, result, start_time, project_id)
+    emit_telemetry(message, result, start_time, project.id)
     result
   end
 
   ## Routing
-  # All routes receive project_id for future use (Phase 1.5+)
+  # All routes receive project for current/future use
 
-  defp route(%{"method" => "ping", "id" => id}, _project_id) do
+  defp route(%{"method" => "ping", "id" => id}, _project) do
     {:ok, success(id, %{})}
   end
 
-  defp route(%{"method" => "initialize", "id" => id, "params" => params}, project_id) do
+  defp route(%{"method" => "initialize", "id" => id, "params" => params}, project) do
     version = protocol_version()
 
     case validate_protocol_version(params["protocolVersion"]) do
@@ -61,7 +63,8 @@ defmodule PopStash.MCP.Server do
            protocolVersion: version,
            capabilities: %{tools: %{listChanged: false}},
            serverInfo: %{name: "PopStash", version: app_version()},
-           projectId: project_id,
+           projectId: project.id,
+           projectName: project.name,
            tools: tools()
          })}
 
@@ -70,32 +73,32 @@ defmodule PopStash.MCP.Server do
     end
   end
 
-  defp route(%{"method" => "tools/list", "id" => id}, _project_id) do
+  defp route(%{"method" => "tools/list", "id" => id}, _project) do
     {:ok, success(id, %{tools: tools()})}
   end
 
-  defp route(%{"method" => "tools/call", "id" => id, "params" => params}, project_id) do
-    call_tool(id, params, project_id)
+  defp route(%{"method" => "tools/call", "id" => id, "params" => params}, project) do
+    call_tool(id, params, project)
   end
 
-  defp route(%{"method" => method, "id" => id}, _project_id) do
+  defp route(%{"method" => method, "id" => id}, _project) do
     {:error, error(id, -32_601, "Method not found: #{method}")}
   end
 
-  defp route(%{"method" => _method}, _project_id) do
+  defp route(%{"method" => _method}, _project) do
     {:ok, :notification}
   end
 
   ## Tool Dispatch
 
-  defp call_tool(id, %{"name" => name, "arguments" => args}, project_id) do
+  defp call_tool(id, %{"name" => name, "arguments" => args}, project) do
     case find_tool(name) do
-      {:ok, callback} -> execute_tool(id, name, callback, args, project_id)
+      {:ok, callback} -> execute_tool(id, name, callback, args, project)
       :error -> {:error, error(id, -32_601, "Unknown tool: #{name}")}
     end
   end
 
-  defp call_tool(id, _, _project_id) do
+  defp call_tool(id, _, _project) do
     {:error, error(id, -32_602, "Missing 'name' or 'arguments'")}
   end
 
@@ -109,20 +112,20 @@ defmodule PopStash.MCP.Server do
     end
   end
 
-  defp execute_tool(id, name, callback, args, project_id) do
+  defp execute_tool(id, name, callback, args, project) do
     result =
       try do
-        # Phase 1: callback.(args)
-        # Phase 1.5+: callback.(args, project_id) — tools will be project-aware
-        callback.(args)
+        # Tool callbacks receive (args, project)
+        # For backward compatibility, check callback arity
+        case Function.info(callback, :arity) do
+          {:arity, 1} -> callback.(args)
+          {:arity, 2} -> callback.(args, project)
+        end
       catch
         kind, reason ->
           Logger.error("Tool #{name} crashed: #{Exception.format(kind, reason, __STACKTRACE__)}")
           {:error, "Tool execution failed"}
       end
-
-    # Suppress unused warning until Phase 1.5
-    _ = project_id
 
     case result do
       {:ok, text} when is_binary(text) ->

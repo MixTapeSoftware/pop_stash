@@ -61,6 +61,7 @@ Elixir is moving away from Typespecs in favor of it's own formal [type system](h
 - `Ecto.Changeset.validate_number/2` **DOES NOT SUPPORT the `:allow_nil` option**. By default, Ecto validations only run if a change for the given field exists and the change value is not nil, so such as option is never needed
 - You **must** use `Ecto.Changeset.get_field(changeset, :field)` to access changeset fields
 - Fields which are set programatically, such as `user_id`, must not be listed in `cast` calls or similar for security purposes. Instead they must be explicitly set when creating the struct
+- **Always** define changesets in context modules, not in schema modules. Changesets are contextual (e.g., `create_changeset`, `update_changeset`, `admin_changeset`) and may have different validation rules depending on the use case. Schema modules should only define the data structure.
 
 ### Schema Configuration
 

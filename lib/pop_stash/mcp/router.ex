@@ -16,22 +16,75 @@ defmodule PopStash.MCP.Router do
   plug(Plug.Parsers, parsers: [:json], pass: ["application/json"], json_decoder: Jason)
   plug(:dispatch)
 
-  # Main MCP endpoint — project_id required in URL
+  # Main MCP endpoint — project_id required and validated
   post "/mcp/:project_id" do
     project_id = conn.path_params["project_id"]
 
-    # For Phase 1, just pass project_id through (no DB validation yet)
-    # Phase 1.5 will add: with {:ok, project} <- PopStash.Projects.get(project_id)
-    case PopStash.MCP.Server.handle_message(conn.body_params, project_id) do
-      {:ok, :notification} -> send_resp(conn, 204, "")
-      {:ok, response} -> json(conn, 200, response)
-      {:error, response} -> json(conn, 200, response)
+    case PopStash.Projects.get(project_id) do
+      {:ok, project} ->
+        case PopStash.MCP.Server.handle_message(conn.body_params, project) do
+          {:ok, :notification} -> send_resp(conn, 204, "")
+          {:ok, response} -> json(conn, 200, response)
+          {:error, response} -> json(conn, 200, response)
+        end
+
+      {:error, :not_found} ->
+        Logger.warning("Request for unknown project: #{project_id}")
+        error_response = %{
+          jsonrpc: "2.0",
+          id: conn.body_params["id"],
+          error: %{
+            code: -32_001,
+            message: "Project not found: #{project_id}",
+            data: %{
+              hint: "Create a project with: mix pop_stash.project.new \"Your Project Name\""
+            }
+          }
+        }
+        json(conn, 404, error_response)
     end
+  end
+
+  # Helpful messages for GET requests to MCP endpoints
+  get "/mcp" do
+    conn
+    |> put_resp_content_type("text/plain")
+    |> send_resp(400, """
+    MCP endpoint requires a project ID.
+
+    Usage: POST /mcp/:project_id with JSON-RPC 2.0 payload
+
+    Create a project with: mix pop_stash.project.new "Your Project Name"
+    """)
+  end
+
+  get "/mcp/:project_id" do
+    conn
+    |> put_resp_content_type("text/plain")
+    |> send_resp(405, """
+    MCP endpoint accepts POST requests only.
+
+    Usage: POST /mcp/#{conn.path_params["project_id"]} with JSON-RPC 2.0 payload
+
+    Example:
+      curl -X POST http://localhost:4001/mcp/#{conn.path_params["project_id"]} \\
+        -H "Content-Type: application/json" \\
+        -d '{"jsonrpc":"2.0","id":1,"method":"ping"}'
+    """)
   end
 
   get "/" do
     tools = PopStash.MCP.Server.tools()
+    projects = PopStash.Projects.list()
     port = Application.get_env(:pop_stash, :mcp_port, 4001)
+
+    projects_html = if Enum.empty?(projects) do
+      "<p><em>No projects yet. Create one with <code>mix pop_stash.project.new \"My Project\"</code></em></p>"
+    else
+      "<ul>" <> Enum.map_join(projects, fn p ->
+        "<li><code>#{p.id}</code> — #{p.name}</li>"
+      end) <> "</ul>"
+    end
 
     html = """
     <!DOCTYPE html>
@@ -50,6 +103,9 @@ defmodule PopStash.MCP.Router do
       <strong>Project ID Required:</strong> Each workspace needs its own project ID in the URL.
       <br>Create one with: <code>mix pop_stash.project.new "My Project"</code>
     </div>
+
+    <h2>Projects (#{length(projects)})</h2>
+    #{projects_html}
 
     <h2>Tools (#{length(tools)})</h2>
     <ul>#{Enum.map_join(tools, fn t -> "<li><b>#{t.name}</b> — #{t.description}</li>" end)}</ul>
