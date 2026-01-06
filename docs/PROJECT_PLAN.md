@@ -6,6 +6,14 @@
 
 Memory, coordination (via tasks and locks), observability, and human feedback for your Agents.
 
+AI agents are good enough now. The models aren't the bottleneck.
+
+**Infrastructure is the bottleneck.**
+
+Memory. Coordination. Accountability.
+
+That's PopStash.
+
 ### PopStash's Focus
 
 | What PopStash Does | What It Doesn't Do |
@@ -27,21 +35,29 @@ Here's how:
 git clone https://github.com/MixTapeSoftware/pop_stash.git
 cd pop_stash
 docker compose up -d
+mix setup
 
-# 2. Add to your MCP config (60 seconds)
-# ~/.config/claude/claude_desktop_config.json
+# 2. Create a project (10 seconds)
+mix pop_stash.project.new "My Awesome Project"
+# => Created project: proj_abc123
+# => Add to workspace MCP config:
+# => {"url": "http://localhost:4001/mcp/proj_abc123"}
+
+# 3. Add to your workspace MCP config (60 seconds)
+# In your project: .claude/mcp_servers.json (commit to git!)
 {
-  "mcpServers": {
-    "pop_stash": {
-      "command": "mix",
-      "args": ["run", "--no-halt"],
-      "cwd": "/path/to/pop_stash"
-    }
+  "pop_stash": {
+    "url": "http://localhost:4001/mcp/proj_abc123"
   }
 }
 
-# 3. Restart Claude Code. That's it.
+# 4. Restart Claude Code. That's it.
 ```
+
+**Why project ID in the URL?**
+- Different workspaces/repos use different projects
+- Config lives in version control — same for all team members
+- Multiple editors on same machine stay isolated automatically
 
 **What just changed:**
 
@@ -157,12 +173,142 @@ How much did that session cost? What files did it touch? What decisions were mad
 |----------|----------|
 | **Embeddings** | Nx/Bumblebee local (all-MiniLM-L6-v2, 384 dimensions) |
 | **Lock expiry** | 15 minutes default, configurable |
-| **Multi-project** | One PopStash instance per project |
+| **Multi-project** | Project ID in URL path (`/mcp/:project_id`), workspace-configurable |
 | **MCP transport** | stdio for V1 |
 | **Stash retention** | Forever by default, optional TTL |
 | **Agent IDs** | PopStash assigns them on connect |
 | **Telemetry** | OpenTelemetry → SigNoz for distributed tracing |
 | **Developer UX** | Pit of success design — make the right thing easy |
+
+---
+
+## Multi-Project Architecture
+
+PopStash supports multiple isolated projects from a single server instance. Each project has its own agents, stashes, insights, decisions, and locks.
+
+### Why Project Isolation?
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     PopStash Server                              │
+│                   (http://localhost:4001)                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │  Project: foo   │  │  Project: bar   │  │  Project: baz   │  │
+│  │  /mcp/proj_foo  │  │  /mcp/proj_bar  │  │  /mcp/proj_baz  │  │
+│  │                 │  │                 │  │                 │  │
+│  │  • Agents       │  │  • Agents       │  │  • Agents       │  │
+│  │  • Stashes      │  │  • Stashes      │  │  • Stashes      │  │
+│  │  • Insights     │  │  • Insights     │  │  • Insights     │  │
+│  │  • Decisions    │  │  • Decisions    │  │  • Decisions    │  │
+│  │  • Locks        │  │  • Locks        │  │  • Locks        │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+│                                                                  │
+│              Data is completely isolated per project             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### URL-Based Routing
+
+Project ID is embedded in the MCP URL path:
+
+```
+POST /mcp/:project_id
+```
+
+**Why URL-based?**
+- **Explicit**: You always know which project you're operating on
+- **Version controllable**: Config lives in workspace `.claude/mcp_servers.json`
+- **Team-friendly**: Same config for all team members
+- **Stateless**: No session cookies, no hidden state
+
+### Workspace Configuration
+
+Each workspace has its own MCP config (committed to git):
+
+```json
+// my-frontend-repo/.claude/mcp_servers.json
+{
+  "pop_stash": {
+    "url": "http://localhost:4001/mcp/proj_frontend_abc123"
+  }
+}
+
+// my-backend-repo/.claude/mcp_servers.json
+{
+  "pop_stash": {
+    "url": "http://localhost:4001/mcp/proj_backend_xyz789"
+  }
+}
+```
+
+### Multi-Editor Scenario
+
+```
+┌──────────────────┐     ┌──────────────────┐
+│  Zed Editor #1   │     │  Zed Editor #2   │
+│  workspace: foo  │     │  workspace: bar  │
+└────────┬─────────┘     └────────┬─────────┘
+         │                        │
+         │ /mcp/proj_foo          │ /mcp/proj_bar
+         │                        │
+         ▼                        ▼
+┌─────────────────────────────────────────────┐
+│              PopStash Server                 │
+│                                             │
+│  proj_foo: stashes, insights, locks...      │
+│  proj_bar: stashes, insights, locks...      │
+└─────────────────────────────────────────────┘
+```
+
+Both editors can run simultaneously without data collision.
+
+### Creating Projects
+
+Use the Mix task to create new projects:
+
+```bash
+# Create a new project
+mix pop_stash.project.new "My Project Name"
+# => Created project: proj_abc123
+# => Add to workspace config:
+# => {"url": "http://localhost:4001/mcp/proj_abc123"}
+
+# List all projects
+mix pop_stash.project.list
+# => proj_abc123  My Project Name       (created 2 days ago)
+# => proj_xyz789  Another Project       (created 1 week ago)
+
+# Delete a project (with confirmation)
+mix pop_stash.project.delete proj_abc123
+# => Are you sure? This will delete all agents, stashes, insights,
+# => decisions, and locks for this project. [y/N]
+```
+
+### Multiple Projects per Workspace (Advanced)
+
+You can connect multiple projects simultaneously if needed:
+
+```json
+// .claude/mcp_servers.json
+{
+  "pop_stash_frontend": {
+    "url": "http://localhost:4001/mcp/proj_frontend"
+  },
+  "pop_stash_shared": {
+    "url": "http://localhost:4001/mcp/proj_shared_libs"
+  }
+}
+```
+
+Tools appear namespaced:
+- `pop_stash_frontend/stash`
+- `pop_stash_frontend/recall`
+- `pop_stash_shared/stash`
+- `pop_stash_shared/recall`
+
+This allows cross-project operations when needed.
 
 ---
 
@@ -818,6 +964,7 @@ Get recent activity across all agents. Great for understanding what happened.
 
 ```mermaid
 erDiagram
+    projects ||--o{ agents : "contains"
     agents ||--o{ stashes : "creates"
     agents ||--o{ insights : "creates"
     agents ||--o{ decisions : "creates"
@@ -826,8 +973,18 @@ erDiagram
     agents ||--o{ activities : "generates"
     sessions ||--o{ activities : "contains"
 
+    projects {
+        text id PK
+        text name
+        text description
+        jsonb metadata
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
     agents {
         text id PK
+        text project_id FK
         text name
         text current_task
         text status
@@ -838,6 +995,7 @@ erDiagram
 
     stashes {
         text id PK
+        text project_id FK
         text name
         text summary
         vector summary_embedding
@@ -850,6 +1008,7 @@ erDiagram
 
     insights {
         text id PK
+        text project_id FK
         text key
         text content
         vector embedding
@@ -860,6 +1019,7 @@ erDiagram
 
     decisions {
         text id PK
+        text project_id FK
         text topic
         text decision
         text reasoning
@@ -870,6 +1030,7 @@ erDiagram
 
     locks {
         text id PK
+        text project_id FK
         text pattern
         text agent_id FK
         timestamptz acquired_at
@@ -878,6 +1039,7 @@ erDiagram
 
     sessions {
         text id PK
+        text project_id FK
         text agent_id FK
         text task
         text status
@@ -891,6 +1053,7 @@ erDiagram
 
     activities {
         bigserial id PK
+        text project_id FK
         text agent_id FK
         text session_id FK
         text type
@@ -906,9 +1069,22 @@ erDiagram
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- Agents (connected MCP clients)
+-- Projects (top-level isolation boundary)
+CREATE TABLE projects (
+  id TEXT PRIMARY KEY,  -- e.g., "proj_abc123"
+  name TEXT NOT NULL,
+  description TEXT,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX projects_name_idx ON projects (name);
+
+-- Agents (connected MCP clients, scoped to project)
 CREATE TABLE agents (
   id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   name TEXT,
   current_task TEXT,
   status TEXT DEFAULT 'active',  -- active, idle, disconnected
@@ -917,11 +1093,13 @@ CREATE TABLE agents (
   metadata JSONB DEFAULT '{}'
 );
 
-CREATE INDEX agents_status_idx ON agents (status);
+CREATE INDEX agents_project_idx ON agents (project_id);
+CREATE INDEX agents_status_idx ON agents (project_id, status);
 
--- Stashes (like git stash)
+-- Stashes (like git stash, scoped to project)
 CREATE TABLE stashes (
   id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   summary TEXT NOT NULL,
   summary_embedding vector(384),  -- for semantic search
@@ -932,12 +1110,14 @@ CREATE TABLE stashes (
   expires_at TIMESTAMPTZ  -- NULL = never expires
 );
 
-CREATE INDEX stashes_name_idx ON stashes (name);
+CREATE INDEX stashes_project_idx ON stashes (project_id);
+CREATE INDEX stashes_name_idx ON stashes (project_id, name);
 CREATE INDEX stashes_embedding_idx ON stashes USING ivfflat (summary_embedding vector_cosine_ops);
 
--- Insights (persistent knowledge)
+-- Insights (persistent knowledge, scoped to project)
 CREATE TABLE insights (
   id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   key TEXT,
   content TEXT NOT NULL,
   embedding vector(384),  -- for semantic search
@@ -946,12 +1126,14 @@ CREATE TABLE insights (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX insights_key_idx ON insights (key);
+CREATE INDEX insights_project_idx ON insights (project_id);
+CREATE INDEX insights_key_idx ON insights (project_id, key);
 CREATE INDEX insights_embedding_idx ON insights USING ivfflat (embedding vector_cosine_ops);
 
--- Decisions (shared across agents)
+-- Decisions (shared across agents within a project)
 CREATE TABLE decisions (
   id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   topic TEXT NOT NULL,
   decision TEXT NOT NULL,
   reasoning TEXT,
@@ -960,24 +1142,28 @@ CREATE TABLE decisions (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX decisions_topic_idx ON decisions (topic, created_at DESC);
+CREATE INDEX decisions_project_idx ON decisions (project_id);
+CREATE INDEX decisions_topic_idx ON decisions (project_id, topic, created_at DESC);
 CREATE INDEX decisions_embedding_idx ON decisions USING ivfflat (embedding vector_cosine_ops);
 
--- Locks (file coordination)
+-- Locks (file coordination, scoped to project)
 CREATE TABLE locks (
   id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   pattern TEXT NOT NULL,  -- file path or glob
   agent_id TEXT REFERENCES agents(id),
   acquired_at TIMESTAMPTZ DEFAULT now(),
   expires_at TIMESTAMPTZ DEFAULT now() + interval '15 minutes'
 );
 
-CREATE INDEX locks_pattern_idx ON locks (pattern);
+CREATE INDEX locks_project_idx ON locks (project_id);
+CREATE INDEX locks_pattern_idx ON locks (project_id, pattern);
 CREATE INDEX locks_expires_idx ON locks (expires_at);
 
--- Sessions (observability)
+-- Sessions (observability, scoped to project)
 CREATE TABLE sessions (
   id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   agent_id TEXT REFERENCES agents(id),
   task TEXT,
   status TEXT DEFAULT 'active',  -- active, completed, abandoned
@@ -989,12 +1175,14 @@ CREATE TABLE sessions (
   ended_at TIMESTAMPTZ
 );
 
-CREATE INDEX sessions_agent_idx ON sessions (agent_id, started_at DESC);
-CREATE INDEX sessions_status_idx ON sessions (status);
+CREATE INDEX sessions_project_idx ON sessions (project_id);
+CREATE INDEX sessions_agent_idx ON sessions (project_id, agent_id, started_at DESC);
+CREATE INDEX sessions_status_idx ON sessions (project_id, status);
 
--- Activity log (timeline)
+-- Activity log (timeline, scoped to project)
 CREATE TABLE activities (
   id BIGSERIAL PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   agent_id TEXT REFERENCES agents(id),
   session_id TEXT REFERENCES sessions(id),
   type TEXT NOT NULL,  -- task_started, task_ended, decision, stash, lock_acquired, etc.
@@ -1003,9 +1191,10 @@ CREATE TABLE activities (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX activities_time_idx ON activities (created_at DESC);
-CREATE INDEX activities_agent_idx ON activities (agent_id, created_at DESC);
-CREATE INDEX activities_type_idx ON activities (type, created_at DESC);
+CREATE INDEX activities_project_idx ON activities (project_id);
+CREATE INDEX activities_time_idx ON activities (project_id, created_at DESC);
+CREATE INDEX activities_agent_idx ON activities (project_id, agent_id, created_at DESC);
+CREATE INDEX activities_type_idx ON activities (project_id, type, created_at DESC);
 ```
 
 ---
@@ -1262,11 +1451,15 @@ pop_stash/
 │   │   ├── application.ex              # OTP application, supervision tree
 │   │   ├── repo.ex                     # Ecto repo
 │   │   │
-│   ├── memory.ex                   # Memory context (stash, insight, recall)
-│   ├── memory/
-│   │   ├── stash.ex                # Schema
-│   │   ├── insight.ex              # Schema
-│   │   └── embeddings.ex           # Nx/Bumblebee GenServer
+│   │   ├── projects.ex                 # Projects context
+│   │   ├── projects/
+│   │   │   └── project.ex              # Schema
+│   │   │
+│   │   ├── memory.ex                   # Memory context (stash, insight, recall)
+│   │   ├── memory/
+│   │   │   ├── stash.ex                # Schema
+│   │   │   ├── insight.ex              # Schema
+│   │   │   └── embeddings.ex           # Nx/Bumblebee GenServer
 │   │   │
 │   │   ├── coordination.ex             # Coordination context
 │   │   ├── coordination/
@@ -1288,19 +1481,27 @@ pop_stash/
 │   │   │
 │   │   ├── mcp/
 │   │   │   ├── server.ex               # MCP protocol handler
-│   │   │   ├── transport/
-│   │   │   │   └── stdio.ex            # stdio transport
+│   │   │   ├── router.ex               # HTTP router with /mcp/:project_id
 │   │   │   └── tools.ex                # Tool definitions
 │   │   │
 │   │   ├── pubsub.ex                   # PubSub wrapper
+│   │   ├── release.ex                  # Release-time operations (migrations, etc.)
 │   │   ├── telemetry.ex                # OpenTelemetry instrumentation
 │   │   └── telemetry/
 │   │       ├── storage_handler.ex      # Storage event handlers
 │   │       └── ecto_handler.ex         # Ecto query instrumentation
 │   │
+├── lib/mix/tasks/
+│   └── pop_stash/
+│       └── project/
+│           ├── new.ex                  # mix pop_stash.project.new
+│           ├── list.ex                 # mix pop_stash.project.list
+│           └── delete.ex               # mix pop_stash.project.delete
+│
 ├── priv/
 │   └── repo/
 │       └── migrations/
+│           ├── 20250101000000_create_projects.exs
 │           ├── 20250101000001_create_agents.exs
 │           ├── 20250101000002_create_stashes.exs
 │           ├── 20250101000003_create_insights.exs
@@ -1318,6 +1519,7 @@ pop_stash/
 │
 ├── test/
 │   ├── pop_stash/
+│   │   ├── projects_test.exs
 │   │   ├── memory_test.exs
 │   │   ├── coordination_test.exs
 │   │   ├── observability_test.exs
@@ -1327,9 +1529,17 @@ pop_stash/
 │   │   └── fixtures.ex
 │   └── test_helper.exs
 │
+├── bin/
+│   ├── setup                           # One-time init script
+│   ├── server                          # Start server script
+│   └── pop_stash                       # CLI wrapper
+│
+├── docker/
+│   └── entrypoint.sh                   # Docker entrypoint
+│
 ├── mix.exs
-├── docker-compose.yml
-├── otel-collector-config.yaml
+├── Dockerfile                          # Multi-stage build with ML models
+├── docker-compose.yml                  # App + PostgreSQL
 └── README.md
 ```
 
@@ -1421,19 +1631,45 @@ end
 
 ---
 
-## Docker Compose
+## Deployment
+
+> **Full deployment documentation:** See [02_deployment.md](./02_deployment.md) for complete Docker and non-Docker setup instructions.
+
+### Quick Start
+
+```bash
+# Docker (recommended)
+docker compose up -d
+# Server runs at http://localhost:4001
+# Default project auto-created on first boot
+
+# Without Docker
+bin/setup    # One-time: deps, db, migrations, default project
+bin/server   # Start server
+```
+
+### Docker Compose (Core)
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
-
 services:
+  app:
+    build: .
+    ports:
+      - "4001:4001"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/pop_stash
+      MCP_PORT: 4001
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: pop_stash_dev
+      POSTGRES_DB: pop_stash
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -1444,99 +1680,45 @@ services:
       timeout: 5s
       retries: 5
 
-  # SigNoz OpenTelemetry Collector
-  signoz-otel-collector:
-    image: signoz/signoz-otel-collector:0.88.11
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-    depends_on:
-      clickhouse:
-        condition: service_healthy
-
-  # ClickHouse for SigNoz storage
-  clickhouse:
-    image: clickhouse/clickhouse-server:24.1.2-alpine
-    volumes:
-      - signoz-clickhouse:/var/lib/clickhouse
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  # SigNoz Query Service
-  signoz-query-service:
-    image: signoz/query-service:0.45.0
-    environment:
-      ClickHouseUrl: tcp://clickhouse:9000
-      STORAGE: clickhouse
-    depends_on:
-      clickhouse:
-        condition: service_healthy
-      signoz-otel-collector:
-        condition: service_started
-
-  # SigNoz Frontend
-  signoz-frontend:
-    image: signoz/frontend:0.45.0
-    ports:
-      - "3301:3301"
-    depends_on:
-      - signoz-query-service
-    environment:
-      FRONTEND_API_ENDPOINT: http://signoz-query-service:8080
-
 volumes:
   pgdata:
-  signoz-clickhouse:
 ```
 
-### OpenTelemetry Collector Config
+### Deployment Files
 
-Create `otel-collector-config.yaml` in the project root:
-
-```yaml
-# otel-collector-config.yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-processors:
-  batch:
-    timeout: 1s
-    send_batch_size: 1024
-
-exporters:
-  clickhousetraces:
-    datasource: tcp://clickhouse:9000/?database=signoz_traces
-  clickhousemetricswrite:
-    endpoint: tcp://clickhouse:9000/?database=signoz_metrics
-  clickhouselogs:
-    dsn: tcp://clickhouse:9000/signoz_logs
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [clickhousetraces]
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [clickhousemetricswrite]
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [clickhouselogs]
 ```
+pop_stash/
+├── Dockerfile              # Multi-stage build, bundles ML models (~1GB)
+├── docker-compose.yml      # App + PostgreSQL
+├── docker/
+│   └── entrypoint.sh       # Runs setup on first boot, then starts server
+└── bin/
+    ├── setup               # One-time init (deps, db, migrations, default project)
+    ├── server              # Start the server
+    └── pop_stash           # CLI wrapper
+```
+
+### Key Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| **ML Models** | Bundled in Docker image | Larger image but instant startup |
+| **Default Project** | Auto-created on first boot | Simpler onboarding |
+| **Database** | Configurable via `DATABASE_URL` | Works with external DB |
+| **First Run** | Idempotent setup | Safe to run multiple times |
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | `postgres://localhost/pop_stash_dev` | PostgreSQL connection |
+| `MCP_PORT` | `4001` | HTTP server port |
+| `SECRET_KEY_BASE` | (generated) | Required in production |
+| `SKIP_DEFAULT_PROJECT` | `false` | Skip auto-creating default project |
+
+### SigNoz (Optional)
+
+SigNoz observability is optional. See [02_deployment.md](./02_deployment.md) for full SigNoz docker-compose setup with ClickHouse backend.
 
 ---
 
@@ -1571,13 +1753,22 @@ Call `stash` to save your current state.
 ## Build Phases
 
 ### Phase 1: MCP Foundation
-- [ ] Project setup, dependencies, basic config
-- [ ] **MCP protocol implementation (stdio transport)**
-- [ ] **Basic supervision tree (MCP server + stdio handler)**
-- [ ] **Implement `list_tools` and `call_tool` handlers**
-- [ ] **First tool: `ping` (returns "pong" - validates end-to-end)**
-- [ ] Manual testing with MCP inspector/Claude Code
-- [ ] Tests for MCP protocol layer
+- [x] Project setup, dependencies, basic config
+- [x] **MCP protocol implementation (HTTP transport)**
+- [x] **Basic supervision tree (Bandit HTTP server + Router)**
+- [x] **Implement `list_tools` and `call_tool` handlers**
+- [x] **First tool: `ping` (returns "pong" - validates end-to-end)**
+- [x] Manual testing with MCP inspector/Claude Code
+- [x] Tests for MCP protocol layer
+
+### Phase 1.5: Projects Foundation
+- [ ] PostgreSQL setup with pgvector
+- [ ] Ecto schemas: `projects` table
+- [ ] **Update router: `/mcp/:project_id` routing**
+- [ ] **Validate project exists on every request**
+- [ ] **Mix tasks: `mix pop_stash.project.new`, `list`, `delete`**
+- [ ] Pass project context to all tool handlers
+- [ ] Tests for project scoping
 
 ### Phase 2: Memory Foundation + Tools
 - [ ] PostgreSQL setup (docker-compose, basic tables only)
@@ -1764,13 +1955,3 @@ The pitch says "Git for AI agent state." The architecture uses PostgreSQL. Why?
 The metaphor helps people understand what PopStash *is*. The database lets you actually *build* it.
 
 ---
-
-### The Bottom Line
-
-AI agents are good enough now. The models aren't the bottleneck.
-
-**Infrastructure is the bottleneck.**
-
-Memory. Coordination. Accountability. The boring stuff that makes the brilliant stuff actually work.
-
-That's PopStash.

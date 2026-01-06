@@ -2,37 +2,61 @@
 
 ## Overview
 
-Build a minimal, idiomatic MCP server following Elixir/OTP best practices. Copy patterns from Tidewave but simplify and improve.
+Build a minimal MCP server following Elixir/OTP conventions. Start simple, iterate.
 
 ## Architecture
 
-**3 core modules:**
-1. `PopStash.MCP.Server` - JSON-RPC handling, tool dispatch
-2. `PopStash.MCP.Router` - Plug-based HTTP endpoint  
-3. `PopStash.MCP.Tools.Ping` - Example tool
+```
+┌─────────────────────────────────────────────┐
+│              PopStash.Application           │
+│                 (Supervisor)                │
+└─────────────────┬───────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────┐
+│     Bandit (HTTP Server on port 4001)       │
+│           └── PopStash.MCP.Router           │
+│                 │                           │
+│                 ├── POST /mcp/:project_id   │
+│                 │     └── PopStash.MCP.Server│
+│                 │           └── Tools.Ping  │
+│                 │                           │
+│                 └── GET /                   │
+│                       └── Info page         │
+└─────────────────────────────────────────────┘
+```
+
+**Modules:**
+- `PopStash.MCP.Server` — JSON-RPC 2.0 handling, tool dispatch
+- `PopStash.MCP.Router` — Plug-based HTTP endpoint with project routing
+- `PopStash.MCP.Tools.Ping` — Validates end-to-end connectivity
+
+**URL Structure:**
+- `POST /mcp/:project_id` — Main MCP endpoint, scoped to project
+- `GET /` — Info page showing available projects and tools
 
 **Principles:**
-- Let it crash (supervisor restarts Bandit on failure)
-- Explicit is better than implicit (clear error types)
-- Convention over configuration (sensible defaults)
-- Telemetry for observability
-- Typespecs for public APIs
+- Let it crash (supervisor restarts on failure)
+- Explicit over implicit
+- Telemetry from day one
+
+---
 
 ## Tasks
 
 ### 1. Add Dependencies
 
-**Update `mix.exs`**:
 ```elixir
+# mix.exs
 defp deps do
   [
     {:bandit, "~> 1.5"},
     {:jason, "~> 1.4"},
     {:plug, "~> 1.16"},
     {:telemetry, "~> 1.2"},
-    
-    # Dev/test only
-    {:credo, "~> 1.7", only: [:dev, test], runtime: false}
+
+    # Dev/test
+    {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
   ]
 end
 ```
@@ -41,292 +65,221 @@ end
 
 ### 2. Configuration
 
-**Create `config/config.exs`**:
 ```elixir
+# config/config.exs
 import Config
 
-config :pop_stash, PopStash.MCP,
-  port: 4000,
-  protocol_version: "2025-03-26"
+config :pop_stash,
+  mcp_port: 4001,
+  mcp_protocol_version: "2025-03-26"
 
 import_config "#{config_env()}.exs"
 ```
 
-**Create `config/dev.exs`**:
 ```elixir
+# config/dev.exs
 import Config
-
-config :pop_stash, PopStash.MCP,
-  port: 4000
 ```
 
-**Create `config/test.exs`**:
 ```elixir
+# config/test.exs
 import Config
 
-# Don't start server in tests
 config :pop_stash, start_server: false
 ```
 
-**Create `config/prod.exs`**:
 ```elixir
+# config/prod.exs
 import Config
-
-# Runtime config in releases
 ```
 
 ---
 
-### 3. Create MCP Server Module
+### 3. MCP Server
 
-**Create `lib/pop_stash/mcp/server.ex`**:
+The server handles JSON-RPC 2.0 messages and dispatches tool calls.
 
 ```elixir
+# lib/pop_stash/mcp/server.ex
 defmodule PopStash.MCP.Server do
   @moduledoc """
-  MCP (Model Context Protocol) server implementing JSON-RPC 2.0.
-  
-  Handles protocol messages and dispatches tool calls to registered tools.
-  Tools are registered at compile-time via module attributes for zero-cost dispatch.
+  MCP server implementing JSON-RPC 2.0.
+
+  Tool modules implement a `tools/0` callback returning a list of tool definitions.
+  Each definition is a map with `:name`, `:description`, `:inputSchema`, and `:callback`.
   """
 
   require Logger
 
-  @protocol_version Application.compile_env(:pop_stash, [PopStash.MCP, :protocol_version])
-  @server_name "PopStash"
-  @server_version Mix.Project.config()[:version]
-
-  # Compile-time tool registry
-  @tools [
-    PopStash.MCP.Tools.Ping.tools()
+  @tool_modules [
+    PopStash.MCP.Tools.Ping
   ]
-         |> List.flatten()
-         |> Enum.map(&validate_tool!/1)
-
-  @tool_schemas Enum.map(@tools, &Map.drop(&1, [:callback]))
-  @tool_dispatch Map.new(@tools, &{&1.name, &1.callback})
-
-  @type message :: map()
-  @type response :: map()
-  @type error_code :: integer()
 
   ## Public API
 
-  @doc """
-  Returns the list of available tool schemas (without callbacks).
-  """
-  @spec tools :: [map()]
-  def tools, do: @tool_schemas
+  @doc "Returns available tools (without callbacks, safe for JSON serialization)."
+  def tools do
+    @tool_modules
+    |> Enum.flat_map(& &1.tools())
+    |> Enum.map(&Map.drop(&1, [:callback]))
+  end
 
   @doc """
-  Handles an incoming JSON-RPC 2.0 message.
-  
-  Returns `{:ok, response}` on success or `{:error, response}` for protocol errors.
-  Tool execution errors are returned as successful responses with `isError: true`.
+  Handles a JSON-RPC 2.0 message.
+
+  Returns `{:ok, response}`, `{:error, response}`, or `{:ok, :notification}`.
+  The project_id is passed from the router (/mcp/:project_id).
   """
-  @spec handle_message(message()) :: {:ok, response()} | {:error, response()}
-  def handle_message(message) do
+  def handle_message(message, project_id) do
     start_time = System.monotonic_time()
-    
+
     result =
-      with {:ok, validated} <- validate_jsonrpc(message),
-           {:ok, response} <- route_message(validated) do
-        {:ok, response}
-      else
-        {:error, error_response} -> {:error, error_response}
+      with {:ok, msg} <- validate_jsonrpc(message) do
+        route(msg, project_id)
       end
-    
-    emit_telemetry(message, result, start_time)
+
+    emit_telemetry(message, result, start_time, project_id)
     result
   end
 
-  ## Message Routing
+  ## Routing
+  # All routes receive project_id for future use (Phase 1.5+)
 
-  defp route_message(%{"method" => "ping", "id" => id}) do
-    {:ok, success_response(id, %{})}
+  defp route(%{"method" => "ping", "id" => id}, _project_id) do
+    {:ok, success(id, %{})}
   end
 
-  defp route_message(%{"method" => "initialize", "id" => id, "params" => params}) do
-    with :ok <- validate_protocol_version(params["protocolVersion"]) do
-      {:ok,
-       success_response(id, %{
-         protocolVersion: @protocol_version,
-         capabilities: %{
-           tools: %{listChanged: false}
-         },
-         serverInfo: %{
-           name: @server_name,
-           version: @server_version
-         },
-         tools: @tool_schemas
-       })}
-    else
-      {:error, reason} -> {:error, error_response(id, -32602, reason)}
+  defp route(%{"method" => "initialize", "id" => id, "params" => params}, project_id) do
+    version = protocol_version()
+
+    case validate_protocol_version(params["protocolVersion"]) do
+      :ok ->
+        {:ok,
+         success(id, %{
+           protocolVersion: version,
+           capabilities: %{tools: %{listChanged: false}},
+           serverInfo: %{name: "PopStash", version: app_version()},
+           projectId: project_id,  # Include project_id in response
+           tools: tools()
+         })}
+
+      {:error, reason} ->
+        {:error, error(id, -32602, reason)}
     end
   end
 
-  defp route_message(%{"method" => "tools/list", "id" => id}) do
-    {:ok, success_response(id, %{tools: @tool_schemas})}
+  defp route(%{"method" => "tools/list", "id" => id}, _project_id) do
+    {:ok, success(id, %{tools: tools()})}
   end
 
-  defp route_message(%{"method" => "tools/call", "id" => id, "params" => params}) do
-    call_tool(id, params)
+  defp route(%{"method" => "tools/call", "id" => id, "params" => params}, project_id) do
+    call_tool(id, params, project_id)
   end
 
-  defp route_message(%{"method" => method, "id" => id}) do
-    {:error, error_response(id, -32601, "Method not found: #{method}")}
+  defp route(%{"method" => method, "id" => id}, _project_id) do
+    {:error, error(id, -32601, "Method not found: #{method}")}
   end
 
-  defp route_message(%{"method" => _method}) do
-    # Notification (no id) - ignore per JSON-RPC spec
-    {:ok, :no_response}
+  defp route(%{"method" => _method}, _project_id) do
+    {:ok, :notification}
   end
 
   ## Tool Dispatch
 
-  defp call_tool(id, %{"name" => name, "arguments" => args}) do
-    case Map.fetch(@tool_dispatch, name) do
-      {:ok, callback} ->
-        execute_tool(id, name, callback, args)
-
-      :error ->
-        {:error, error_response(id, -32601, "Unknown tool: #{name}")}
+  defp call_tool(id, %{"name" => name, "arguments" => args}, project_id) do
+    case find_tool(name) do
+      {:ok, callback} -> execute_tool(id, name, callback, args, project_id)
+      :error -> {:error, error(id, -32601, "Unknown tool: #{name}")}
     end
   end
 
-  defp call_tool(id, _params) do
-    {:error, error_response(id, -32602, "Invalid params: missing 'name' or 'arguments'")}
+  defp call_tool(id, _, _project_id) do
+    {:error, error(id, -32602, "Missing 'name' or 'arguments'")}
   end
 
-  defp execute_tool(id, name, callback, args) do
-    try do
-      case callback.(args) do
-        {:ok, text} when is_binary(text) ->
-          {:ok, success_response(id, text_content(text))}
+  defp find_tool(name) do
+    @tool_modules
+    |> Enum.flat_map(& &1.tools())
+    |> Enum.find(&(&1.name == name))
+    |> case do
+      %{callback: cb} -> {:ok, cb}
+      nil -> :error
+    end
+  end
 
-        {:ok, result} when is_map(result) ->
-          {:ok, success_response(id, result)}
-
-        {:error, message} when is_binary(message) ->
-          {:ok, success_response(id, text_content(message, error: true))}
-
-        other ->
-          Logger.warning("Tool #{name} returned unexpected value: #{inspect(other)}")
-          {:ok, success_response(id, text_content("Tool returned invalid response", error: true))}
+  defp execute_tool(id, name, callback, args, project_id) do
+    result =
+      try do
+        # Phase 1: callback.(args)
+        # Phase 1.5+: callback.(args, project_id) — tools will be project-aware
+        callback.(args)
+      catch
+        kind, reason ->
+          Logger.error("Tool #{name} crashed: #{Exception.format(kind, reason, __STACKTRACE__)}")
+          {:error, "Tool execution failed"}
       end
-    catch
-      kind, reason ->
-        stacktrace = __STACKTRACE__
-        Logger.error("Tool #{name} crashed: #{Exception.format(kind, reason, stacktrace)}")
 
-        error_text = """
-        Tool execution failed: #{Exception.message(Exception.normalize(kind, reason, stacktrace))}
-        """
+    _ = project_id  # Suppress unused warning until Phase 1.5
 
-        {:ok, success_response(id, text_content(error_text, error: true))}
+    case result do
+      {:ok, text} when is_binary(text) ->
+        {:ok, success(id, %{content: [%{type: "text", text: text}]})}
+
+      {:ok, data} when is_map(data) ->
+        {:ok, success(id, data)}
+
+      {:error, msg} when is_binary(msg) ->
+        {:ok, success(id, %{content: [%{type: "text", text: msg}], isError: true})}
+
+      other ->
+        Logger.warning("Tool #{name} returned invalid result: #{inspect(other)}")
+        {:ok, success(id, %{content: [%{type: "text", text: "Invalid tool response"}], isError: true})}
     end
   end
 
   ## Validation
 
-  defp validate_jsonrpc(%{"jsonrpc" => "2.0", "method" => method, "id" => id} = msg)
-       when is_binary(method) and (is_binary(id) or is_integer(id)) do
+  defp validate_jsonrpc(%{"jsonrpc" => "2.0", "method" => m} = msg) when is_binary(m) do
     {:ok, msg}
   end
 
-  defp validate_jsonrpc(%{"jsonrpc" => "2.0", "method" => method} = msg)
-       when is_binary(method) do
-    # Notification (no id required)
-    {:ok, msg}
+  defp validate_jsonrpc(_) do
+    {:error, error(nil, -32600, "Invalid JSON-RPC 2.0 request")}
   end
 
-  defp validate_jsonrpc(_msg) do
-    {:error, error_response(nil, -32600, "Invalid JSON-RPC 2.0 request")}
+  # Protocol versions are date-formatted strings. Lexicographic comparison works.
+  defp validate_protocol_version(nil), do: {:error, "protocolVersion required"}
+
+  defp validate_protocol_version(v) when is_binary(v) do
+    if v >= protocol_version(), do: :ok, else: {:error, "Protocol version #{v} not supported"}
   end
 
-  defp validate_protocol_version(nil) do
-    {:error, "Protocol version is required"}
-  end
+  defp validate_protocol_version(_), do: {:error, "protocolVersion must be a string"}
 
-  defp validate_protocol_version(version) when is_binary(version) do
-    if version >= @protocol_version do
-      :ok
-    else
-      {:error, "Unsupported protocol version. Server requires #{@protocol_version} or later"}
-    end
-  end
+  ## Response Builders
 
-  defp validate_protocol_version(_) do
-    {:error, "Protocol version must be a string"}
-  end
+  defp success(id, result), do: %{jsonrpc: "2.0", id: id, result: result}
 
-  ## Tool Validation (compile-time)
+  defp error(id, code, message), do: %{jsonrpc: "2.0", id: id, error: %{code: code, message: message}}
 
-  defp validate_tool!(%{name: name, description: desc, inputSchema: schema, callback: cb} = tool)
-       when is_binary(name) and is_binary(desc) and is_map(schema) and is_function(cb, 1) do
-    tool
-  end
+  ## Config
 
-  defp validate_tool!(tool) do
-    raise ArgumentError, """
-    Invalid tool definition: #{inspect(tool)}
-    
-    Tools must have:
-      - name: string
-      - description: string
-      - inputSchema: map (JSON Schema)
-      - callback: function/1
-    """
-  end
+  defp protocol_version, do: Application.get_env(:pop_stash, :mcp_protocol_version, "2025-03-26")
 
-  ## Response Helpers
-
-  defp success_response(id, result) do
-    %{
-      jsonrpc: "2.0",
-      id: id,
-      result: result
-    }
-  end
-
-  defp error_response(id, code, message) when is_integer(code) and is_binary(message) do
-    %{
-      jsonrpc: "2.0",
-      id: id,
-      error: %{
-        code: code,
-        message: message
-      }
-    }
-  end
-
-  defp text_content(text, opts \\ []) when is_binary(text) do
-    content = %{
-      content: [%{type: "text", text: text}]
-    }
-
-    if Keyword.get(opts, :error, false) do
-      Map.put(content, :isError, true)
-    else
-      content
-    end
-  end
+  defp app_version, do: Application.spec(:pop_stash, :vsn) |> to_string()
 
   ## Telemetry
 
-  defp emit_telemetry(message, result, start_time) do
-    duration = System.monotonic_time() - start_time
-
-    metadata = %{
-      method: message["method"],
-      tool: get_in(message, ["params", "name"]),
-      success: match?({:ok, _}, result)
-    }
-
+  defp emit_telemetry(message, result, start_time, project_id) do
     :telemetry.execute(
       [:pop_stash, :mcp, :request],
-      %{duration: duration},
-      metadata
+      %{duration: System.monotonic_time() - start_time},
+      %{
+        method: message["method"],
+        tool: get_in(message, ["params", "name"]),
+        project_id: project_id,
+        success: match?({:ok, _}, result)
+      }
     )
   end
 end
@@ -334,240 +287,158 @@ end
 
 ---
 
-### 4. Create HTTP Router
-
-**Create `lib/pop_stash/mcp/router.ex`**:
+### 4. HTTP Router
 
 ```elixir
+# lib/pop_stash/mcp/router.ex
 defmodule PopStash.MCP.Router do
   @moduledoc """
-  Plug-based HTTP router for MCP server.
-  
-  - POST /mcp - JSON-RPC 2.0 endpoint
-  - GET / - Health check / info page
-  
-  Security: Localhost-only by default.
+  HTTP router for MCP server.
+
+  - `POST /mcp/:project_id` — JSON-RPC endpoint, scoped to project
+  - `GET /` — Info page
+
+  Localhost-only for security.
   """
 
   use Plug.Router
   require Logger
 
   plug :match
-  plug :check_remote_ip
-  plug Plug.Parsers,
-    parsers: [:json],
-    pass: ["application/json"],
-    json_decoder: Jason
-
+  plug :check_localhost
+  plug Plug.Parsers, parsers: [:json], pass: ["application/json"], json_decoder: Jason
   plug :dispatch
 
-  ## Routes
+  # Main MCP endpoint — project_id required in URL
+  post "/mcp/:project_id" do
+    project_id = conn.path_params["project_id"]
 
-  post "/mcp" do
-    message = conn.body_params
-
-    case PopStash.MCP.Server.handle_message(message) do
-      {:ok, response} ->
-        send_json(conn, 200, response)
-
-      {:error, error_response} ->
-        send_json(conn, 200, error_response)
-
-      {:ok, :no_response} ->
-        # Notification - no response per JSON-RPC spec
-        send_resp(conn, 204, "")
+    # For Phase 1, just pass project_id through (no DB validation yet)
+    # Phase 1.5 will add: with {:ok, project} <- PopStash.Projects.get(project_id)
+    case PopStash.MCP.Server.handle_message(conn.body_params, project_id) do
+      {:ok, :notification} -> send_resp(conn, 204, "")
+      {:ok, response} -> json(conn, 200, response)
+      {:error, response} -> json(conn, 200, response)
     end
   end
 
   get "/" do
     tools = PopStash.MCP.Server.tools()
+    port = Application.get_env(:pop_stash, :mcp_port, 4001)
 
     html = """
     <!DOCTYPE html>
     <html>
-    <head>
-      <title>PopStash MCP Server</title>
-      <style>
-        body { font-family: system-ui; max-width: 800px; margin: 40px auto; padding: 0 20px; }
-        code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
-        pre { background: #f4f4f4; padding: 12px; border-radius: 4px; overflow-x: auto; }
-      </style>
+    <head><title>PopStash MCP</title>
+    <style>body{font-family:system-ui;max-width:700px;margin:40px auto;padding:0 20px}
+    code{background:#f4f4f4;padding:2px 6px;border-radius:3px}
+    pre{background:#f4f4f4;padding:12px;border-radius:4px;overflow-x:auto}
+    .note{background:#fffbeb;border:1px solid #f59e0b;padding:12px;border-radius:4px;margin:12px 0}</style>
     </head>
     <body>
-      <h1>PopStash MCP Server</h1>
-      <p>Model Context Protocol server for AI coding agents.</p>
-      
-      <h2>Endpoint</h2>
-      <p>POST JSON-RPC 2.0 messages to <code>/mcp</code></p>
-      
-      <h2>Available Tools (#{length(tools)})</h2>
-      <ul>
-        #{Enum.map_join(tools, fn t -> "<li><strong>#{t.name}</strong> - #{t.description}</li>" end)}
-      </ul>
-      
-      <h2>Integration</h2>
-      <p>Add to <code>.claude/mcp_servers.json</code>:</p>
-      <pre>{
+    <h1>PopStash MCP Server</h1>
+    <p>POST JSON-RPC 2.0 to <code>/mcp/:project_id</code></p>
+
+    <div class="note">
+      <strong>Project ID Required:</strong> Each workspace needs its own project ID in the URL.
+      <br>Create one with: <code>mix pop_stash.project.new "My Project"</code>
+    </div>
+
+    <h2>Tools (#{length(tools)})</h2>
+    <ul>#{Enum.map_join(tools, fn t -> "<li><b>#{t.name}</b> — #{t.description}</li>" end)}</ul>
+
+    <h2>Claude Code Setup</h2>
+    <p>Add to your workspace <code>.claude/mcp_servers.json</code>:</p>
+    <pre>{
   "pop_stash": {
-    "url": "http://localhost:#{port()}/mcp"
+    "url": "http://localhost:#{port}/mcp/YOUR_PROJECT_ID"
   }
 }</pre>
-    </body>
-    </html>
+    </body></html>
     """
 
-    conn
-    |> put_resp_content_type("text/html")
-    |> send_resp(200, html)
+    conn |> put_resp_content_type("text/html") |> send_resp(200, html)
   end
 
-  match _ do
-    send_resp(conn, 404, "Not found")
-  end
+  match _, do: send_resp(conn, 404, "Not found")
 
   ## Security
 
-  defp check_remote_ip(conn, _opts) do
-    if local_request?(conn.remote_ip) do
+  defp check_localhost(conn, _opts) do
+    if localhost?(conn.remote_ip) do
       conn
     else
-      Logger.warning("Rejected remote MCP request from #{inspect(conn.remote_ip)}")
-
-      conn
-      |> put_resp_content_type("text/plain")
-      |> send_resp(403, "Forbidden: MCP server only accepts localhost connections")
-      |> halt()
+      Logger.warning("Rejected non-localhost request from #{:inet.ntoa(conn.remote_ip)}")
+      conn |> send_resp(403, "Localhost only") |> halt()
     end
   end
 
-  # IPv4 localhost
-  defp local_request?({127, 0, 0, _}), do: true
-  # IPv6 localhost
-  defp local_request?({0, 0, 0, 0, 0, 0, 0, 1}), do: true
-  # IPv4-mapped IPv6 localhost (::ffff:127.0.0.1)
-  defp local_request?({0, 0, 0, 0, 0, 65535, 32512, 1}), do: true
-  defp local_request?(_), do: false
+  defp localhost?({127, _, _, _}), do: true
+  defp localhost?({0, 0, 0, 0, 0, 0, 0, 1}), do: true
+  defp localhost?(_), do: false
 
   ## Helpers
 
-  defp send_json(conn, status, data) do
-    conn
-    |> put_resp_content_type("application/json")
-    |> send_resp(status, Jason.encode!(data))
-  end
-
-  defp port do
-    Application.get_env(:pop_stash, PopStash.MCP)[:port] || 4000
+  defp json(conn, status, data) do
+    conn |> put_resp_content_type("application/json") |> send_resp(status, Jason.encode!(data))
   end
 end
 ```
 
 ---
 
-### 5. Create Ping Tool
-
-**Create `lib/pop_stash/mcp/tools/ping.ex`**:
+### 5. Ping Tool
 
 ```elixir
+# lib/pop_stash/mcp/tools/ping.ex
 defmodule PopStash.MCP.Tools.Ping do
-  @moduledoc """
-  Simple health check tool for MCP protocol validation.
-  
-  Always returns "pong" to confirm the server is responding.
-  """
+  @moduledoc "Health check tool."
 
-  @doc """
-  Returns tool definitions for registration.
-  """
-  @spec tools :: [map()]
   def tools do
     [
       %{
         name: "ping",
-        description: """
-        Health check that returns 'pong'. Used to validate MCP connection.
-        """,
-        inputSchema: %{
-          type: "object",
-          properties: %{},
-          required: []
-        },
+        description: "Health check. Returns 'pong'.",
+        inputSchema: %{type: "object", properties: %{}},
         callback: &execute/1
       }
     ]
   end
 
-  @doc """
-  Executes the ping tool.
-  
-  ## Examples
-  
-      iex> PopStash.MCP.Tools.Ping.execute(%{})
-      {:ok, "pong"}
-  """
-  @spec execute(map()) :: {:ok, String.t()}
-  def execute(_args) do
-    {:ok, "pong"}
-  end
+  def execute(_args), do: {:ok, "pong"}
 end
 ```
 
 ---
 
-### 6. Create Application Supervisor
-
-**Create `lib/pop_stash/application.ex`**:
+### 6. Application
 
 ```elixir
+# lib/pop_stash/application.ex
 defmodule PopStash.Application do
-  @moduledoc false
-
   use Application
 
   @impl true
   def start(_type, _args) do
-    children = children(Application.get_env(:pop_stash, :start_server, true))
+    children =
+      if Application.get_env(:pop_stash, :start_server, true) do
+        port = Application.get_env(:pop_stash, :mcp_port, 4001)
+        [{Bandit, plug: PopStash.MCP.Router, port: port}]
+      else
+        []
+      end
 
-    opts = [strategy: :one_for_one, name: PopStash.Supervisor]
-    Supervisor.start_link(children, opts)
+    Supervisor.start_link(children, strategy: :one_for_one, name: PopStash.Supervisor)
   end
-
-  # Start HTTP server in dev/prod, skip in test
-  defp children(true) do
-    port = Application.get_env(:pop_stash, PopStash.MCP)[:port] || 4000
-
-    [
-      {Bandit, plug: PopStash.MCP.Router, port: port, startup_log: false}
-    ]
-  end
-
-  defp children(false), do: []
 end
 ```
 
-**Update `mix.exs`**:
 ```elixir
+# mix.exs (application section)
 def application do
   [
     mod: {PopStash.Application, []},
     extra_applications: [:logger]
-  ]
-end
-
-def project do
-  [
-    app: :pop_stash,
-    version: "0.1.0",
-    elixir: "~> 1.18",
-    start_permanent: Mix.env() == :prod,
-    deps: deps(),
-    aliases: aliases()
-  ]
-end
-
-defp aliases do
-  [
-    "mcp.server": ["run --no-halt"]
   ]
 end
 ```
@@ -576,435 +447,259 @@ end
 
 ### 7. Tests
 
-**Update `test/test_helper.exs`**:
 ```elixir
+# test/test_helper.exs
 ExUnit.start()
 ```
 
-**Create `test/pop_stash/mcp/server_test.exs`**:
 ```elixir
+# test/pop_stash/mcp/server_test.exs
 defmodule PopStash.MCP.ServerTest do
   use ExUnit.Case, async: true
-
   alias PopStash.MCP.Server
 
-  describe "handle_message/1 - ping" do
-    test "responds to ping" do
-      assert {:ok, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "ping"
-               })
+  @test_project_id "test_project_123"
 
-      assert response.id == 1
-      assert response.result == %{}
+  defp msg(method, opts \\ []) do
+    %{"jsonrpc" => "2.0", "method" => method, "id" => opts[:id] || 1}
+    |> then(fn m -> if opts[:params], do: Map.put(m, "params", opts[:params]), else: m end)
+  end
+
+  describe "ping" do
+    test "returns empty result" do
+      assert {:ok, %{result: %{}}} = Server.handle_message(msg("ping"), @test_project_id)
     end
   end
 
-  describe "handle_message/1 - initialize" do
-    test "returns server capabilities with valid protocol version" do
-      assert {:ok, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "initialize",
-                 "params" => %{"protocolVersion" => "2025-03-26"}
-               })
+  describe "initialize" do
+    test "returns capabilities with project_id" do
+      assert {:ok, %{result: result}} =
+               Server.handle_message(
+                 msg("initialize", params: %{"protocolVersion" => "2025-03-26"}),
+                 @test_project_id
+               )
 
-      assert response.result.protocolVersion == "2025-03-26"
-      assert response.result.serverInfo.name == "PopStash"
-      assert is_list(response.result.tools)
+      assert result.serverInfo.name == "PopStash"
+      assert result.projectId == @test_project_id
+      assert is_list(result.tools)
     end
 
-    test "rejects old protocol version" do
-      assert {:error, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "initialize",
-                 "params" => %{"protocolVersion" => "2024-01-01"}
-               })
-
-      assert response.error.code == -32602
-      assert response.error.message =~ "Unsupported protocol version"
+    test "rejects old protocol" do
+      assert {:error, %{error: %{code: -32602}}} =
+               Server.handle_message(
+                 msg("initialize", params: %{"protocolVersion" => "2020-01-01"}),
+                 @test_project_id
+               )
     end
 
     test "requires protocol version" do
-      assert {:error, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "initialize",
-                 "params" => %{}
-               })
-
-      assert response.error.code == -32602
+      assert {:error, %{error: %{code: -32602}}} =
+               Server.handle_message(msg("initialize", params: %{}), @test_project_id)
     end
   end
 
-  describe "handle_message/1 - tools/list" do
-    test "returns available tools" do
-      assert {:ok, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "tools/list"
-               })
-
-      assert is_list(response.result.tools)
-      assert Enum.any?(response.result.tools, &(&1.name == "ping"))
-    end
-
-    test "tools do not include callbacks" do
-      assert {:ok, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "tools/list"
-               })
-
-      refute Enum.any?(response.result.tools, &Map.has_key?(&1, :callback))
+  describe "tools/list" do
+    test "returns tools without callbacks" do
+      assert {:ok, %{result: %{tools: tools}}} = Server.handle_message(msg("tools/list"), @test_project_id)
+      assert Enum.any?(tools, &(&1.name == "ping"))
+      refute Enum.any?(tools, &Map.has_key?(&1, :callback))
     end
   end
 
-  describe "handle_message/1 - tools/call" do
-    test "calls ping tool successfully" do
-      assert {:ok, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "tools/call",
-                 "params" => %{
-                   "name" => "ping",
-                   "arguments" => %{}
-                 }
-               })
-
-      assert response.result.content == [%{type: "text", text: "pong"}]
-      refute Map.has_key?(response.result, :isError)
+  describe "tools/call" do
+    test "calls ping" do
+      assert {:ok, %{result: %{content: [%{text: "pong"}]}}} =
+               Server.handle_message(
+                 msg("tools/call", params: %{"name" => "ping", "arguments" => %{}}),
+                 @test_project_id
+               )
     end
 
-    test "returns error for unknown tool" do
-      assert {:error, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "tools/call",
-                 "params" => %{
-                   "name" => "nonexistent",
-                   "arguments" => %{}
-                 }
-               })
-
-      assert response.error.code == -32601
-      assert response.error.message =~ "Unknown tool"
-    end
-
-    test "returns error for missing parameters" do
-      assert {:error, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "tools/call",
-                 "params" => %{"name" => "ping"}
-               })
-
-      assert response.error.code == -32602
+    test "unknown tool" do
+      assert {:error, %{error: %{code: -32601}}} =
+               Server.handle_message(
+                 msg("tools/call", params: %{"name" => "nope", "arguments" => %{}}),
+                 @test_project_id
+               )
     end
   end
 
-  describe "handle_message/1 - validation" do
-    test "rejects messages without jsonrpc version" do
-      assert {:error, response} =
-               Server.handle_message(%{
-                 "id" => 1,
-                 "method" => "ping"
-               })
-
-      assert response.error.code == -32600
+  describe "validation" do
+    test "rejects missing jsonrpc" do
+      assert {:error, _} = Server.handle_message(%{"method" => "ping", "id" => 1}, @test_project_id)
     end
 
-    test "rejects messages without method" do
-      assert {:error, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1
-               })
-
-      assert response.error.code == -32600
+    test "rejects missing method" do
+      assert {:error, _} = Server.handle_message(%{"jsonrpc" => "2.0", "id" => 1}, @test_project_id)
     end
 
-    test "rejects unknown methods" do
-      assert {:error, response} =
-               Server.handle_message(%{
-                 "jsonrpc" => "2.0",
-                 "id" => 1,
-                 "method" => "unknown"
-               })
-
-      assert response.error.code == -32601
+    test "unknown method" do
+      assert {:error, %{error: %{code: -32601}}} = Server.handle_message(msg("unknown"), @test_project_id)
     end
   end
 end
 ```
 
-**Create `test/pop_stash/mcp/tools/ping_test.exs`**:
 ```elixir
-defmodule PopStash.MCP.Tools.PingTest do
-  use ExUnit.Case, async: true
-
-  alias PopStash.MCP.Tools.Ping
-
-  describe "tools/0" do
-    test "returns list with ping tool definition" do
-      assert [tool] = Ping.tools()
-
-      assert tool.name == "ping"
-      assert is_binary(tool.description)
-      assert tool.inputSchema.type == "object"
-      assert is_function(tool.callback, 1)
-    end
-  end
-
-  describe "execute/1" do
-    test "returns pong" do
-      assert {:ok, "pong"} = Ping.execute(%{})
-    end
-
-    test "ignores arguments" do
-      assert {:ok, "pong"} = Ping.execute(%{"unused" => "arg"})
-    end
-  end
-end
-```
-
-**Create `test/pop_stash/mcp/router_test.exs`**:
-```elixir
+# test/pop_stash/mcp/router_test.exs
 defmodule PopStash.MCP.RouterTest do
   use ExUnit.Case, async: true
   use Plug.Test
-
   alias PopStash.MCP.Router
 
   @opts Router.init([])
+  @test_project_id "test_project_123"
 
-  describe "GET /" do
-    test "returns HTML info page" do
-      conn =
-        conn(:get, "/")
-        |> put_remote_ip({127, 0, 0, 1})
-        |> Router.call(@opts)
+  defp call(conn), do: %{conn | remote_ip: {127, 0, 0, 1}} |> Router.call(@opts)
 
-      assert conn.status == 200
-      assert conn.resp_body =~ "PopStash MCP Server"
-    end
+  test "GET / returns HTML" do
+    conn = conn(:get, "/") |> call()
+    assert conn.status == 200
+    assert conn.resp_body =~ "PopStash"
+    assert conn.resp_body =~ "project_id"
   end
 
-  describe "POST /mcp" do
-    test "handles valid ping request" do
-      conn =
-        conn(:post, "/mcp", Jason.encode!(%{jsonrpc: "2.0", id: 1, method: "ping"}))
-        |> put_req_header("content-type", "application/json")
-        |> put_remote_ip({127, 0, 0, 1})
-        |> Router.call(@opts)
+  test "POST /mcp/:project_id handles ping" do
+    conn =
+      conn(:post, "/mcp/#{@test_project_id}", Jason.encode!(%{jsonrpc: "2.0", id: 1, method: "ping"}))
+      |> put_req_header("content-type", "application/json")
+      |> call()
 
-      assert conn.status == 200
-      response = Jason.decode!(conn.resp_body)
-      assert response["result"] == %{}
-    end
-
-    test "handles invalid JSON" do
-      conn =
-        conn(:post, "/mcp", "not json")
-        |> put_req_header("content-type", "application/json")
-        |> put_remote_ip({127, 0, 0, 1})
-        |> Router.call(@opts)
-
-      assert conn.status == 400
-    end
+    assert conn.status == 200
+    assert Jason.decode!(conn.resp_body)["result"] == %{}
   end
 
-  describe "security" do
-    test "allows localhost IPv4" do
-      conn =
-        conn(:get, "/")
-        |> put_remote_ip({127, 0, 0, 1})
-        |> Router.call(@opts)
+  test "POST /mcp/:project_id initialize includes project_id" do
+    conn =
+      conn(:post, "/mcp/#{@test_project_id}", Jason.encode!(%{
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: %{protocolVersion: "2025-03-26"}
+      }))
+      |> put_req_header("content-type", "application/json")
+      |> call()
 
-      assert conn.status == 200
-    end
-
-    test "allows localhost IPv6" do
-      conn =
-        conn(:get, "/")
-        |> put_remote_ip({0, 0, 0, 0, 0, 0, 0, 1})
-        |> Router.call(@opts)
-
-      assert conn.status == 200
-    end
-
-    test "rejects remote IP" do
-      conn =
-        conn(:get, "/")
-        |> put_remote_ip({192, 168, 1, 100})
-        |> Router.call(@opts)
-
-      assert conn.status == 403
-      assert conn.resp_body =~ "Forbidden"
-    end
+    assert conn.status == 200
+    result = Jason.decode!(conn.resp_body)["result"]
+    assert result["projectId"] == @test_project_id
   end
 
-  defp put_remote_ip(conn, ip) do
-    %{conn | remote_ip: ip}
+  test "POST /mcp without project_id returns 404" do
+    conn =
+      conn(:post, "/mcp", Jason.encode!(%{jsonrpc: "2.0", id: 1, method: "ping"}))
+      |> put_req_header("content-type", "application/json")
+      |> call()
+
+    assert conn.status == 404
+  end
+
+  test "rejects non-localhost" do
+    conn =
+      conn(:get, "/")
+      |> Map.put(:remote_ip, {8, 8, 8, 8})
+      |> Router.call(@opts)
+
+    assert conn.status == 403
   end
 end
 ```
 
-Run: `mix test`
+```elixir
+# test/pop_stash/mcp/tools/ping_test.exs
+defmodule PopStash.MCP.Tools.PingTest do
+  use ExUnit.Case, async: true
+  alias PopStash.MCP.Tools.Ping
+
+  test "tools/0 returns valid definition" do
+    assert [%{name: "ping", callback: cb}] = Ping.tools()
+    assert is_function(cb, 1)
+  end
+
+  test "execute returns pong" do
+    assert {:ok, "pong"} = Ping.execute(%{})
+  end
+end
+```
 
 ---
 
-### 8. Update README
+### 8. Verification
 
-**Update `README.md`**:
-
-```markdown
-# PopStash
-
-Infrastructure layer for AI coding agents providing Memory, Coordination, and Observability via MCP (Model Context Protocol).
-
-## Quick Start
+After implementation, verify everything works:
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 mix deps.get
 
-# Start MCP server
-mix mcp.server
-```
-
-Server runs on `http://localhost:4000` (localhost-only for security).
-
-## Claude Code Integration
-
-Add to `.claude/mcp_servers.json`:
-
-```json
-{
-  "pop_stash": {
-    "url": "http://localhost:4000/mcp"
-  }
-}
-```
-
-Restart Claude Code to connect.
-
-## Available Tools
-
-- `ping` - Health check (returns "pong")
-
-## Development
-
-```bash
-# Run tests
+# 2. Run tests
 mix test
 
-# Run with coverage
-mix test --cover
+# 3. Start server
+mix run --no-halt
 
-# Lint code
-mix credo
+# 4. Test ping (in another terminal)
+# Note: project_id is required in the URL (use any string for now)
+curl -X POST http://localhost:4001/mcp/test_project \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"ping"}'
 
-# Format code
-mix format
-```
+# Expected: {"jsonrpc":"2.0","id":1,"result":{}}
 
-## Configuration
+# 5. Test initialize
+curl -X POST http://localhost:4001/mcp/test_project \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}'
 
-Edit `config/dev.exs`:
+# Expected: includes "projectId":"test_project" in response
 
-```elixir
-config :pop_stash, PopStash.MCP,
-  port: 4000
-```
+# 6. Test tool call
+curl -X POST http://localhost:4001/mcp/test_project \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"ping","arguments":{}}}'
 
-## Adding Tools
+# Expected: {"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"pong"}]}}
 
-1. Create tool module in `lib/pop_stash/mcp/tools/`
-2. Add to tool list in `lib/pop_stash/mcp/server.ex`
-
-Example:
-
-```elixir
-defmodule PopStash.MCP.Tools.MyTool do
-  def tools do
-    [
-      %{
-        name: "my_tool",
-        description: "What it does",
-        inputSchema: %{
-          type: "object",
-          required: ["param"],
-          properties: %{
-            param: %{type: "string", description: "Parameter description"}
-          }
-        },
-        callback: &execute/1
-      }
-    ]
-  end
-
-  def execute(%{"param" => value}) do
-    {:ok, "Result: #{value}"}
-  end
-end
-```
-
-## License
-
-Apache 2.0
+# 7. Visit info page
+open http://localhost:4001
 ```
 
 ---
 
-## Success Criteria
+## File Checklist
 
-- ✅ Server starts on http://localhost:4000
-- ✅ GET / shows tool list and integration instructions
-- ✅ POST /mcp handles JSON-RPC 2.0 correctly
-- ✅ Localhost-only security enforced (IPv4 + IPv6)
-- ✅ Telemetry events emitted for observability
-- ✅ Tests pass with >90% coverage
-- ✅ Credo passes with no warnings
-- ✅ All public functions have typespecs
-- ✅ Claude Code connects successfully
-- ✅ ping tool returns "pong"
+```
+lib/
+├── pop_stash/
+│   ├── application.ex
+│   └── mcp/
+│       ├── router.ex
+│       ├── server.ex
+│       └── tools/
+│           └── ping.ex
+config/
+├── config.exs
+├── dev.exs
+├── test.exs
+└── prod.exs
+test/
+├── test_helper.exs
+└── pop_stash/
+    └── mcp/
+        ├── router_test.exs
+        ├── server_test.exs
+        └── tools/
+            └── ping_test.exs
+```
 
-## Task Checklist
+---
 
-- [ ] 1. Add dependencies
-- [ ] 2. Configuration
-- [ ] 3. MCP Server module
-- [ ] 4. HTTP Router
-- [ ] 5. Ping tool
-- [ ] 6. Application supervisor
-- [ ] 7. Tests
-- [ ] 8. Update README
+## Done When
 
-## Key Improvements Over Initial Plan
-
-1. **Proper error handling** - `{:ok, response} | {:error, response}` instead of always `{:ok, _}`
-2. **Telemetry** - Emit events for observability
-3. **Typespecs** - All public APIs documented
-4. **Config environments** - Proper dev/test/prod split
-5. **Tool validation** - Compile-time checks for well-formed tools
-6. **Better HTML page** - Shows tools and integration instructions
-7. **Async tests** - Faster test runs
-8. **Security logging** - Warn on rejected remote requests
-9. **Better docs** - Examples in moduledocs, integration guide
-10. **Idiomatic Elixir** - Pattern matching, guards, proper use of with/case
-
-## Next Steps
-
-Phase 2: Database setup (PostgreSQL, Ecto, pgvector)
+- [x] `mix test` passes
+- [x] `curl` to `/mcp/:project_id` ping returns `{"jsonrpc":"2.0","id":1,"result":{}}`
+- [x] `curl` to `/mcp/:project_id` tool call returns `pong` in content
+- [x] Info page renders at `http://localhost:4001`
+- [x] Remote IP rejected with 403
+- [ ] (Phase 1.5) Project validation on every request
+- [ ] (Phase 1.5) Mix tasks: `mix pop_stash.project.new/list/delete`
