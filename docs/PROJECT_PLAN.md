@@ -1789,11 +1789,15 @@ Call `stash` to save your current state.
 - [x] Manual test with Claude Code
 
 **Future enhancements (post Phase 2):**
+
+See [PHASE_2_FOLLOWUP_PLAN.md](./PHASE_2_FOLLOWUP_PLAN.md) for detailed implementation.
+
 - [ ] Telemetry for memory operations (stash create/pop, insight create/recall)
 
-**Technical debt (acceptable for Phase 2):**
-- Agent created per request (Phase 3 adds session management)
-- No agent cleanup (Phase 3 adds lifecycle management)
+
+**Technical debt (resolved in Phase 3):**
+- Agent created per request → Phase 3 adds session management
+- No agent cleanup → Phase 3 adds lifecycle management via Agent.Connection GenServer
 
 ### Phase 3: Coordination + Tools
 - [ ] Ecto schemas: locks, sessions, decisions (all with project_id FK)
