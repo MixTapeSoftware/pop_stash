@@ -11,24 +11,26 @@ defmodule PopStash.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {PopStash.Application, []},
       extra_applications: [:logger]
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      #  Dev, Test, QA
+      # Runtime
+      {:bandit, "~> 1.5"},
+      {:jason, "~> 1.4"},
+      {:plug, "~> 1.16"},
+      {:telemetry, "~> 1.2"},
+
+      # Dev/test
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mimic, "~> 1.10", only: :test},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:tidewave, "~> 0.1", only: :dev}
-
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
 end
