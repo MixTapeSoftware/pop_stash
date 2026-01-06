@@ -61,5 +61,15 @@ Elixir is moving away from Typespecs in favor of it's own formal [type system](h
 - `Ecto.Changeset.validate_number/2` **DOES NOT SUPPORT the `:allow_nil` option**. By default, Ecto validations only run if a change for the given field exists and the change value is not nil, so such as option is never needed
 - You **must** use `Ecto.Changeset.get_field(changeset, :field)` to access changeset fields
 - Fields which are set programatically, such as `user_id`, must not be listed in `cast` calls or similar for security purposes. Instead they must be explicitly set when creating the struct
+
+### Schema Configuration
+
+- **Always** use `use PopStash.Schema` instead of `use Ecto.Schema` to ensure consistent configuration
+- The `PopStash.Schema` module centralizes configuration for:
+  - UUIDs as primary keys (`:binary_id`)
+  - UUIDs for foreign keys
+  - UTC datetime with microseconds for timestamps (`:utc_datetime_usec`)
+- In migrations, use `references(:table_name, type: :binary_id)` for foreign key associations
+- Configure global migration defaults in the Repo: `migration_primary_key: [type: :binary_id]` and `migration_timestamps: [type: :utc_datetime_usec]`
 <!-- ecto-end -->
 <!-- usage-rules-end -->
