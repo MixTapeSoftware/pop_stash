@@ -1,4 +1,4 @@
-# Dossier Project Plan
+# PopStash Project Plan
 
 **Project Status: EXPERIMENTAL**
 
@@ -8,13 +8,13 @@ Agents can be briliant wrecking balls if the lack the appropriate context. We ca
 into the project root and hope for the best or we can build systems that help agents coordinate, pick
 up where they left off, and record insights for future use as they work. 
 
-*That's Dossier*
+*That's PopStash*
 
 It's the missing infrastructure layer between your AI agents and sanity: memory, coordination (via tasks and locks), observability.
 
-### Dossier's Focus
+### PopStash's Focus
 
-| What Dossier Does | What It Doesn't Do |
+| What PopStash Does | What It Doesn't Do |
 |-------------------|-------------------|
 | Remembers context across sessions | Call LLMs (agents do that) |
 | Prevents agents from colliding | Execute code or write files |
@@ -30,18 +30,18 @@ Here's how:
 
 ```bash
 # 1. Clone and start (30 seconds)
-git clone https://github.com/MixTapeSoftware/dossier.git
-cd dossier
+git clone https://github.com/MixTapeSoftware/pop_stash.git
+cd pop_stash
 docker compose up -d
 
 # 2. Add to your MCP config (60 seconds)
 # ~/.config/claude/claude_desktop_config.json
 {
   "mcpServers": {
-    "dossier": {
+    "pop_stash": {
       "command": "mix",
       "args": ["run", "--no-halt"],
-      "cwd": "/path/to/dossier"
+      "cwd": "/path/to/pop_stash"
     }
   }
 }
@@ -66,7 +66,7 @@ docker compose up -d
 
 > "The programming is done by accumulating, massaging and cleaning datasets." — [Andrej Karpathy](https://karpathy.medium.com/software-2-0-a64152b37c35)
 
-Dossier is infrastructure:
+PopStash is infrastructure:
 
 - **Decisions are code** — Every `decide` call is like a commit to the project's decision history
 - **Context is the program** — Stashes and notes ARE the state that makes agents effective
@@ -124,7 +124,7 @@ How much did that session cost? What files did it touch? What decisions were mad
                          │ MCP Protocol (stdio)
                          ▼
          ┌───────────────────────────────────┐
-         │              Dossier              │
+         │              PopStash              │
          │                                   │
          │  ┌─────────┐ ┌──────────────────┐ │
          │  │ Memory  │ │   Coordination   │ │
@@ -153,7 +153,7 @@ How much did that session cost? What files did it touch? What decisions were mad
                    (+ pgvector)
 ```
 
-**No LLM calls.** Dossier is a smart database with MCP tools and local embeddings.
+**No LLM calls.** PopStash is a smart database with MCP tools and local embeddings.
 
 ---
 
@@ -163,10 +163,10 @@ How much did that session cost? What files did it touch? What decisions were mad
 |----------|----------|
 | **Embeddings** | Nx/Bumblebee local (all-MiniLM-L6-v2, 384 dimensions) |
 | **Lock expiry** | 15 minutes default, configurable |
-| **Multi-project** | One Dossier instance per project |
+| **Multi-project** | One PopStash instance per project |
 | **MCP transport** | stdio for V1 |
 | **Stash retention** | Forever by default, optional TTL |
-| **Agent IDs** | Dossier assigns them on connect |
+| **Agent IDs** | PopStash assigns them on connect |
 | **Telemetry** | OpenTelemetry → SigNoz for distributed tracing |
 | **Developer UX** | Pit of success design — make the right thing easy |
 
@@ -182,8 +182,8 @@ Persistent storage that survives session death.
 |------|---------|
 | `stash` | Save current context with a name ("auth-debugging") |
 | `pop` | Restore a stash (by name or semantic search) |
-| `note` | Save a persistent note ("The auth module uses JWT") |
-| `recall` | Search notes semantically ("how does auth work?") |
+| `insight` | Save a persistent insight ("The auth module uses JWT") |
+| `recall` | Search insights semantically ("how does auth work?") |
 | `decide` | Record a decision ("Using Guardian for auth tokens") |
 | `get_decisions` | Get decisions on a topic |
 
@@ -219,7 +219,7 @@ Visibility into what agents are doing, what it costs, and distributed tracing vi
 
 ## Telemetry Architecture
 
-Dossier emits OpenTelemetry spans for all storage operations, enabling full observability in SigNoz.
+PopStash emits OpenTelemetry spans for all storage operations, enabling full observability in SigNoz.
 
 ### Storage Events
 
@@ -227,30 +227,30 @@ All database operations emit telemetry events with the following pattern:
 
 | Event | Span Name | Attributes |
 |-------|-----------|------------|
-| **Stash created** | `dossier.stash.create` | `stash.id`, `stash.name`, `agent.id` |
-| **Stash popped** | `dossier.stash.pop` | `stash.id`, `stash.name`, `agent.id` |
-| **Stash deleted** | `dossier.stash.delete` | `stash.id`, `agent.id` |
-| **Note created** | `dossier.note.create` | `note.id`, `note.key`, `agent.id` |
-| **Note recalled** | `dossier.note.recall` | `note.id`, `query`, `agent.id` |
-| **Note updated** | `dossier.note.update` | `note.id`, `note.key`, `agent.id` |
-| **Note deleted** | `dossier.note.delete` | `note.id`, `agent.id` |
-| **Decision created** | `dossier.decision.create` | `decision.id`, `decision.topic`, `agent.id` |
-| **Decision queried** | `dossier.decision.query` | `topic`, `count`, `agent.id` |
-| **Lock acquired** | `dossier.lock.acquire` | `lock.id`, `lock.pattern`, `agent.id` |
-| **Lock released** | `dossier.lock.release` | `lock.id`, `lock.pattern`, `agent.id` |
-| **Lock expired** | `dossier.lock.expire` | `lock.id`, `lock.pattern`, `agent.id` |
-| **Session started** | `dossier.session.start` | `session.id`, `task`, `agent.id` |
-| **Session ended** | `dossier.session.end` | `session.id`, `status`, `cost_usd`, `agent.id` |
-| **Agent connected** | `dossier.agent.connect` | `agent.id`, `agent.name` |
-| **Agent disconnected** | `dossier.agent.disconnect` | `agent.id`, `reason` |
-| **Activity logged** | `dossier.activity.log` | `activity.type`, `agent.id`, `session.id` |
+| **Stash created** | `pop_stash.stash.create` | `stash.id`, `stash.name`, `agent.id` |
+| **Stash popped** | `pop_stash.stash.pop` | `stash.id`, `stash.name`, `agent.id` |
+| **Stash deleted** | `pop_stash.stash.delete` | `stash.id`, `agent.id` |
+| **Insight created** | `pop_stash.insight.create` | `insight.id`, `insight.key`, `agent.id` |
+| **Insight recalled** | `pop_stash.insight.recall` | `insight.id`, `query`, `agent.id` |
+| **Insight updated** | `pop_stash.insight.update` | `insight.id`, `insight.key`, `agent.id` |
+| **Insight deleted** | `pop_stash.insight.delete` | `insight.id`, `agent.id` |
+| **Decision created** | `pop_stash.decision.create` | `decision.id`, `decision.topic`, `agent.id` |
+| **Decision queried** | `pop_stash.decision.query` | `topic`, `count`, `agent.id` |
+| **Lock acquired** | `pop_stash.lock.acquire` | `lock.id`, `lock.pattern`, `agent.id` |
+| **Lock released** | `pop_stash.lock.release` | `lock.id`, `lock.pattern`, `agent.id` |
+| **Lock expired** | `pop_stash.lock.expire` | `lock.id`, `lock.pattern`, `agent.id` |
+| **Session started** | `pop_stash.session.start` | `session.id`, `task`, `agent.id` |
+| **Session ended** | `pop_stash.session.end` | `session.id`, `status`, `cost_usd`, `agent.id` |
+| **Agent connected** | `pop_stash.agent.connect` | `agent.id`, `agent.name` |
+| **Agent disconnected** | `pop_stash.agent.disconnect` | `agent.id`, `reason` |
+| **Activity logged** | `pop_stash.activity.log` | `activity.type`, `agent.id`, `session.id` |
 
 ### Telemetry Module
 
 ```elixir
-defmodule Dossier.Telemetry do
+defmodule PopStash.Telemetry do
   @moduledoc """
-  OpenTelemetry instrumentation for all Dossier storage operations.
+  OpenTelemetry instrumentation for all PopStash storage operations.
   """
   
   require OpenTelemetry.Tracer, as: Tracer
@@ -285,10 +285,10 @@ end
 ### Usage in Storage Modules
 
 ```elixir
-# Example: Dossier.Memory.create_stash/3
+# Example: PopStash.Memory.create_stash/3
 def create_stash(agent_id, name, summary, opts \\ []) do
-  Dossier.Telemetry.emit_storage_event(
-    "dossier.stash.create",
+  PopStash.Telemetry.emit_storage_event(
+    "pop_stash.stash.create",
     %{agent_id: agent_id, stash_name: name},
     fn ->
       # ... actual database operation
@@ -306,7 +306,7 @@ Database queries are automatically instrumented via `opentelemetry_ecto`:
 
 ```elixir
 # In application.ex
-:ok = OpentelemetryEcto.setup([:dossier, :repo])
+:ok = OpentelemetryEcto.setup([:pop_stash, :repo])
 ```
 
 ---
@@ -320,7 +320,7 @@ Every agent task follows this pattern:
 │                      START TASK                             │
 │                                                             │
 │  1. Call start_task("Implement user auth", ["lib/auth.ex"]) │
-│  2. Dossier returns:                                        │
+│  2. PopStash returns:                                        │
 │     - Your agent_id                                         │
 │     - Lock status (acquired or conflict)                    │
 │     - Relevant stashes/notes/decisions                      │
@@ -344,7 +344,7 @@ Every agent task follows this pattern:
 │                       END TASK                              │
 │                                                             │
 │  1. Call end_task("Implemented JWT auth with Guardian")     │
-│  2. Dossier:                                                │
+│  2. PopStash:                                                │
 │     - Releases your locks                                   │
 │     - Logs the activity                                     │
 │     - Records cost if provided                              │
@@ -394,7 +394,7 @@ Called at the beginning of every task. Returns context and acquires locks.
     "relevant_stashes": [
       { "name": "auth-research", "summary": "Evaluated Guardian vs Pow for auth...", "age": "2 days" }
     ],
-    "relevant_notes": [
+    "relevant_insights": [
       { "key": "api-patterns", "content": "All API responses use {:ok, data} | {:error, reason}" }
     ],
     "recent_decisions": [
@@ -556,19 +556,19 @@ Retrieve a stash by name or semantic search. Works even with fuzzy queries!
 }
 ```
 
-### note
+### insight
 
-Save a persistent note. Notes never expire and are searchable by meaning.
+Save a persistent insight. Insights never expire and are searchable by meaning.
 
 ```json
 {
-  "name": "note",
-  "description": "Save a persistent note about the codebase.",
+  "name": "insight",
+  "description": "Save a persistent insight about the codebase.",
   "inputSchema": {
     "type": "object",
     "properties": {
       "key": { "type": "string", "description": "Optional key for direct retrieval" },
-      "content": { "type": "string", "description": "The note content" }
+      "content": { "type": "string", "description": "The insight content" }
     },
     "required": ["content"]
   }
@@ -585,7 +585,7 @@ Save a persistent note. Notes never expire and are searchable by meaning.
 
 // Output
 {
-  "note_id": "note_xyz789",
+  "insight_id": "insight_xyz789",
   "key": "auth-patterns",
   "created_at": "2025-01-15T10:35:00Z",
   "tip": "Other agents can find this via `recall` with queries like 'how does auth work'"
@@ -594,12 +594,12 @@ Save a persistent note. Notes never expire and are searchable by meaning.
 
 ### recall
 
-Search notes semantically. Finds relevant info even with vague queries.
+Search insights semantically. Finds relevant info even with vague queries.
 
 ```json
 {
   "name": "recall",
-  "description": "Search notes by semantic similarity.",
+  "description": "Search insights by semantic similarity.",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -616,17 +616,17 @@ Search notes semantically. Finds relevant info even with vague queries.
 // Input (natural language query)
 { "query": "how do we handle authentication in this project", "limit": 3 }
 
-// Output — semantic search finds relevant notes
+// Output — semantic search finds relevant insights
 {
   "results": [
     {
-      "note_id": "note_xyz789",
+      "insight_id": "insight_xyz789",
       "key": "auth-patterns",
       "content": "This codebase uses Guardian for JWT auth. Tokens expire in 24h...",
       "match_score": 0.92
     },
     {
-      "note_id": "note_abc456",
+      "insight_id": "insight_abc456",
       "key": "api-security",
       "content": "All API endpoints require authentication except /health and /metrics...",
       "match_score": 0.78
@@ -811,7 +811,7 @@ Get recent activity across all agents. Great for understanding what happened.
     { "time": "5 min ago", "agent": "agent_xyz789", "type": "decision", "description": "Decided: Use Guardian for JWT" },
     { "time": "14 min ago", "agent": "agent_abc123", "type": "task_started", "description": "Started: Add JWT authentication" },
     { "time": "20 min ago", "agent": "agent_abc123", "type": "stash", "description": "Stashed: auth-research" },
-    { "time": "1 hour ago", "agent": "agent_def456", "type": "note", "description": "Added note: api-patterns" }
+    { "time": "1 hour ago", "agent": "agent_def456", "type": "insight", "description": "Added insight: api-patterns" }
   ]
 }
 ```
@@ -853,8 +853,8 @@ CREATE TABLE stashes (
 CREATE INDEX stashes_name_idx ON stashes (name);
 CREATE INDEX stashes_embedding_idx ON stashes USING ivfflat (summary_embedding vector_cosine_ops);
 
--- Notes (persistent knowledge)
-CREATE TABLE notes (
+-- Insights (persistent knowledge)
+CREATE TABLE insights (
   id TEXT PRIMARY KEY,
   key TEXT,
   content TEXT NOT NULL,
@@ -864,8 +864,8 @@ CREATE TABLE notes (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX notes_key_idx ON notes (key);
-CREATE INDEX notes_embedding_idx ON notes USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX insights_key_idx ON insights (key);
+CREATE INDEX insights_embedding_idx ON insights USING ivfflat (embedding vector_cosine_ops);
 
 -- Decisions (shared across agents)
 CREATE TABLE decisions (
@@ -931,25 +931,25 @@ CREATE INDEX activities_type_idx ON activities (type, created_at DESC);
 ## OTP Supervision Tree
 
 ```
-Dossier.Supervisor (one_for_one)
-├── Dossier.Repo (PostgreSQL + pgvector)
+PopStash.Supervisor (one_for_one)
+├── PopStash.Repo (PostgreSQL + pgvector)
 ├── Phoenix.PubSub (real-time coordination)
 │
-├── Dossier.Memory.Embeddings (GenServer)
+├── PopStash.Memory.Embeddings (GenServer)
 │   └── Loads Nx/Bumblebee model at startup
 │
-├── Registry (Dossier.Agents.Registry)
+├── Registry (PopStash.Agents.Registry)
 │   └── Tracks connected agents by ID
 │
-├── DynamicSupervisor (Dossier.Agents.Supervisor)
-│   ├── Dossier.Agent.Connection (agent_A) ← GenServer per agent
-│   ├── Dossier.Agent.Connection (agent_B)
-│   └── Dossier.Agent.Connection (agent_C)
+├── DynamicSupervisor (PopStash.Agents.Supervisor)
+│   ├── PopStash.Agent.Connection (agent_A) ← GenServer per agent
+│   ├── PopStash.Agent.Connection (agent_B)
+│   └── PopStash.Agent.Connection (agent_C)
 │
-├── Dossier.Locks.Cleaner (GenServer)
+├── PopStash.Locks.Cleaner (GenServer)
 │   └── Periodic cleanup of expired locks
 │
-└── Dossier.Telemetry
+└── PopStash.Telemetry
     └── OpenTelemetry span emission for all storage events
 ```
 
@@ -957,10 +957,10 @@ Dossier.Supervisor (one_for_one)
 
 ## Core Modules
 
-### Dossier.Memory.Embeddings
+### PopStash.Memory.Embeddings
 
 ```elixir
-defmodule Dossier.Memory.Embeddings do
+defmodule PopStash.Memory.Embeddings do
   @moduledoc """
   Local embeddings using Nx/Bumblebee.
   Loads all-MiniLM-L6-v2 at startup for 384-dimensional embeddings.
@@ -996,18 +996,18 @@ defmodule Dossier.Memory.Embeddings do
 end
 ```
 
-### Dossier.Agent.Connection
+### PopStash.Agent.Connection
 
 ```elixir
-defmodule Dossier.Agent.Connection do
+defmodule PopStash.Agent.Connection do
   @moduledoc """
   GenServer representing a connected agent.
   Handles heartbeat, task tracking, and cleanup on disconnect.
   """
   use GenServer
   
-  alias Dossier.{Repo, Coordination, Memory}
-  alias Dossier.Coordination.{Agent, Lock, Session}
+  alias PopStash.{Repo, Coordination, Memory}
+  alias PopStash.Coordination.{Agent, Lock, Session}
   
   @heartbeat_interval :timer.seconds(30)
   @heartbeat_timeout :timer.seconds(90)
@@ -1065,7 +1065,7 @@ defmodule Dossier.Agent.Connection do
     # Get relevant context
     context = %{
       relevant_stashes: Memory.search_stashes(task, limit: 3),
-      relevant_notes: Memory.search_notes(task, limit: 5),
+      relevant_insights: Memory.search_insights(task, limit: 5),
       recent_decisions: Coordination.recent_decisions(limit: 5),
       other_agents: Coordination.active_agents(exclude: state.agent_id)
     }
@@ -1126,21 +1126,21 @@ defmodule Dossier.Agent.Connection do
   end
   
   defp via_tuple(agent_id) do
-    {:via, Registry, {Dossier.Agents.Registry, agent_id}}
+    {:via, Registry, {PopStash.Agents.Registry, agent_id}}
   end
 end
 ```
 
-### Dossier.Locks.Cleaner
+### PopStash.Locks.Cleaner
 
 ```elixir
-defmodule Dossier.Locks.Cleaner do
+defmodule PopStash.Locks.Cleaner do
   @moduledoc """
   Periodic cleanup of expired locks.
   """
   use GenServer
   
-  alias Dossier.Repo
+  alias PopStash.Repo
   import Ecto.Query
   
   @cleanup_interval :timer.minutes(1)
@@ -1173,18 +1173,18 @@ end
 ## Project Structure
 
 ```
-dossier/
+pop_stash/
 ├── lib/
-│   ├── dossier.ex                         # Public API facade
-│   ├── dossier/
+│   ├── pop_stash.ex                         # Public API facade
+│   ├── pop_stash/
 │   │   ├── application.ex              # OTP application, supervision tree
 │   │   ├── repo.ex                     # Ecto repo
 │   │   │
-│   │   ├── memory.ex                   # Memory context (stash, note, recall)
-│   │   ├── memory/
-│   │   │   ├── stash.ex                # Schema
-│   │   │   ├── note.ex                 # Schema
-│   │   │   └── embeddings.ex           # Nx/Bumblebee GenServer
+│   ├── memory.ex                   # Memory context (stash, insight, recall)
+│   ├── memory/
+│   │   ├── stash.ex                # Schema
+│   │   ├── insight.ex              # Schema
+│   │   └── embeddings.ex           # Nx/Bumblebee GenServer
 │   │   │
 │   │   ├── coordination.ex             # Coordination context
 │   │   ├── coordination/
@@ -1221,7 +1221,7 @@ dossier/
 │       └── migrations/
 │           ├── 20250101000001_create_agents.exs
 │           ├── 20250101000002_create_stashes.exs
-│           ├── 20250101000003_create_notes.exs
+│           ├── 20250101000003_create_insights.exs
 │           ├── 20250101000004_create_decisions.exs
 │           ├── 20250101000005_create_locks.exs
 │           ├── 20250101000006_create_sessions.exs
@@ -1235,7 +1235,7 @@ dossier/
 │   └── runtime.exs
 │
 ├── test/
-│   ├── dossier/
+│   ├── pop_stash/
 │   │   ├── memory_test.exs
 │   │   ├── coordination_test.exs
 │   │   ├── observability_test.exs
@@ -1259,22 +1259,22 @@ dossier/
 # config/config.exs
 import Config
 
-config :dossier,
-  ecto_repos: [Dossier.Repo]
+config :pop_stash,
+  ecto_repos: [PopStash.Repo]
 
-config :dossier, Dossier.Repo,
+config :pop_stash, PopStash.Repo,
   migration_primary_key: [type: :text]
 
 # config/runtime.exs
 import Config
 
-config :dossier,
+config :pop_stash,
   project_name: System.get_env("DOSSIER_PROJECT_NAME", "default"),
   project_path: System.get_env("DOSSIER_PROJECT_PATH", "."),
   lock_expiry_minutes: System.get_env("DOSSIER_LOCK_EXPIRY", "15") |> String.to_integer()
 
-config :dossier, Dossier.Repo,
-  url: System.get_env("DATABASE_URL", "postgres://localhost/dossier_dev"),
+config :pop_stash, PopStash.Repo,
+  url: System.get_env("DATABASE_URL", "postgres://localhost/pop_stash_dev"),
   pool_size: String.to_integer(System.get_env("POOL_SIZE", "10"))
 
 config :nx, default_backend: EXLA.Backend
@@ -1290,7 +1290,7 @@ config :opentelemetry_exporter,
 
 config :opentelemetry, :resource,
   service: [
-    name: "dossier",
+    name: "pop_stash",
     namespace: System.get_env("DOSSIER_PROJECT_NAME", "default")
   ]
 ```
@@ -1351,7 +1351,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: dossier_dev
+      POSTGRES_DB: pop_stash_dev
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -1460,12 +1460,12 @@ service:
 
 ## CLAUDE.md Integration
 
-For agents to actually use Dossier, add to your project's CLAUDE.md:
+For agents to actually use PopStash, add to your project's CLAUDE.md:
 
 ```markdown
 # Coordination Rules (REQUIRED)
 
-This project uses Dossier for multi-agent coordination. You MUST follow these rules:
+This project uses PopStash for multi-agent coordination. You MUST follow these rules:
 
 ## At the start of every task:
 Call `start_task` with what you're about to do and which files you'll edit.
@@ -1478,7 +1478,7 @@ Call `end_task` with a summary of what you accomplished.
 Call `decide` to record the decision so other agents know.
 
 ## When you learn something important about the codebase:
-Call `note` to save it for future sessions.
+Call `insight` to save it for future sessions.
 
 ## When context is getting long or you're switching tasks:
 Call `stash` to save your current state.
@@ -1499,9 +1499,9 @@ Call `stash` to save your current state.
 
 ### Phase 2: Memory Foundation + Tools
 - [ ] PostgreSQL setup (docker-compose, basic tables only)
-- [ ] Ecto schemas: stashes, notes (no embeddings yet)
+- [ ] Ecto schemas: stashes, insights (no embeddings yet)
 - [ ] Simple in-memory storage (GenServer) as placeholder
-- [ ] **MCP tools: `stash`, `pop` (by name only), `note`, `recall` (exact key match)**
+- [ ] **MCP tools: `stash`, `pop` (by name only), `insight`, `recall` (exact key match)**
 - [ ] Test with real MCP client
 - [ ] Upgrade to Ecto persistence when working
 
@@ -1532,11 +1532,11 @@ Call `stash` to save your current state.
 - [ ] "5-minute quickstart" validation
 - [ ] Error messages with remediation
 - [ ] All MCP tools documented with examples
-- [ ] `dossier doctor` health check
+- [ ] `pop_stash doctor` health check
 - [ ] Lock cleanup background job
 
 ### Phase 7: Polish
-- [ ] CLI (`dossier status`)
+- [ ] CLI (`pop_stash status`)
 - [ ] Edge case handling
 - [ ] End-to-end integration tests
 - [ ] Production hardening
@@ -1550,7 +1550,7 @@ Call `stash` to save your current state.
 - [ ] Agent can call `start_task` and get relevant context
 - [ ] Two agents can't edit the same file simultaneously (locks work)
 - [ ] Agent can stash context, disconnect, reconnect, and pop it
-- [ ] Semantic search returns relevant notes/decisions
+- [ ] Semantic search returns relevant insights/decisions
 - [ ] Decisions are visible to all agents
 - [ ] Timeline shows all activity across agents
 - [ ] Cost tracking shows token usage per session
@@ -1603,11 +1603,11 @@ Human development teams figured this out decades ago:
 
 AI agents have none of this. They're incredibly capable individuals with zero organizational infrastructure.
 
-**Dossier is that infrastructure.**
+**PopStash is that infrastructure.**
 
 ### What Changes
 
-| Before Dossier | After Dossier |
+| Before PopStash | After PopStash |
 |----------------|---------------|
 | "Where were we?" | Agent picks up exactly where it left off |
 | "Did you already try that?" | Decisions are recorded, searchable, shared |
@@ -1617,7 +1617,7 @@ AI agents have none of this. They're incredibly capable individuals with zero or
 
 ### Who This Is For
 
-Dossier is for developers who:
+PopStash is for developers who:
 - Use AI agents for real work, not demos
 - Have felt the pain of re-explaining context
 - Run (or want to run) multiple agents on one codebase
@@ -1637,7 +1637,7 @@ For the engineers who want to know how:
 
 ### The One-Liner
 
-**Dossier: Memory, coordination, and accountability for AI agents.**
+**PopStash: Memory, coordination, and accountability for AI agents.**
 
 Because the bottleneck isn't AI capability anymore. It's AI infrastructure.
 
@@ -1655,7 +1655,7 @@ We're in the "before Git" era of AI development. Everyone's copying files around
 
 **The shift is happening.** The developers who figure out AI agent infrastructure first will have a massive advantage. Not because their agents are smarter — everyone has access to the same models — but because their agents are *organized*.
 
-Dossier is a bet on that shift.
+PopStash is a bet on that shift.
 
 The question isn't whether AI agents need memory and coordination. They obviously do. The question is whether you'll have it when your competitors don't.
 
@@ -1673,13 +1673,13 @@ The pitch says "Git for AI agent state." The architecture uses PostgreSQL. Why?
 
 | Requirement | Git | PostgreSQL + pgvector |
 |-------------|-----|----------------------|
-| "Find notes about authentication" | Grep through files | `ORDER BY embedding <=> $query LIMIT 5` |
+| "Find insights about authentication" | Grep through files | `ORDER BY embedding <=> $query LIMIT 5` |
 | "Who's working right now?" | Parse file timestamps | `SELECT * FROM agents WHERE status = 'active'` |
 | "Total cost this week" | Script it yourself | `SELECT SUM(cost_usd) FROM sessions` |
 | Lock expiry after 15 minutes | Manual cleanup | `WHERE expires_at < now()` |
 | Multiple agents writing concurrently | Merge conflicts | Transactions just work |
 
-The metaphor helps people understand what Dossier *is*. The database lets you actually *build* it.
+The metaphor helps people understand what PopStash *is*. The database lets you actually *build* it.
 
 ---
 
@@ -1691,4 +1691,4 @@ AI agents are good enough now. The models aren't the bottleneck.
 
 Memory. Coordination. Accountability. The boring stuff that makes the brilliant stuff actually work.
 
-That's Dossier.
+That's PopStash.
