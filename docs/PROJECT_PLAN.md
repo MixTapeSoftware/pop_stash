@@ -1788,12 +1788,6 @@ Call `stash` to save your current state.
 - [x] Tests for agents, memory, and MCP integration
 - [x] Manual test with Claude Code
 
-**Future enhancements (post Phase 2):**
-
-See [PHASE_2_FOLLOWUP_PLAN.md](./PHASE_2_FOLLOWUP_PLAN.md) for detailed implementation.
-
-- [ ] Telemetry for memory operations (stash create/pop, insight create/recall)
-
 
 **Technical debt (resolved in Phase 3):**
 - Agent created per request → Phase 3 adds session management
@@ -1807,25 +1801,28 @@ See [PHASE_2_FOLLOWUP_PLAN.md](./PHASE_2_FOLLOWUP_PLAN.md) for detailed implemen
 - [ ] Test multi-agent scenarios with Claude Code
 - [ ] PubSub for real-time updates
 
-### Phase 4: Semantic Search
-**Foundation ready:**
-- [x] pgvector extension enabled in migration
+### Phase 4: Semantic Search with Typesense
+**Search Infrastructure:**
+- [ ] Add `typesense_ex` dependency (https://github.com/MixTapeSoftware/typesense_ex)
+- [ ] Configure Typesense connection and collection schemas
+- [ ] Create Typesense collections for insights
+- [ ] Build sync module to index insights on create/update/delete
 
-**Remaining:**
-- [ ] Nx/Bumblebee embeddings GenServer
-- [ ] Add embedding columns (vector type) to stashes, insights, decisions
-- [ ] Upgrade `pop` to semantic search with vector similarity
-- [ ] Upgrade `recall` to semantic search
-- [ ] Upgrade `decide` queries to semantic search
-- [ ] Upgrade `insight` queries to semantic search
-- [ ] Performance testing and indexing
+**Embeddings:**
+- [ ] Nx/Bumblebee embeddings GenServer for generating vectors
+- [ ] Add embedding columns (vector type) to insights schema
+- [ ] Generate embeddings on insight create/update
+
+**Search Features:**
+- [ ] Upgrade `recall` to hybrid search (keyword + semantic via Typesense)
+- [ ] Add search filters by project, tags, date ranges
+- [ ] Implement result ranking combining text relevance + vector similarity
+- [ ] Performance testing and query optimization
 
 ### Phase 5: Observability + Tools
 - [ ] Activity logging schema + context
 - [ ] Cost tracking calculations
 - [ ] **MCP tools: `report_cost`, `timeline`, `session_summary`**
-- [ ] OpenTelemetry instrumentation
-- [ ] SigNoz integration (optional, graceful degradation)
 
 ### Phase 6: Developer Experience
 - [ ] "5-minute quickstart" validation
@@ -1855,14 +1852,13 @@ See [PHASE_2_FOLLOWUP_PLAN.md](./PHASE_2_FOLLOWUP_PLAN.md) for detailed implemen
 - [ ] Cost tracking shows token usage per session
 - [ ] GenServer crashes don't lose state (DB persistence)
 - [ ] Disconnected agents release their locks
-- [ ] All storage events visible in SigNoz traces
 
 ### Developer Experience Metrics (Non-Negotiable)
 - [ ] Time from `git clone` to first `start_task`: **< 5 minutes**
 - [ ] Zero configuration required for basic usage
 - [ ] Every error message includes remediation steps
 - [ ] Documentation coverage: 100% of public tools
-- [ ] Works in "degraded mode" without SigNoz/embeddings
+- [ ] Works in "degraded mode" without Typesense/embeddings
 
 ---
 
