@@ -57,6 +57,23 @@ alwaysApply: true
 - Elixir's builtin OTP primitives like `DynamicSupervisor` and `Registry`, require names in the child spec, such as `{DynamicSupervisor, name: MyApp.MyDynamicSup}`, then you can use `DynamicSupervisor.start_child(MyApp.MyDynamicSup, child_spec)`
 - Use `Task.async_stream(collection, callback, options)` for concurrent enumeration with back-pressure. The majority of times you will want to pass `timeout: :infinity` as option
 
+- **Avoid redundant `with` patterns** — Don't re-wrap results that are already in the correct format
+
+  **Never do this (redundant):**
+
+      with {:ok, callback} <- find_tool(id, name),
+           {:ok, response} <- execute_tool(id, name, callback, args, context) do
+        {:ok, response}
+      end
+
+  **Instead, return the final call directly:**
+
+      with {:ok, callback} <- find_tool(id, name) do
+        execute_tool(id, name, callback, args, context)
+      end
+
+  If `execute_tool` already returns `{:ok, response}` or `{:error, reason}`, don't match and re-wrap it — just let it flow through.
+
 ### Types and TypeSpecs
 
 Elixir is moving away from Typespecs in favor of it's own formal [type system](https://hexdocs.pm/elixir/1.19.4/gradual-set-theoretic-types.html). Therefore, never add typespecs. 
