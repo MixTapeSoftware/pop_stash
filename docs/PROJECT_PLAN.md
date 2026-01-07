@@ -1808,32 +1808,32 @@ Decisions are fundamentally about persistent knowledge - "We chose Guardian over
 - **Defer semantic search**: Phase 3 uses exact topic matching; Phase 4 adds semantic search
 
 **Schema & Migration:**
-- [ ] Create `PopStash.Memory.Decision` schema at `lib/pop_stash/memory/decision.ex`
+- [x] Create `PopStash.Memory.Decision` schema at `lib/pop_stash/memory/decision.ex`
   - `topic` - What area this decision affects (normalized: lowercase, trimmed)
   - `decision` - What was decided
   - `reasoning` - Why this decision was made (optional)
   - `metadata` (JSONB) - Extensible storage
   - `project_id` - FK to projects
   - `created_by` - FK to agents
-- [ ] Add migration for decisions table with indexes on (project_id), (project_id, topic), (project_id, inserted_at)
+- [x] Add migration for decisions table with indexes on (project_id), (project_id, topic), (project_id, inserted_at)
 
 **Context Functions (add to `PopStash.Memory`):**
-- [ ] `create_decision(project_id, agent_id, topic, decision, opts \\ [])` - Create a decision (normalizes topic)
-- [ ] `get_decision(decision_id)` - Get by ID
-- [ ] `get_decisions_by_topic(project_id, topic)` - Get all decisions for a topic (most recent first)
-- [ ] `list_decisions(project_id, opts \\ [])` - List with filters (limit, since datetime)
-- [ ] `delete_decision(decision_id)` - Remove decision (admin use only)
+- [x] `create_decision(project_id, agent_id, topic, decision, opts \\ [])` - Create a decision (normalizes topic)
+- [x] `get_decision(decision_id)` - Get by ID
+- [x] `get_decisions_by_topic(project_id, topic)` - Get all decisions for a topic (most recent first)
+- [x] `list_decisions(project_id, opts \\ [])` - List with filters (limit, since datetime)
+- [x] `delete_decision(decision_id)` - Remove decision (admin use only)
 
 **MCP Tools:**
-- [ ] Add `decide` tool - Record a decision (topic, decision, reasoning)
-- [ ] Add `get_decisions` tool - Query by exact topic or list recent
-- [ ] Wire tools to MCP server
+- [x] Add `decide` tool - Record a decision (topic, decision, reasoning)
+- [x] Add `get_decisions` tool - Query by exact topic or list recent
+- [x] Wire tools to MCP server
 
 **Testing:**
-- [ ] Unit tests for Decision schema and context functions
-- [ ] Integration tests for MCP tools
-- [ ] Test topic normalization (case insensitive matching)
-- [ ] Manual test with Claude Code in real workflow
+- [x] Unit tests for Decision schema and context functions
+- [x] Integration tests for MCP tools
+- [x] Test topic normalization (case insensitive matching)
+- [x] Manual test with Claude Code in real workflow
 
 ---
 
