@@ -9,7 +9,10 @@ defmodule PopStash.ProjectsTest do
       assert project.name == "My Project"
       assert is_binary(project.id)
       # UUID format: 8-4-4-4-12 hex chars
-      assert String.match?(project.id, ~r/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      assert String.match?(
+               project.id,
+               ~r/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+             )
     end
 
     test "creates a project with description" do
@@ -19,7 +22,8 @@ defmodule PopStash.ProjectsTest do
 
     test "rejects duplicate project name" do
       {:ok, _} = Projects.create("Duplicate Name")
-      assert {:ok, _} = Projects.create("Duplicate Name")  # Names can be duplicated, IDs are unique
+      # Names can be duplicated, IDs are unique
+      assert {:ok, _} = Projects.create("Duplicate Name")
     end
   end
 

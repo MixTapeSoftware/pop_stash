@@ -102,7 +102,10 @@ defmodule PopStash.Agents do
   def update_task(agent_id, task) when is_binary(agent_id) do
     with {:ok, agent} <- get(agent_id) do
       agent
-      |> cast(%{current_task: task, last_seen_at: DateTime.utc_now()}, [:current_task, :last_seen_at])
+      |> cast(%{current_task: task, last_seen_at: DateTime.utc_now()}, [
+        :current_task,
+        :last_seen_at
+      ])
       |> Repo.update()
     end
   end

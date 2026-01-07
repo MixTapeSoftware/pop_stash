@@ -25,12 +25,6 @@ defmodule PopStash.MCP.ServerTest do
   end
 
   describe "handle_message/2" do
-    test "ping returns empty result", %{context: context} do
-      message = %{"jsonrpc" => "2.0", "id" => 1, "method" => "ping"}
-      assert {:ok, response} = Server.handle_message(message, context)
-      assert response.result == %{}
-    end
-
     test "initialize returns server info with project", %{context: context, project: project} do
       message = %{
         "jsonrpc" => "2.0",
@@ -49,19 +43,8 @@ defmodule PopStash.MCP.ServerTest do
       message = %{"jsonrpc" => "2.0", "id" => 1, "method" => "tools/list"}
       assert {:ok, response} = Server.handle_message(message, context)
       assert is_list(response.result.tools)
-      assert Enum.any?(response.result.tools, &(&1.name == "ping"))
-    end
-
-    test "tools/call with ping returns pong", %{context: context} do
-      message = %{
-        "jsonrpc" => "2.0",
-        "id" => 1,
-        "method" => "tools/call",
-        "params" => %{"name" => "ping", "arguments" => %{}}
-      }
-
-      assert {:ok, response} = Server.handle_message(message, context)
-      assert [%{text: "pong"}] = response.result.content
+      assert Enum.any?(response.result.tools, &(&1.name == "stash"))
+      assert Enum.any?(response.result.tools, &(&1.name == "decide"))
     end
 
     test "rejects invalid JSON-RPC", %{context: context} do
@@ -97,7 +80,7 @@ defmodule PopStash.MCP.ServerTest do
       assert {:ok, %{result: %{tools: tools}}} =
                Server.handle_message(msg("tools/list"), context)
 
-      assert Enum.any?(tools, &(&1.name == "ping"))
+      assert Enum.any?(tools, &(&1.name == "stash"))
       refute Enum.any?(tools, &Map.has_key?(&1, :callback))
     end
   end
@@ -115,12 +98,64 @@ defmodule PopStash.MCP.ServerTest do
   describe "validation" do
     test "rejects missing jsonrpc", %{context: context} do
       assert {:error, _} =
-               Server.handle_message(%{"method" => "ping", "id" => 1}, context)
+               Server.handle_message(%{"method" => "tools/list", "id" => 1}, context)
     end
 
     test "rejects missing method", %{context: context} do
       assert {:error, _} =
                Server.handle_message(%{"jsonrpc" => "2.0", "id" => 1}, context)
+    end
+  end
+
+  describe "decision tools" do
+    test "decide tool records a decision", %{context: context} do
+      message = %{
+        "jsonrpc" => "2.0",
+        "id" => 1,
+        "method" => "tools/call",
+        "params" => %{
+          "name" => "decide",
+          "arguments" => %{
+            "topic" => "testing",
+            "decision" => "Use ExUnit",
+            "reasoning" => "Built into Elixir"
+          }
+        }
+      }
+
+      assert {:ok, response} = Server.handle_message(message, context)
+      assert [%{text: text}] = response.result.content
+      assert text =~ "Decision recorded"
+    end
+
+    test "get_decisions tool queries decisions", %{context: context} do
+      # First record a decision
+      decide_msg = %{
+        "jsonrpc" => "2.0",
+        "id" => 1,
+        "method" => "tools/call",
+        "params" => %{
+          "name" => "decide",
+          "arguments" => %{"topic" => "auth", "decision" => "Use Guardian"}
+        }
+      }
+
+      Server.handle_message(decide_msg, context)
+
+      # Then query it
+      query_msg = %{
+        "jsonrpc" => "2.0",
+        "id" => 2,
+        "method" => "tools/call",
+        "params" => %{
+          "name" => "get_decisions",
+          "arguments" => %{"topic" => "auth"}
+        }
+      }
+
+      assert {:ok, response} = Server.handle_message(query_msg, context)
+      assert [%{text: text}] = response.result.content
+      assert text =~ "Use Guardian"
     end
   end
 end

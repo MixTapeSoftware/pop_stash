@@ -38,6 +38,7 @@ defmodule PopStash.MCP.Router do
 
       {:error, :not_found} ->
         Logger.warning("Request for unknown project: #{project_id}")
+
         error_response = %{
           jsonrpc: "2.0",
           id: conn.body_params["id"],
@@ -49,6 +50,7 @@ defmodule PopStash.MCP.Router do
             }
           }
         }
+
         json(conn, 404, error_response)
     end
   end
@@ -91,13 +93,15 @@ defmodule PopStash.MCP.Router do
     projects = PopStash.Projects.list()
     port = Application.get_env(:pop_stash, :mcp_port, 4001)
 
-    projects_html = if Enum.empty?(projects) do
-      "<p><em>No projects yet. Create one with <code>mix pop_stash.project.new \"My Project\"</code></em></p>"
-    else
-      "<ul>" <> Enum.map_join(projects, fn p ->
-        "<li><code>#{p.id}</code> — #{p.name}</li>"
-      end) <> "</ul>"
-    end
+    projects_html =
+      if projects === [] do
+        "<p><em>No projects yet. Create one with <code>mix pop_stash.project.new \"My Project\"</code></em></p>"
+      else
+        "<ul>" <>
+          Enum.map_join(projects, fn p ->
+            "<li><code>#{p.id}</code> — #{p.name}</li>"
+          end) <> "</ul>"
+      end
 
     html = """
     <!DOCTYPE html>

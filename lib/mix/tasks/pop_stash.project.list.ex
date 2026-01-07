@@ -19,8 +19,10 @@ defmodule Mix.Tasks.PopStash.Project.List do
 
     projects = PopStash.Projects.list()
 
-    if Enum.empty?(projects) do
-      Mix.shell().info("No projects found. Create one with: mix pop_stash.project.new \"Project Name\"")
+    if projects === [] do
+      Mix.shell().info(
+        "No projects found. Create one with: mix pop_stash.project.new \"Project Name\""
+      )
     else
       Mix.shell().info("\nProjects:\n")
 

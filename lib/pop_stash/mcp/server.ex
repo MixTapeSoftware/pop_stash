@@ -9,11 +9,12 @@ defmodule PopStash.MCP.Server do
   require Logger
 
   @tool_modules [
-    PopStash.MCP.Tools.Ping,
     PopStash.MCP.Tools.Stash,
     PopStash.MCP.Tools.Pop,
     PopStash.MCP.Tools.Insight,
-    PopStash.MCP.Tools.Recall
+    PopStash.MCP.Tools.Recall,
+    PopStash.MCP.Tools.Decide,
+    PopStash.MCP.Tools.GetDecisions
   ]
 
   @type message :: map()
@@ -49,10 +50,6 @@ defmodule PopStash.MCP.Server do
 
   ## Routing
   # All routes receive context map with project_id, agent_id, and project
-
-  defp route(%{"method" => "ping", "id" => id}, _context) do
-    {:ok, success(id, %{})}
-  end
 
   defp route(%{"method" => "initialize", "id" => id, "params" => params}, context) do
     version = protocol_version()
@@ -93,9 +90,8 @@ defmodule PopStash.MCP.Server do
   ## Tool Dispatch
 
   defp call_tool(id, %{"name" => name, "arguments" => args}, context) do
-    case find_tool(name) do
-      {:ok, callback} -> execute_tool(id, name, callback, args, context)
-      :error -> {:error, error(id, -32_601, "Unknown tool: #{name}")}
+    with {:ok, callback} <- find_tool(id, name) do
+      execute_tool(id, name, callback, args, context)
     end
   end
 
@@ -103,32 +99,18 @@ defmodule PopStash.MCP.Server do
     {:error, error(id, -32_602, "Missing 'name' or 'arguments'")}
   end
 
-  defp find_tool(name) do
+  defp find_tool(id, name) do
     @tool_modules
     |> Enum.flat_map(& &1.tools())
     |> Enum.find(&(&1.name == name))
     |> case do
       %{callback: cb} -> {:ok, cb}
-      nil -> :error
+      nil -> {:error, error(id, -32_601, "Unknown tool: #{name}")}
     end
   end
 
   defp execute_tool(id, name, callback, args, context) do
-    result =
-      try do
-        # Tool callbacks receive (args, context)
-        # For backward compatibility, check callback arity
-        case Function.info(callback, :arity) do
-          {:arity, 1} -> callback.(args)
-          {:arity, 2} -> callback.(args, context)
-        end
-      catch
-        kind, reason ->
-          Logger.error("Tool #{name} crashed: #{Exception.format(kind, reason, __STACKTRACE__)}")
-          {:error, "Tool execution failed"}
-      end
-
-    case result do
+    case callback.(args, context) do
       {:ok, text} when is_binary(text) ->
         {:ok, success(id, %{content: [%{type: "text", text: text}]})}
 
@@ -136,14 +118,16 @@ defmodule PopStash.MCP.Server do
         {:ok, success(id, data)}
 
       {:error, msg} when is_binary(msg) ->
-        {:ok, success(id, %{content: [%{type: "text", text: msg}], isError: true})}
+        {:error, error(id, -32_603, msg)}
 
       other ->
         Logger.warning("Tool #{name} returned invalid result: #{inspect(other)}")
-
-        {:ok,
-         success(id, %{content: [%{type: "text", text: "Invalid tool response"}], isError: true})}
+        {:error, error(id, -32_603, "Invalid tool response")}
     end
+  catch
+    kind, reason ->
+      Logger.error("Tool #{name} crashed: #{Exception.format(kind, reason, __STACKTRACE__)}")
+      {:error, error(id, -32_603, "Tool execution failed")}
   end
 
   ## Validation

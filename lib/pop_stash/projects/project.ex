@@ -8,11 +8,11 @@ defmodule PopStash.Projects.Project do
   use PopStash.Schema
 
   schema "projects" do
-    field :name, :string
-    field :description, :string
-    field :metadata, :map, default: %{}
+    field(:name, :string)
+    field(:description, :string)
+    field(:metadata, :map, default: %{})
 
-    has_many :agents, PopStash.Agents.Agent
+    has_many(:agents, PopStash.Agents.Agent)
 
     timestamps()
   end

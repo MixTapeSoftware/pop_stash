@@ -19,14 +19,16 @@ defmodule PopStash.MCP.RouterTest do
         conn(:post, "/mcp/#{project.id}", %{
           "jsonrpc" => "2.0",
           "id" => 1,
-          "method" => "ping"
+          "method" => "tools/list"
         })
         |> put_req_header("content-type", "application/json")
         |> put_private(:remote_ip, {127, 0, 0, 1})
         |> Router.call([])
 
       assert conn.status == 200
-      assert %{"jsonrpc" => "2.0", "id" => 1, "result" => %{}} = Jason.decode!(conn.resp_body)
+      response = Jason.decode!(conn.resp_body)
+      assert %{"jsonrpc" => "2.0", "id" => 1, "result" => %{"tools" => tools}} = response
+      assert is_list(tools)
     end
 
     test "returns 404 for unknown project" do
@@ -36,7 +38,7 @@ defmodule PopStash.MCP.RouterTest do
         conn(:post, "/mcp/#{unknown_id}", %{
           "jsonrpc" => "2.0",
           "id" => 1,
-          "method" => "ping"
+          "method" => "tools/list"
         })
         |> put_req_header("content-type", "application/json")
         |> put_private(:remote_ip, {127, 0, 0, 1})
@@ -66,13 +68,16 @@ defmodule PopStash.MCP.RouterTest do
       assert result["projectName"] == project.name
     end
 
-    test "tools/call ping returns pong", %{project: project} do
+    test "tools/call decide records decision", %{project: project} do
       conn =
         conn(:post, "/mcp/#{project.id}", %{
           "jsonrpc" => "2.0",
           "id" => 1,
           "method" => "tools/call",
-          "params" => %{"name" => "ping", "arguments" => %{}}
+          "params" => %{
+            "name" => "decide",
+            "arguments" => %{"topic" => "testing", "decision" => "Use ExUnit"}
+          }
         })
         |> put_req_header("content-type", "application/json")
         |> put_private(:remote_ip, {127, 0, 0, 1})
@@ -80,12 +85,13 @@ defmodule PopStash.MCP.RouterTest do
 
       assert conn.status == 200
       response = Jason.decode!(conn.resp_body)
-      assert [%{"text" => "pong"}] = response["result"]["content"]
+      assert [%{"text" => text}] = response["result"]["content"]
+      assert text =~ "Decision recorded"
     end
 
     test "POST /mcp without project_id returns 404" do
       conn =
-        conn(:post, "/mcp", %{"jsonrpc" => "2.0", "id" => 1, "method" => "ping"})
+        conn(:post, "/mcp", %{"jsonrpc" => "2.0", "id" => 1, "method" => "tools/list"})
         |> put_req_header("content-type", "application/json")
         |> put_private(:remote_ip, {127, 0, 0, 1})
         |> Router.call([])
@@ -116,7 +122,7 @@ defmodule PopStash.MCP.RouterTest do
         conn(:post, "/mcp/#{project.id}", %{
           "jsonrpc" => "2.0",
           "id" => 1,
-          "method" => "ping"
+          "method" => "tools/list"
         })
         |> put_req_header("content-type", "application/json")
         |> Map.put(:remote_ip, {192, 168, 1, 100})

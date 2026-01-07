@@ -25,10 +25,14 @@ defmodule Mix.Tasks.PopStash.Project.New do
         create_project(name, opts)
 
       [] ->
-        Mix.shell().error("Usage: mix pop_stash.project.new \"Project Name\" [--description \"desc\"]")
+        Mix.shell().error(
+          "Usage: mix pop_stash.project.new \"Project Name\" [--description \"desc\"]"
+        )
 
       _ ->
-        Mix.shell().error("Too many arguments. Project name should be quoted if it contains spaces.")
+        Mix.shell().error(
+          "Too many arguments. Project name should be quoted if it contains spaces."
+        )
     end
   end
 

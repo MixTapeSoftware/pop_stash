@@ -9,12 +9,12 @@ defmodule PopStash.Memory.Insight do
   use PopStash.Schema
 
   schema "insights" do
-    field :key, :string
-    field :content, :string
-    field :metadata, :map, default: %{}
+    field(:key, :string)
+    field(:content, :string)
+    field(:metadata, :map, default: %{})
 
-    belongs_to :project, PopStash.Projects.Project
-    belongs_to :agent, PopStash.Agents.Agent, foreign_key: :created_by
+    belongs_to(:project, PopStash.Projects.Project)
+    belongs_to(:agent, PopStash.Agents.Agent, foreign_key: :created_by)
 
     timestamps()
   end
