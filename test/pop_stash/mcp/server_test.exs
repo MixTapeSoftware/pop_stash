@@ -1,8 +1,8 @@
 defmodule PopStash.MCP.ServerTest do
   use PopStash.DataCase, async: true
 
-  alias PopStash.MCP.Server
   alias PopStash.Agents
+  alias PopStash.MCP.Server
 
   import PopStash.Fixtures
 

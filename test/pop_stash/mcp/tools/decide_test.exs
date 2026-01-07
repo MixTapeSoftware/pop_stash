@@ -1,8 +1,9 @@
 defmodule PopStash.MCP.Tools.DecideTest do
   use PopStash.DataCase, async: true
 
+  alias PopStash.Agents
   alias PopStash.MCP.Tools.Decide
-  alias PopStash.{Agents, Memory}
+  alias PopStash.Memory
 
   import PopStash.Fixtures
 

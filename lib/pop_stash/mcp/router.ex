@@ -11,6 +11,10 @@ defmodule PopStash.MCP.Router do
   use Plug.Router
   require Logger
 
+  alias PopStash.Agents
+  alias PopStash.MCP.Server
+  alias PopStash.Projects
+
   plug(:match)
   plug(:check_localhost)
   plug(Plug.Parsers, parsers: [:json], pass: ["application/json"], json_decoder: Jason)
@@ -20,7 +24,7 @@ defmodule PopStash.MCP.Router do
   post "/mcp/:project_id" do
     project_id = conn.path_params["project_id"]
 
-    case PopStash.Projects.get(project_id) do
+    case Projects.get(project_id) do
       {:ok, project} ->
         {:ok, agent} = get_or_create_agent(project.id)
 
@@ -30,7 +34,7 @@ defmodule PopStash.MCP.Router do
           agent_id: agent.id
         }
 
-        case PopStash.MCP.Server.handle_message(conn.body_params, context) do
+        case Server.handle_message(conn.body_params, context) do
           {:ok, :notification} -> send_resp(conn, 204, "")
           {:ok, response} -> json(conn, 200, response)
           {:error, response} -> json(conn, 200, response)
@@ -57,7 +61,7 @@ defmodule PopStash.MCP.Router do
 
   # Temporary: Phase 3 will replace with session-based agent management
   defp get_or_create_agent(project_id) do
-    PopStash.Agents.connect(project_id, name: "mcp-client")
+    Agents.connect(project_id, name: "mcp-client")
   end
 
   # Helpful messages for GET requests to MCP endpoints
@@ -89,8 +93,8 @@ defmodule PopStash.MCP.Router do
   end
 
   get "/" do
-    tools = PopStash.MCP.Server.tools()
-    projects = PopStash.Projects.list()
+    tools = Server.tools()
+    projects = Projects.list()
     port = Application.get_env(:pop_stash, :mcp_port, 4001)
 
     projects_html =

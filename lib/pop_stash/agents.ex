@@ -8,8 +8,8 @@ defmodule PopStash.Agents do
   import Ecto.Changeset
   import Ecto.Query
 
-  alias PopStash.Repo
   alias PopStash.Agents.Agent
+  alias PopStash.Repo
 
   ## Queries
 

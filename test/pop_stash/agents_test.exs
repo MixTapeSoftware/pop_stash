@@ -1,7 +1,8 @@
 defmodule PopStash.AgentsTest do
   use PopStash.DataCase, async: true
 
-  alias PopStash.{Projects, Agents}
+  alias PopStash.Agents
+  alias PopStash.Projects
 
   setup do
     {:ok, project} = Projects.create("Test Project")

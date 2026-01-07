@@ -9,10 +9,10 @@ defmodule PopStash.Memory do
   import Ecto.Changeset
   import Ecto.Query
 
-  alias PopStash.Repo
-  alias PopStash.Memory.Stash
-  alias PopStash.Memory.Insight
   alias PopStash.Memory.Decision
+  alias PopStash.Memory.Insight
+  alias PopStash.Memory.Stash
+  alias PopStash.Repo
 
   ## Stashes
 

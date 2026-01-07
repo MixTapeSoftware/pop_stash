@@ -8,8 +8,8 @@ defmodule PopStash.Projects do
 
   import Ecto.Changeset
   import Ecto.Query
-  alias PopStash.Repo
   alias PopStash.Projects.Project
+  alias PopStash.Repo
 
   @doc """
   Gets a project by ID.

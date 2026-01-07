@@ -32,21 +32,19 @@ defmodule PopStash.MCP.Tools.Recall do
 
       {:error, :not_found} ->
         recent = Memory.list_insights(project_id, limit: 5)
-
-        hint =
-          if recent == [] do
-            "No insights yet."
-          else
-            keys =
-              recent
-              |> Enum.filter(& &1.key)
-              |> Enum.map(& &1.key)
-              |> Enum.join(", ")
-
-            if keys == "", do: "No keyed insights.", else: "Keys: #{keys}"
-          end
-
+        hint = build_hint(recent)
         {:error, "Insight '#{key}' not found. #{hint}"}
     end
+  end
+
+  defp build_hint([]), do: "No insights yet."
+
+  defp build_hint(recent) do
+    keys =
+      recent
+      |> Enum.filter(& &1.key)
+      |> Enum.map_join(", ", & &1.key)
+
+    if keys == "", do: "No keyed insights.", else: "Keys: #{keys}"
   end
 end

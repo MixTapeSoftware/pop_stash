@@ -26,7 +26,7 @@ defmodule Mix.Tasks.PopStash.Project.New do
 
       [] ->
         Mix.shell().error(
-          "Usage: mix pop_stash.project.new \"Project Name\" [--description \"desc\"]"
+          ~s(Usage: mix pop_stash.project.new "Project Name" [--description "desc"])
         )
 
       _ ->

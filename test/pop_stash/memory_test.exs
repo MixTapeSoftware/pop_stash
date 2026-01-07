@@ -1,7 +1,9 @@
 defmodule PopStash.MemoryTest do
   use PopStash.DataCase, async: true
 
-  alias PopStash.{Projects, Agents, Memory}
+  alias PopStash.Agents
+  alias PopStash.Memory
+  alias PopStash.Projects
 
   setup do
     {:ok, project} = Projects.create("Test Project")
