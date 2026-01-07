@@ -1789,49 +1789,113 @@ Call `stash` to save your current state.
 - [x] Manual test with Claude Code
 
 
-**Technical debt (resolved in Phase 3):**
-- Agent created per request → Phase 3 adds session management
-- No agent cleanup → Phase 3 adds lifecycle management via Agent.Connection GenServer
+**Technical debt (to be resolved in Phase 5):**
+- Agent created per request → Phase 5 (Coordination) adds session management
+- No agent cleanup → Phase 5 (Coordination) adds lifecycle management via Agent.Connection GenServer
 
-### Phase 3: Coordination + Tools
-- [ ] Ecto schemas: locks, sessions, decisions (all with project_id FK)
-- [ ] Agent.Connection GenServer
-- [ ] Lock manager (acquire/release, basic expiry)
-- [ ] **MCP tools: `start_task`, `end_task`, `acquire`, `release`, `decide`, `who_is_working`**
-- [ ] Test multi-agent scenarios with Claude Code
-- [ ] PubSub for real-time updates
+### Phase 3: Decisions (CURRENT PRIORITY)
 
-### Phase 4: Semantic Search with Typesense
-**Search Infrastructure:**
-- [ ] Add `typesense_ex` dependency (https://github.com/MixTapeSoftware/typesense_ex)
-- [ ] Configure Typesense connection and collection schemas
-- [ ] Create Typesense collections for insights
-- [ ] Build sync module to index insights on create/update/delete
+**Goal:** Add an immutable decision log so agents can record and query architectural decisions, technical choices, and project direction.
+
+**Why Decisions Are Memory, Not Coordination:**
+Decisions are fundamentally about persistent knowledge - "We chose Guardian over Pow for auth because..." The fact that multiple agents can see them is a side effect, not the primary purpose. A single agent working across multiple sessions needs to remember what decisions were made and why.
+
+**Design Decisions:**
+- **Immutable log**: Decisions are append-only. New decisions on the same topic create new entries (full history preserved). No updates.
+- **Topic normalization**: Topics are lowercased and trimmed to prevent duplicates like "Authentication" vs "authentication"
+- **Simplified schema**: Use `topic`, `decision`, `reasoning` (aligned with existing SQL schema in this doc)
+- **Defer embeddings**: Column added in Phase 4 when search infrastructure exists
+- **Defer semantic search**: Phase 3 uses exact topic matching; Phase 4 adds semantic search
+
+**Schema & Migration:**
+- [ ] Create `PopStash.Memory.Decision` schema at `lib/pop_stash/memory/decision.ex`
+  - `topic` - What area this decision affects (normalized: lowercase, trimmed)
+  - `decision` - What was decided
+  - `reasoning` - Why this decision was made (optional)
+  - `metadata` (JSONB) - Extensible storage
+  - `project_id` - FK to projects
+  - `created_by` - FK to agents
+- [ ] Add migration for decisions table with indexes on (project_id), (project_id, topic), (project_id, inserted_at)
+
+**Context Functions (add to `PopStash.Memory`):**
+- [ ] `create_decision(project_id, agent_id, topic, decision, opts \\ [])` - Create a decision (normalizes topic)
+- [ ] `get_decision(decision_id)` - Get by ID
+- [ ] `get_decisions_by_topic(project_id, topic)` - Get all decisions for a topic (most recent first)
+- [ ] `list_decisions(project_id, opts \\ [])` - List with filters (limit, since datetime)
+- [ ] `delete_decision(decision_id)` - Remove decision (admin use only)
+
+**MCP Tools:**
+- [ ] Add `decide` tool - Record a decision (topic, decision, reasoning)
+- [ ] Add `get_decisions` tool - Query by exact topic or list recent
+- [ ] Wire tools to MCP server
+
+**Testing:**
+- [ ] Unit tests for Decision schema and context functions
+- [ ] Integration tests for MCP tools
+- [ ] Test topic normalization (case insensitive matching)
+- [ ] Manual test with Claude Code in real workflow
+
+---
+
+### Phase 4: Discoverability with Typesense
+
+**Goal:** Make PopStash immediately useful by ensuring agents can reliably save and find insights/stashes.
 
 **Embeddings:**
 - [ ] Nx/Bumblebee embeddings GenServer for generating vectors
-- [ ] Add embedding columns (vector type) to insights schema
-- [ ] Generate embeddings on insight create/update
+- [ ] Verify embedding columns (vector type) already exist on stashes/insights
+- [ ] Generate embeddings on decision create/update (combine title + description + decision)
+- [ ] Generate embeddings on stash/insight create/update
+
+**Search Infrastructure:**
+- [ ] Add `typesense_ex` dependency (https://github.com/MixTapeSoftware/typesense_ex)
+- [ ] Configure Typesense connection and collection schemas
+- [ ] Create Typesense collections for stashes and insights
+- [ ] Build sync module to index stashes/insights on create/update/delete
 
 **Search Features:**
 - [ ] Upgrade `recall` to hybrid search (keyword + semantic via Typesense)
-- [ ] Add search filters by project, tags, date ranges
+- [ ] Upgrade `pop` to support semantic search for stashes
+- [ ] Add search filters by project, topics, date ranges
 - [ ] Implement result ranking combining text relevance + vector similarity
 - [ ] Performance testing and query optimization
 
-### Phase 5: Observability + Tools
+**Testing:**
+- [ ] Manual test: save insights and verify semantic search finds them
+- [ ] Manual test: stash context and verify fuzzy queries can pop it
+- [ ] Test with Claude Code in real workflow
+
+---
+
+### Phase 5: Coordination (DEFERRED)
+
+**Rationale for deferring:** Coordination (locks, sessions, multi-agent conflict prevention) is valuable but not essential for initial usefulness. An agent working solo still benefits from memory and search. Coordination becomes critical when running multiple agents simultaneously.
+
+**Deferred until Phase 4 (Discoverability with Typesense) is solid:**
+- [ ] Ecto schemas: locks, sessions (all with project_id FK)
+- [ ] Agent.Connection GenServer
+- [ ] Lock manager (acquire/release, basic expiry)
+- [ ] **MCP tools: `start_task`, `end_task`, `acquire`, `release`, `who_is_working`**
+- [ ] Test multi-agent scenarios with Claude Code
+- [ ] PubSub for real-time updates
+
+### Phase 6: Observability (DEFERRED)
+
+**Rationale for deferring:** Observability (activity logs, cost tracking, timelines) is nice-to-have but not blocking for core value. Agents need memory and search first. Once those work reliably, observability helps with debugging and accountability.
+
+**Deferred until Phase 5 (Coordination) is complete:**
 - [ ] Activity logging schema + context
 - [ ] Cost tracking calculations
 - [ ] **MCP tools: `report_cost`, `timeline`, `session_summary`**
 
-### Phase 6: Developer Experience
+### Phase 7: Developer Experience
 - [ ] "5-minute quickstart" validation
 - [ ] Error messages with remediation
 - [ ] All MCP tools documented with examples
 - [ ] `pop_stash doctor` health check
 - [ ] Lock cleanup background job
 
-### Phase 7: Polish
+### Phase 8: Polish
 - [ ] CLI (`pop_stash status`)
 - [ ] Edge case handling
 - [ ] End-to-end integration tests
