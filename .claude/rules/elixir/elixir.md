@@ -57,6 +57,20 @@ alwaysApply: true
 - Elixir's builtin OTP primitives like `DynamicSupervisor` and `Registry`, require names in the child spec, such as `{DynamicSupervisor, name: MyApp.MyDynamicSup}`, then you can use `DynamicSupervisor.start_child(MyApp.MyDynamicSup, child_spec)`
 - Use `Task.async_stream(collection, callback, options)` for concurrent enumeration with back-pressure. The majority of times you will want to pass `timeout: :infinity` as option
 
+- **Use `=== []` instead of `Enum.empty?/1`** — `Enum.empty?/1` has overhead for type checking, while `=== []` is a direct comparison
+
+  **Never do this (inefficient):**
+
+      if Enum.empty?(items) do
+        # ...
+      end
+
+  **Always do this:**
+
+      if items === [] do
+        # ...
+      end
+
 - **Avoid redundant `with` patterns** — Don't re-wrap results that are already in the correct format
 
   **Never do this (redundant):**
