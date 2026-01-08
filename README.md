@@ -26,11 +26,32 @@ mix ecto.setup
 
 # 3. Start the MCP server
 mix run --no-halt
+
+# 4. Create a project for your codebase
+mix pop_stash.project.new "My Project" --description "Optional description"
 ```
 
-The server runs on `http://localhost:4001` using the MCP protocol over HTTP/SSE.
+Step 4 outputs:
+1. The MCP server URL to add to your workspace's `.claude/mcp_servers.json`
+2. An **AGENTS.md prompt** to add to your project's `AGENTS.md` file
+
+The server runs on `http://localhost:4001` using the MCP protocol over HTTP.
+
+> **Note**: On first boot, the server downloads the embedding model (~90MB) to `.cache/bumblebee`. This may take a minute depending on your connection.
 
 ## MCP Client Configuration
+
+### Claude Code
+
+Add the URL from step 4 to your workspace's `.claude/mcp_servers.json`:
+
+```json
+{
+  "pop_stash": {
+    "url": "http://localhost:4001/mcp/YOUR_PROJECT_ID"
+  }
+}
+```
 
 ### Claude Desktop (macOS)
 
@@ -54,21 +75,9 @@ Add to `%APPDATA%\Claude\claude_desktop_config.json` with the same configuration
 
 ### Other MCP Clients
 
-Connect to `http://localhost:4001` via HTTP with JSON-RPC transport. Supports MCP protocol version `2025-03-26`.
+Connect to `http://localhost:4001/mcp/YOUR_PROJECT_ID` via HTTP with JSON-RPC transport. Supports MCP protocol version `2025-03-26`.
 
-## Project Setup
-
-Create a project for your codebase:
-
-```bash
-mix pop_stash.project.new "My Project" --description "Optional description"
-```
-
-This outputs:
-1. The MCP server URL to add to your workspace's `.claude/mcp_servers.json`
-2. An **AGENTS.md prompt** to add to your project's `AGENTS.md` file
-
-### AGENTS.md Integration
+## AGENTS.md Integration
 
 The AGENTS.md prompt tells AI agents when and how to use PopStash. Add it to your project's `AGENTS.md` file so agents automatically leverage persistent memory.
 
@@ -189,7 +198,7 @@ await use_mcp_tool("pop_stash", "get_decisions", {
 - **Database**: PostgreSQL with pgvector extension for embeddings
 - **Search**: Typesense for fast full-text and vector search
 - **Embeddings**: Local model (`sentence-transformers/all-MiniLM-L6-v2`) via Bumblebee/EXLA
-- **MCP Server**: Bandit HTTP server with SSE transport
+- **MCP Server**: Bandit HTTP server with JSON-RPC transport
 - **Storage**: All data keyed by `project_id` and `agent_id` for multi-project support
 
 ## Configuration
