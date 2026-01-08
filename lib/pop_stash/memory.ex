@@ -3,7 +3,7 @@ defmodule PopStash.Memory do
   Context for memory operations: stashes and insights.
 
   Handles saving and retrieving agent context across sessions.
-  Phase 2 uses exact matching; Phase 4 adds semantic search.
+  Supports both exact matching and semantic search via Typesense.
   """
 
   import Ecto.Changeset
@@ -13,6 +13,7 @@ defmodule PopStash.Memory do
   alias PopStash.Memory.Insight
   alias PopStash.Memory.Stash
   alias PopStash.Repo
+  alias PopStash.Search.Typesense
 
   ## Stashes
 
@@ -43,6 +44,19 @@ defmodule PopStash.Memory do
     |> foreign_key_constraint(:project_id)
     |> foreign_key_constraint(:created_by)
     |> Repo.insert()
+    |> tap_ok(&broadcast(:stash_created, &1))
+  end
+
+  @doc """
+  Updates a stash.
+  """
+  def update_stash(stash, attrs) do
+    stash
+    |> cast(attrs, [:name, :summary, :files, :metadata, :expires_at])
+    |> validate_required([:name, :summary])
+    |> validate_length(:name, min: 1, max: 255)
+    |> Repo.update()
+    |> tap_ok(&broadcast(:stash_updated, &1))
   end
 
   @doc """
@@ -74,8 +88,18 @@ defmodule PopStash.Memory do
   """
   def delete_stash(stash_id) when is_binary(stash_id) do
     case Repo.get(Stash, stash_id) do
-      nil -> {:error, :not_found}
-      stash -> Repo.delete(stash)
+      nil ->
+        {:error, :not_found}
+
+      stash ->
+        case Repo.delete(stash) do
+          {:ok, _} ->
+            broadcast(:stash_deleted, stash.id)
+            :ok
+
+          error ->
+            error
+        end
     end
   end
 
@@ -105,6 +129,7 @@ defmodule PopStash.Memory do
     |> foreign_key_constraint(:project_id)
     |> foreign_key_constraint(:created_by)
     |> Repo.insert()
+    |> tap_ok(&broadcast(:insight_created, &1))
   end
 
   @doc """
@@ -145,6 +170,7 @@ defmodule PopStash.Memory do
         |> cast(%{content: content}, [:content])
         |> validate_required([:content])
         |> Repo.update()
+        |> tap_ok(&broadcast(:insight_updated, &1))
     end
   end
 
@@ -153,8 +179,18 @@ defmodule PopStash.Memory do
   """
   def delete_insight(insight_id) when is_binary(insight_id) do
     case Repo.get(Insight, insight_id) do
-      nil -> {:error, :not_found}
-      insight -> Repo.delete(insight)
+      nil ->
+        {:error, :not_found}
+
+      insight ->
+        case Repo.delete(insight) do
+          {:ok, _} ->
+            broadcast(:insight_deleted, insight.id)
+            :ok
+
+          error ->
+            error
+        end
     end
   end
 
@@ -187,6 +223,7 @@ defmodule PopStash.Memory do
     |> foreign_key_constraint(:project_id)
     |> foreign_key_constraint(:created_by)
     |> Repo.insert()
+    |> tap_ok(&broadcast(:decision_created, &1))
   end
 
   @doc """
@@ -254,8 +291,18 @@ defmodule PopStash.Memory do
   """
   def delete_decision(decision_id) when is_binary(decision_id) do
     case Repo.get(Decision, decision_id) do
-      nil -> {:error, :not_found}
-      decision -> Repo.delete(decision)
+      nil ->
+        {:error, :not_found}
+
+      decision ->
+        case Repo.delete(decision) do
+          {:ok, _} ->
+            broadcast(:decision_deleted, decision.id)
+            :ok
+
+          error ->
+            error
+        end
     end
   end
 
@@ -272,8 +319,45 @@ defmodule PopStash.Memory do
     |> Repo.all()
   end
 
+  ## Search
+
+  @doc """
+  Search stashes by semantic similarity.
+  Returns ranked list of matching stashes.
+  """
+  def search_stashes(project_id, query, opts \\ []) do
+    Typesense.search_stashes(project_id, query, opts)
+  end
+
+  @doc """
+  Search insights by semantic similarity.
+  Returns ranked list of matching insights.
+  """
+  def search_insights(project_id, query, opts \\ []) do
+    Typesense.search_insights(project_id, query, opts)
+  end
+
+  @doc """
+  Search decisions by semantic similarity.
+  Returns ranked list of matching decisions.
+  """
+  def search_decisions(project_id, query, opts \\ []) do
+    Typesense.search_decisions(project_id, query, opts)
+  end
+
   ## Helpers
 
   defp wrap_result(nil), do: {:error, :not_found}
   defp wrap_result(record), do: {:ok, record}
+
+  defp broadcast(event, payload) do
+    Phoenix.PubSub.broadcast(PopStash.PubSub, "memory:events", {event, payload})
+  end
+
+  defp tap_ok({:ok, value} = result, fun) do
+    fun.(value)
+    result
+  end
+
+  defp tap_ok(error, _fun), do: error
 end

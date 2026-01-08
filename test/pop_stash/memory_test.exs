@@ -83,7 +83,7 @@ defmodule PopStash.MemoryTest do
 
     test "delete_stash/1 removes a stash", %{project: project, agent: agent} do
       {:ok, stash} = Memory.create_stash(project.id, agent.id, "temp", "Temp")
-      assert {:ok, _} = Memory.delete_stash(stash.id)
+      assert :ok = Memory.delete_stash(stash.id)
       assert {:error, :not_found} = Memory.get_stash_by_name(project.id, "temp")
     end
 
@@ -153,7 +153,7 @@ defmodule PopStash.MemoryTest do
 
     test "delete_insight/1 removes an insight", %{project: project, agent: agent} do
       {:ok, insight} = Memory.create_insight(project.id, agent.id, "Temp", key: "temp")
-      assert {:ok, _} = Memory.delete_insight(insight.id)
+      assert :ok = Memory.delete_insight(insight.id)
       assert {:error, :not_found} = Memory.get_insight_by_key(project.id, "temp")
     end
 
@@ -301,7 +301,7 @@ defmodule PopStash.MemoryTest do
     test "delete_decision/1 removes a decision", %{project: project, agent: agent} do
       {:ok, decision} = Memory.create_decision(project.id, agent.id, "temp", "Temporary")
 
-      assert {:ok, _} = Memory.delete_decision(decision.id)
+      assert :ok = Memory.delete_decision(decision.id)
       assert {:error, :not_found} = Memory.get_decision(decision.id)
     end
 

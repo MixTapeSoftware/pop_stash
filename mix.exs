@@ -16,7 +16,7 @@ defmodule PopStash.MixProject do
   def application do
     [
       mod: {PopStash.Application, []},
-      extra_applications: [:logger]
+      extra_applications: [:logger, :runtime_tools]
     ]
   end
 
@@ -30,10 +30,20 @@ defmodule PopStash.MixProject do
       {:jason, "~> 1.4"},
       {:plug, "~> 1.16"},
       {:telemetry, "~> 1.2"},
+      {:phoenix_pubsub, "~> 2.1"},
 
       # Database
       {:ecto_sql, "~> 3.11"},
       {:postgrex, "~> 0.18"},
+      {:pgvector, "~> 0.3"},
+
+      # Embeddings
+      {:bumblebee, "~> 0.6"},
+      {:nx, "~> 0.9"},
+      {:exla, "~> 0.9"},
+
+      # Typesense
+      {:typesense_ex, git: "https://github.com/MixTapeSoftware/typesense_ex"},
 
       # Dev/test
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},

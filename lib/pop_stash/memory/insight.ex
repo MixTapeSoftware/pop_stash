@@ -12,6 +12,7 @@ defmodule PopStash.Memory.Insight do
     field(:key, :string)
     field(:content, :string)
     field(:metadata, :map, default: %{})
+    field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)
     belongs_to(:agent, PopStash.Agents.Agent, foreign_key: :created_by)

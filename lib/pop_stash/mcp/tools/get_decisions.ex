@@ -13,15 +13,24 @@ defmodule PopStash.MCP.Tools.GetDecisions do
       %{
         name: "get_decisions",
         description: """
-        Query recorded decisions. Provide a topic to get all decisions for that topic, \
-        or omit topic to list recent decisions. Topics are matched case-insensitively.
+        Query recorded decisions by topic or semantic search.
+
+        Search tips:
+        - Use exact topic names like "authentication" for precise matches
+        - Use natural language like "security considerations" for semantic search
+        - To exclude words in your query explicitly, prefix the word with the - operator, e.g. "electric car" -tesla.
+        - Use list_topics to discover available topic names
+        - Omit topic to list recent decisions
+
+        Topics are matched case-insensitively for exact matches.
         """,
         inputSchema: %{
           type: "object",
           properties: %{
             topic: %{
               type: "string",
-              description: "Topic to query (optional - if omitted, lists recent decisions)"
+              description:
+                "Exact topic name (e.g., 'authentication') or natural language query (e.g., 'how we handle security')"
             },
             limit: %{
               type: "integer",
@@ -51,31 +60,50 @@ defmodule PopStash.MCP.Tools.GetDecisions do
     end
   end
 
-  def execute(args, %{project_id: project_id}) do
+  def execute(%{"topic" => topic} = args, %{project_id: project_id}) do
     limit = Map.get(args, "limit", 10)
-    opts = [limit: limit]
-    opts = if topic = args["topic"], do: Keyword.put(opts, :topic, topic), else: opts
 
-    decisions = Memory.list_decisions(project_id, opts)
-
-    format_decisions(decisions, args["topic"])
+    # Try exact topic match first
+    case Memory.list_decisions(project_id, topic: topic, limit: limit) do
+      [] -> search_decisions_by_topic(project_id, topic, limit)
+      decisions -> format_decisions(decisions, topic, "exact")
+    end
   end
 
-  defp format_decisions([], nil) do
+  def execute(args, %{project_id: project_id}) do
+    limit = Map.get(args, "limit", 10)
+    decisions = Memory.list_decisions(project_id, limit: limit)
+    format_decisions(decisions, nil, "list")
+  end
+
+  defp search_decisions_by_topic(project_id, topic, limit) do
+    case Memory.search_decisions(project_id, topic, limit: limit) do
+      {:ok, []} -> format_decisions([], topic, "exact")
+      {:ok, results} -> format_decisions(results, topic, "semantic")
+      {:error, _reason} -> format_decisions([], topic, "exact")
+    end
+  end
+
+  defp format_decisions([], nil, _match_type) do
     {:ok, "No decisions recorded yet. Use `decide` to record architectural decisions."}
   end
 
-  defp format_decisions([], topic) do
+  defp format_decisions([], topic, _match_type) do
     {:ok,
      "No decisions found for topic \"#{topic}\". Use `get_decisions` with `list_topics: true` to see available topics."}
   end
 
-  defp format_decisions(decisions, topic) do
+  defp format_decisions(decisions, topic, match_type) do
     header =
-      if topic do
-        "Decisions for \"#{topic}\" (#{length(decisions)} found, most recent first):\n\n"
-      else
-        "Recent decisions (#{length(decisions)}):\n\n"
+      case {topic, match_type} do
+        {nil, _} ->
+          "Recent decisions (#{length(decisions)}):\n\n"
+
+        {_, "semantic"} ->
+          "Decisions matching \"#{topic}\" (#{length(decisions)} found via semantic search):\n\n"
+
+        {_, _} ->
+          "Decisions for \"#{topic}\" (#{length(decisions)} found, most recent first):\n\n"
       end
 
     formatted = Enum.map_join(decisions, "\n---\n\n", &format_decision/1)

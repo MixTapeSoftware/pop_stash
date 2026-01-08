@@ -19,4 +19,22 @@ if config_env() == :prod do
   if port = System.get_env("MCP_PORT") do
     config :pop_stash, mcp_port: String.to_integer(port)
   end
+
+  # Typesense configuration from environment
+  typesense_url = System.get_env("TYPESENSE_URL") || raise("TYPESENSE_URL not set")
+  typesense_api_key = System.get_env("TYPESENSE_API_KEY") || raise("TYPESENSE_API_KEY not set")
+
+  # Parse URL to extract host, port, protocol
+  uri = URI.parse(typesense_url)
+
+  config :pop_stash, :typesense,
+    api_key: typesense_api_key,
+    nodes: [
+      %{
+        host: uri.host,
+        port: uri.port || 8108,
+        protocol: uri.scheme || "https"
+      }
+    ],
+    enabled: true
 end

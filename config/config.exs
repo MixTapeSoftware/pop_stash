@@ -12,4 +12,26 @@ config :pop_stash, PopStash.Repo,
   migration_primary_key: [type: :binary_id],
   migration_timestamps: [type: :utc_datetime_usec]
 
+# TypesenseEx configuration
+config :pop_stash, :typesense,
+  api_key: "pop_stash_dev_key",
+  nodes: [
+    %{
+      host: "localhost",
+      port: 8108,
+      protocol: "http"
+    }
+  ],
+  enabled: true
+
+# Embeddings configuration
+config :pop_stash, PopStash.Embeddings,
+  model: "sentence-transformers/all-MiniLM-L6-v2",
+  dimensions: 384,
+  enabled: true,
+  cache_dir: ".cache/bumblebee"
+
+# Configure EXLA for CPU (can be overridden for GPU in prod)
+config :nx, :default_backend, EXLA.Backend
+
 import_config "#{config_env()}.exs"

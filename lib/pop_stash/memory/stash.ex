@@ -13,6 +13,7 @@ defmodule PopStash.Memory.Stash do
     field(:files, {:array, :string}, default: [])
     field(:metadata, :map, default: %{})
     field(:expires_at, :utc_datetime_usec)
+    field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)
     belongs_to(:agent, PopStash.Agents.Agent, foreign_key: :created_by)
