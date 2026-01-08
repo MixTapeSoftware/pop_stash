@@ -2,7 +2,7 @@ defmodule PopStash.Memory.Insight do
   @moduledoc """
   Schema for insights (persistent codebase knowledge).
 
-  Insights are facts about the codebase that agents discover and share.
+  Insights are facts about the codebase that are discovered and shared.
   They never expire and are searchable by key.
   """
 
@@ -15,7 +15,6 @@ defmodule PopStash.Memory.Insight do
     field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)
-    belongs_to(:agent, PopStash.Agents.Agent, foreign_key: :created_by)
 
     timestamps()
   end

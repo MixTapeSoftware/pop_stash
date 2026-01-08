@@ -1,15 +1,13 @@
 defmodule PopStash.MCP.Tools.PopTest do
   use PopStash.DataCase, async: true
 
-  alias PopStash.Agents
   alias PopStash.MCP.Tools.Pop
   alias PopStash.Memory
   alias PopStash.Projects
 
   setup do
     {:ok, project} = Projects.create("Test Project")
-    {:ok, agent} = Agents.connect(project.id, name: "TestAgent")
-    %{project: project, agent: agent}
+    %{project: project}
   end
 
   describe "tools/0" do
@@ -24,9 +22,9 @@ defmodule PopStash.MCP.Tools.PopTest do
   end
 
   describe "execute/2 - exact match" do
-    test "returns stash when exact name match found", %{project: project, agent: agent} do
+    test "returns stash when exact name match found", %{project: project} do
       {:ok, stash} =
-        Memory.create_stash(project.id, agent.id, "auth-work", "Working on authentication",
+        Memory.create_stash(project.id, "auth-work", "Working on authentication",
           files: ["lib/auth.ex"]
         )
 
@@ -42,10 +40,9 @@ defmodule PopStash.MCP.Tools.PopTest do
 
   describe "execute/2 - semantic search fallback" do
     test "returns error when no match found and embeddings disabled", %{
-      project: project,
-      agent: agent
+      project: project
     } do
-      {:ok, _} = Memory.create_stash(project.id, agent.id, "other-stash", "Some summary")
+      {:ok, _} = Memory.create_stash(project.id, "other-stash", "Some summary")
 
       result = Pop.execute(%{"name" => "nonexistent"}, %{project_id: project.id})
 
@@ -61,9 +58,9 @@ defmodule PopStash.MCP.Tools.PopTest do
   end
 
   describe "execute/2 - result format" do
-    test "formats stash with all expected fields", %{project: project, agent: agent} do
+    test "formats stash with all expected fields", %{project: project} do
       {:ok, stash} =
-        Memory.create_stash(project.id, agent.id, "test-stash", "Test summary",
+        Memory.create_stash(project.id, "test-stash", "Test summary",
           files: ["file1.ex", "file2.ex"]
         )
 
@@ -79,8 +76,8 @@ defmodule PopStash.MCP.Tools.PopTest do
       assert result.files == ["file1.ex", "file2.ex"]
     end
 
-    test "handles stash without files", %{project: project, agent: agent} do
-      {:ok, _stash} = Memory.create_stash(project.id, agent.id, "no-files", "No files stash")
+    test "handles stash without files", %{project: project} do
+      {:ok, _stash} = Memory.create_stash(project.id, "no-files", "No files stash")
 
       {:ok, %{results: [result]}} =
         Pop.execute(%{"name" => "no-files"}, %{project_id: project.id})

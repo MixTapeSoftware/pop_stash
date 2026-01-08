@@ -2,7 +2,7 @@ defmodule PopStash.Memory do
   @moduledoc """
   Context for memory operations: stashes and insights.
 
-  Handles saving and retrieving agent context across sessions.
+  Handles saving and retrieving context across sessions.
   Supports both exact matching and semantic search via Typesense.
   """
 
@@ -25,24 +25,22 @@ defmodule PopStash.Memory do
     * `:metadata` - Optional metadata map
     * `:expires_at` - Optional expiration datetime
   """
-  def create_stash(project_id, agent_id, name, summary, opts \\ []) do
+  def create_stash(project_id, name, summary, opts \\ []) do
     %Stash{}
     |> cast(
       %{
         project_id: project_id,
-        created_by: agent_id,
         name: name,
         summary: summary,
         files: Keyword.get(opts, :files, []),
         metadata: Keyword.get(opts, :metadata, %{}),
         expires_at: Keyword.get(opts, :expires_at)
       },
-      [:project_id, :created_by, :name, :summary, :files, :metadata, :expires_at]
+      [:project_id, :name, :summary, :files, :metadata, :expires_at]
     )
     |> validate_required([:project_id, :name, :summary])
     |> validate_length(:name, min: 1, max: 255)
     |> foreign_key_constraint(:project_id)
-    |> foreign_key_constraint(:created_by)
     |> Repo.insert()
     |> tap_ok(&broadcast(:stash_created, &1))
   end
@@ -112,22 +110,20 @@ defmodule PopStash.Memory do
     * `:key` - Optional semantic key for exact retrieval
     * `:metadata` - Optional metadata map
   """
-  def create_insight(project_id, agent_id, content, opts \\ []) do
+  def create_insight(project_id, content, opts \\ []) do
     %Insight{}
     |> cast(
       %{
         project_id: project_id,
-        created_by: agent_id,
         content: content,
         key: Keyword.get(opts, :key),
         metadata: Keyword.get(opts, :metadata, %{})
       },
-      [:project_id, :created_by, :content, :key, :metadata]
+      [:project_id, :content, :key, :metadata]
     )
     |> validate_required([:project_id, :content])
     |> validate_length(:key, max: 255)
     |> foreign_key_constraint(:project_id)
-    |> foreign_key_constraint(:created_by)
     |> Repo.insert()
     |> tap_ok(&broadcast(:insight_created, &1))
   end
@@ -205,23 +201,21 @@ defmodule PopStash.Memory do
     * `:reasoning` - Why this decision was made (optional)
     * `:metadata` - Optional metadata map
   """
-  def create_decision(project_id, agent_id, topic, decision, opts \\ []) do
+  def create_decision(project_id, topic, decision, opts \\ []) do
     %Decision{}
     |> cast(
       %{
         project_id: project_id,
-        created_by: agent_id,
         topic: Decision.normalize_topic(topic),
         decision: decision,
         reasoning: Keyword.get(opts, :reasoning),
         metadata: Keyword.get(opts, :metadata, %{})
       },
-      [:project_id, :created_by, :topic, :decision, :reasoning, :metadata]
+      [:project_id, :topic, :decision, :reasoning, :metadata]
     )
     |> validate_required([:project_id, :topic, :decision])
     |> validate_length(:topic, min: 1, max: 255)
     |> foreign_key_constraint(:project_id)
-    |> foreign_key_constraint(:created_by)
     |> Repo.insert()
     |> tap_ok(&broadcast(:decision_created, &1))
   end

@@ -1,7 +1,6 @@
 defmodule PopStash.MCP.Tools.GetDecisionsTest do
   use PopStash.DataCase, async: true
 
-  alias PopStash.Agents
   alias PopStash.MCP.Tools.GetDecisions
   alias PopStash.Memory
 
@@ -9,9 +8,8 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
 
   setup do
     project = project_fixture()
-    {:ok, agent} = Agents.connect(project.id, name: "test-agent")
-    context = %{project_id: project.id, agent_id: agent.id}
-    {:ok, context: context, project: project, agent: agent}
+    context = %{project_id: project.id}
+    {:ok, context: context, project: project}
   end
 
   describe "execute/2" do
@@ -22,11 +20,10 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
 
     test "lists recent decisions when no topic provided", %{
       context: context,
-      project: project,
-      agent: agent
+      project: project
     } do
-      {:ok, _} = Memory.create_decision(project.id, agent.id, "auth", "Use Guardian")
-      {:ok, _} = Memory.create_decision(project.id, agent.id, "db", "Use Postgres")
+      {:ok, _} = Memory.create_decision(project.id, "auth", "Use Guardian")
+      {:ok, _} = Memory.create_decision(project.id, "db", "Use Postgres")
 
       assert {:ok, message} = GetDecisions.execute(%{}, context)
       assert message =~ "auth"
@@ -34,25 +31,25 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
       assert message =~ "Use Guardian"
     end
 
-    test "filters by topic", %{context: context, project: project, agent: agent} do
-      {:ok, _} = Memory.create_decision(project.id, agent.id, "auth", "Auth decision")
-      {:ok, _} = Memory.create_decision(project.id, agent.id, "database", "DB decision")
+    test "filters by topic", %{context: context, project: project} do
+      {:ok, _} = Memory.create_decision(project.id, "auth", "Auth decision")
+      {:ok, _} = Memory.create_decision(project.id, "database", "DB decision")
 
       assert {:ok, message} = GetDecisions.execute(%{"topic" => "auth"}, context)
       assert message =~ "Auth decision"
       refute message =~ "DB decision"
     end
 
-    test "topic matching is case-insensitive", %{context: context, project: project, agent: agent} do
-      {:ok, _} = Memory.create_decision(project.id, agent.id, "Authentication", "Decision")
+    test "topic matching is case-insensitive", %{context: context, project: project} do
+      {:ok, _} = Memory.create_decision(project.id, "Authentication", "Decision")
 
       assert {:ok, message} = GetDecisions.execute(%{"topic" => "AUTHENTICATION"}, context)
       assert message =~ "Decision"
     end
 
-    test "respects limit parameter", %{context: context, project: project, agent: agent} do
+    test "respects limit parameter", %{context: context, project: project} do
       for i <- 1..5 do
-        Memory.create_decision(project.id, agent.id, "topic", "Decision #{i}")
+        Memory.create_decision(project.id, "topic", "Decision #{i}")
       end
 
       assert {:ok, message} = GetDecisions.execute(%{"limit" => 2}, context)
@@ -61,12 +58,11 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
 
     test "lists topics when list_topics is true", %{
       context: context,
-      project: project,
-      agent: agent
+      project: project
     } do
-      {:ok, _} = Memory.create_decision(project.id, agent.id, "auth", "Decision")
-      {:ok, _} = Memory.create_decision(project.id, agent.id, "database", "Decision")
-      {:ok, _} = Memory.create_decision(project.id, agent.id, "api", "Decision")
+      {:ok, _} = Memory.create_decision(project.id, "auth", "Decision")
+      {:ok, _} = Memory.create_decision(project.id, "database", "Decision")
+      {:ok, _} = Memory.create_decision(project.id, "api", "Decision")
 
       assert {:ok, message} = GetDecisions.execute(%{"list_topics" => true}, context)
       assert message =~ "Decision topics:"

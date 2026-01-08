@@ -27,10 +27,9 @@ defmodule PopStash.MCP.Tools.Stash do
     ]
   end
 
-  def execute(args, %{project_id: project_id, agent_id: agent_id}) do
+  def execute(args, %{project_id: project_id}) do
     case Memory.create_stash(
            project_id,
-           agent_id,
            args["name"],
            args["summary"],
            files: Map.get(args, "files", [])

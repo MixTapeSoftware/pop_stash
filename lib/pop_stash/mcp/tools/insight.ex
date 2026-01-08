@@ -26,10 +26,10 @@ defmodule PopStash.MCP.Tools.Insight do
     ]
   end
 
-  def execute(args, %{project_id: project_id, agent_id: agent_id}) do
+  def execute(args, %{project_id: project_id}) do
     opts = if args["key"], do: [key: args["key"]], else: []
 
-    case Memory.create_insight(project_id, agent_id, args["content"], opts) do
+    case Memory.create_insight(project_id, args["content"], opts) do
       {:ok, insight} ->
         key_text = if insight.key, do: " (key: #{insight.key})", else: ""
         {:ok, "Insight saved#{key_text}. Use `recall` to retrieve."}

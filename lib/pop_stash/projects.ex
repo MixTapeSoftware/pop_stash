@@ -3,7 +3,7 @@ defmodule PopStash.Projects do
   Context for managing projects.
 
   Projects are the top-level isolation boundary. Each project has its own
-  agents, stashes, insights, decisions, and locks.
+  stashes, insights, decisions, and locks.
   """
 
   import Ecto.Changeset

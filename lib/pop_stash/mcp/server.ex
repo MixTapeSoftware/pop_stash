@@ -34,7 +34,7 @@ defmodule PopStash.MCP.Server do
   Handles a JSON-RPC 2.0 message.
 
   Returns `{:ok, response}`, `{:error, response}`, or `{:ok, :notification}`.
-  Context map must include :project_id and :agent_id.
+  Context map must include :project_id.
   """
   def handle_message(message, %{project_id: project_id} = context) do
     start_time = System.monotonic_time()
@@ -49,7 +49,7 @@ defmodule PopStash.MCP.Server do
   end
 
   ## Routing
-  # All routes receive context map with project_id, agent_id, and project
+  # All routes receive context map with project_id and project
 
   defp route(%{"method" => "initialize", "id" => id, "params" => params}, context) do
     version = protocol_version()

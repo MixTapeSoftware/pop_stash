@@ -41,10 +41,10 @@ defmodule PopStash.MCP.Tools.Decide do
     ]
   end
 
-  def execute(args, %{project_id: project_id, agent_id: agent_id}) do
+  def execute(args, %{project_id: project_id}) do
     opts = if args["reasoning"], do: [reasoning: args["reasoning"]], else: []
 
-    case Memory.create_decision(project_id, agent_id, args["topic"], args["decision"], opts) do
+    case Memory.create_decision(project_id, args["topic"], args["decision"], opts) do
       {:ok, decision} ->
         {:ok,
          """

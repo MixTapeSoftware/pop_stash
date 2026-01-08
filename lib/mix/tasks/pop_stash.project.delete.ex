@@ -60,7 +60,6 @@ defmodule Mix.Tasks.PopStash.Project.Delete do
     Are you sure you want to delete project "#{project.name}" (#{project.id})?
 
     This will permanently delete all:
-      • Agents
       • Stashes
       • Insights
       • Decisions

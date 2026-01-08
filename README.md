@@ -75,6 +75,29 @@ Add to your workspace's `.claude/mcp_servers.json`:
 }
 ```
 
+#### Auto-Stash with Claude Hooks (Optional)
+
+Use Claude hooks to automatically preserve context at session end. Add to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "If meaningful work occurred: stash WIP, record insights, document decisions. Be brief."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+See [docs/CLAUDE_HOOKS.md](docs/CLAUDE_HOOKS.md) for more hook configurations.
+
 ### Zed / Claude Desktop (via mcp-proxy)
 
 Add to your MCP client config:

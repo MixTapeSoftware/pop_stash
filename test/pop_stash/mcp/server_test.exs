@@ -1,19 +1,16 @@
 defmodule PopStash.MCP.ServerTest do
   use PopStash.DataCase, async: true
 
-  alias PopStash.Agents
   alias PopStash.MCP.Server
 
   import PopStash.Fixtures
 
   setup do
     project = project_fixture()
-    {:ok, agent} = Agents.connect(project.id, name: "test-agent")
 
     context = %{
       project_id: project.id,
-      project_name: project.name,
-      agent_id: agent.id
+      project_name: project.name
     }
 
     {:ok, context: context, project: project}

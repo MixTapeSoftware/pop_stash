@@ -1,7 +1,7 @@
 # Remove Agents Model
 
-**Status**: Planned  
-**Effort**: ~30 minutes
+**Status**: Complete  
+**Completed**: 2025-01-15
 
 ## Why
 

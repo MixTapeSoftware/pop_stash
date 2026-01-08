@@ -5,7 +5,6 @@ defmodule PopStash.Repo.Migrations.CreateDecisions do
     create table(:decisions, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
-      add :created_by, references(:agents, type: :binary_id, on_delete: :nilify_all)
       add :topic, :string, null: false
       add :decision, :text, null: false
       add :reasoning, :text

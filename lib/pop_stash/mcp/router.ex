@@ -11,7 +11,6 @@ defmodule PopStash.MCP.Router do
   use Plug.Router
   require Logger
 
-  alias PopStash.Agents
   alias PopStash.MCP.Server
   alias PopStash.Projects
 
@@ -26,12 +25,9 @@ defmodule PopStash.MCP.Router do
 
     case Projects.get(project_id) do
       {:ok, project} ->
-        {:ok, agent} = get_or_create_agent(project.id)
-
         context = %{
           project_id: project.id,
-          project_name: project.name,
-          agent_id: agent.id
+          project_name: project.name
         }
 
         case Server.handle_message(conn.body_params, context) do
@@ -57,11 +53,6 @@ defmodule PopStash.MCP.Router do
 
         json(conn, 404, error_response)
     end
-  end
-
-  # Temporary: Phase 3 will replace with session-based agent management
-  defp get_or_create_agent(project_id) do
-    Agents.connect(project_id, name: "mcp-client")
   end
 
   # Helpful messages for GET requests to MCP endpoints

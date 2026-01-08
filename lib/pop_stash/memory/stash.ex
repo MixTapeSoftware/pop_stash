@@ -1,6 +1,6 @@
 defmodule PopStash.Memory.Stash do
   @moduledoc """
-  Schema for stashes (saved agent context).
+  Schema for stashes (saved context).
 
   A stash is like `git stash` - saves current work state for later retrieval.
   """
@@ -16,7 +16,6 @@ defmodule PopStash.Memory.Stash do
     field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)
-    belongs_to(:agent, PopStash.Agents.Agent, foreign_key: :created_by)
 
     timestamps()
   end

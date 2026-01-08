@@ -1,7 +1,6 @@
 defmodule PopStash.MCP.Tools.DecideTest do
   use PopStash.DataCase, async: true
 
-  alias PopStash.Agents
   alias PopStash.MCP.Tools.Decide
   alias PopStash.Memory
 
@@ -9,8 +8,7 @@ defmodule PopStash.MCP.Tools.DecideTest do
 
   setup do
     project = project_fixture()
-    {:ok, agent} = Agents.connect(project.id, name: "test-agent")
-    context = %{project_id: project.id, agent_id: agent.id}
+    context = %{project_id: project.id}
     {:ok, context: context, project: project}
   end
 
