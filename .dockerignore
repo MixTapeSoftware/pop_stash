@@ -1,0 +1,31 @@
+# Build artifacts
+_build/
+deps/
+.elixir_ls/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+
+# Test
+test/
+cover/
+
+# Dev/IDE
+.vscode/
+.idea/
+.zed/
+.claude/
+.expert/
+.cache/
+
+# Misc
+erl_crash.dump
+*.local.exs
+.formatter.exs
+.credo.exs
+.sobelow-conf

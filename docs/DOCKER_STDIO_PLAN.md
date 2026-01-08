@@ -1,6 +1,6 @@
 # Docker + MCP Proxy Implementation Plan
 
-**Status**: Planned  
+**Status**: ✅ Implemented  
 **Goal**: Enable MCP clients (Zed, Claude Desktop, etc.) to connect via stdio using `mcp-proxy`, without requiring Elixir installed locally.
 
 ## Background

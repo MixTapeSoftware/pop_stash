@@ -9,7 +9,8 @@ defmodule PopStash.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      aliases: aliases()
+      aliases: aliases(),
+      releases: releases()
     ]
   end
 
@@ -22,6 +23,14 @@ defmodule PopStash.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp releases do
+    [
+      pop_stash: [
+        applications: [runtime_tools: :permanent]
+      ]
+    ]
+  end
 
   defp deps do
     [

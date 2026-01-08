@@ -13,7 +13,10 @@ if config_env() == :prod do
 
   config :pop_stash, PopStash.Repo,
     url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    types: PopStash.PostgrexTypes,
+    migration_primary_key: [type: :binary_id],
+    migration_timestamps: [type: :utc_datetime_usec]
 
   # Optionally configure the MCP port
   if port = System.get_env("MCP_PORT") do
@@ -37,4 +40,9 @@ if config_env() == :prod do
       }
     ],
     enabled: true
+
+  # Embeddings cache directory (model downloads)
+  cache_dir = System.get_env("BUMBLEBEE_CACHE_DIR") || "/app/.cache/bumblebee"
+
+  config :pop_stash, PopStash.Embeddings, cache_dir: cache_dir
 end

@@ -149,7 +149,7 @@ defmodule PopStash.MCP.Router do
   ## Security
 
   defp check_localhost(conn, _opts) do
-    if localhost?(conn.remote_ip) do
+    if skip_localhost_check?() or localhost?(conn.remote_ip) or docker_network?(conn.remote_ip) do
       conn
     else
       Logger.warning("Rejected non-localhost request from #{:inet.ntoa(conn.remote_ip)}")
@@ -157,9 +157,17 @@ defmodule PopStash.MCP.Router do
     end
   end
 
+  defp skip_localhost_check? do
+    Application.get_env(:pop_stash, :skip_localhost_check, false)
+  end
+
   defp localhost?({127, _, _, _}), do: true
   defp localhost?({0, 0, 0, 0, 0, 0, 0, 1}), do: true
   defp localhost?(_), do: false
+
+  # Docker bridge network typically uses 172.x.x.x
+  defp docker_network?({172, _, _, _}), do: true
+  defp docker_network?(_), do: false
 
   ## Helpers
 

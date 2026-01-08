@@ -14,6 +14,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - popstash
 
   typesense:
     image: typesense/typesense:27.1
@@ -23,8 +25,31 @@ services:
     ports:
       - "127.0.0.1:8108:8108"
     volumes:
-      - pop_stash_typesense_data:/data
+      - typesense_data:/data
+    networks:
+      - popstash
+
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:4001:4001"
+    environment:
+      DATABASE_URL: ecto://postgres:postgres@db:5432/pop_stash_dev
+      TYPESENSE_URL: http://typesense:8108
+      TYPESENSE_API_KEY: pop_stash_dev_key
+      MCP_PORT: "4001"
+    depends_on:
+      db:
+        condition: service_healthy
+      typesense:
+        condition: service_started
+    networks:
+      - popstash
+
+networks:
+  popstash:
+    name: popstash_network
 
 volumes:
   pgdata:
-  pop_stash_typesense_data:
+  typesense_data:

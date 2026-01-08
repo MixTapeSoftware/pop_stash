@@ -16,9 +16,37 @@ All retrieval supports both exact matching and semantic search powered by local 
 
 ## Quick Start
 
+### Option A: Docker (Recommended)
+
+No Elixir installation required.
+
+```bash
+# 1. Clone and start PopStash
+git clone https://github.com/your-org/pop_stash.git
+cd pop_stash/service
+docker compose up -d
+
+# 2. Run database migrations
+docker compose exec app bin/pop_stash eval "PopStash.Release.migrate()"
+
+# 3. Create a project for your codebase
+docker compose exec app bin/pop_stash eval 'PopStash.CLI.project_new("My Project")'
+# => Created project: abc123
+
+# 4. Install mcp-proxy (for Zed/Claude Desktop - skip if using Claude Code)
+uv tool install mcp-proxy      # recommended
+# or: pipx install mcp-proxy
+# or: pip install mcp-proxy
+# or: docker pull ghcr.io/sparfenyuk/mcp-proxy:latest
+```
+
+### Option B: Local Development
+
+Requires Elixir 1.18+.
+
 ```bash
 # 1. Start dependencies (Postgres + Typesense)
-docker compose up -d
+docker compose up -d db typesense
 
 # 2. Install dependencies and setup database
 mix deps.get
@@ -28,22 +56,16 @@ mix ecto.setup
 mix run --no-halt
 
 # 4. Create a project for your codebase
-mix pop_stash.project.new "My Project" --description "Optional description"
+mix pop_stash.project.new "My Project"
 ```
 
-Step 4 outputs:
-1. The MCP server URL to add to your workspace's `.claude/mcp_servers.json`
-2. An **AGENTS.md prompt** to add to your project's `AGENTS.md` file
-
-The server runs on `http://localhost:4001` using the MCP protocol over HTTP.
-
-> **Note**: On first boot, the server downloads the embedding model (~90MB) to `.cache/bumblebee`. This may take a minute depending on your connection.
+> **Note**: On first boot, the server downloads the embedding model (~90MB). This may take a minute depending on your connection.
 
 ## MCP Client Configuration
 
-### Claude Code
+### Claude Code (direct HTTP)
 
-Add the URL from step 4 to your workspace's `.claude/mcp_servers.json`:
+Add to your workspace's `.claude/mcp_servers.json`:
 
 ```json
 {
@@ -53,25 +75,29 @@ Add the URL from step 4 to your workspace's `.claude/mcp_servers.json`:
 }
 ```
 
-### Claude Desktop (macOS)
+### Zed / Claude Desktop (via mcp-proxy)
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Add to your MCP client config:
 
 ```json
 {
   "mcpServers": {
     "pop_stash": {
-      "command": "mix",
-      "args": ["run", "--no-halt"],
-      "cwd": "/absolute/path/to/pop_stash/service"
+      "command": "mcp-proxy",
+      "args": [
+        "--transport", "streamablehttp",
+        "http://localhost:4001/mcp/YOUR_PROJECT_ID"
+      ]
     }
   }
 }
 ```
 
-### Claude Desktop (Windows)
+For Claude Desktop on macOS, the config file is at:
+`~/Library/Application Support/Claude/claude_desktop_config.json`
 
-Add to `%APPDATA%\Claude\claude_desktop_config.json` with the same configuration.
+For Claude Desktop on Windows:
+`%APPDATA%\Claude\claude_desktop_config.json`
 
 ### Other MCP Clients
 
@@ -203,6 +229,18 @@ await use_mcp_tool("pop_stash", "get_decisions", {
 
 ## Configuration
 
+### Environment Variables (Docker/Production)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection URL | Required |
+| `TYPESENSE_URL` | Typesense server URL | Required |
+| `TYPESENSE_API_KEY` | Typesense API key | Required |
+| `MCP_PORT` | HTTP server port | `4001` |
+| `POOL_SIZE` | Database connection pool size | `10` |
+
+### Local Development
+
 See `config/config.exs` and `config/dev.exs` for:
 - Database connection (default: `localhost:5433`)
 - Typesense settings (default: `localhost:8108`)
@@ -223,6 +261,9 @@ mix ecto.reset
 
 # Reindex search (after schema changes)
 mix pop_stash.reindex_search
+
+# List projects
+docker compose exec app bin/pop_stash eval "PopStash.CLI.project_list()"
 ```
 
 ## License
