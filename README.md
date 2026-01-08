@@ -169,54 +169,26 @@ All retrieval tools (`pop`, `recall`, `get_decisions`) support:
 
 Exact matches return immediately. If no exact match is found, semantic search kicks in automatically.
 
-## Example Usage
+## Testing the Server
 
-```javascript
-// Save context when switching tasks
-await use_mcp_tool("pop_stash", "stash", {
-  name: "login-refactor",
-  summary: "Refactoring login flow to use sessions instead of JWT",
-  files: ["lib/auth/session.ex", "lib/auth/controller.ex"]
-});
+```bash
+# Check server status
+curl http://localhost:4001/
 
-// Retrieve it later (exact match)
-await use_mcp_tool("pop_stash", "pop", {
-  name: "login-refactor"
-});
+# Initialize connection (required first)
+curl -X POST http://localhost:4001/mcp/YOUR_PROJECT_ID \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}'
 
-// Or search semantically
-await use_mcp_tool("pop_stash", "pop", {
-  name: "authentication changes",
-  limit: 3
-});
+# List available tools
+curl -X POST http://localhost:4001/mcp/YOUR_PROJECT_ID \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
 
-// Record an insight
-await use_mcp_tool("pop_stash", "insight", {
-  key: "auth-flow",
-  content: "User authentication uses Phoenix sessions stored in ETS"
-});
-
-// Retrieve it
-await use_mcp_tool("pop_stash", "recall", {
-  key: "auth-flow"
-});
-
-// Document a decision
-await use_mcp_tool("pop_stash", "decide", {
-  topic: "authentication",
-  decision: "Use Phoenix sessions instead of JWT",
-  reasoning: "Sessions work better for our use case and simplify token management"
-});
-
-// Query decisions
-await use_mcp_tool("pop_stash", "get_decisions", {
-  topic: "authentication"
-});
-
-// List all decision topics
-await use_mcp_tool("pop_stash", "get_decisions", {
-  list_topics: true
-});
+# Call a tool (e.g., stash)
+curl -X POST http://localhost:4001/mcp/YOUR_PROJECT_ID \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"stash","arguments":{"name":"test","summary":"Testing the API"}}}'
 ```
 
 ## Architecture
