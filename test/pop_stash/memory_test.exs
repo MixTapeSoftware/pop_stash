@@ -19,15 +19,15 @@ defmodule PopStash.MemoryTest do
       assert stash.project_id == project.id
     end
 
-    test "create_stash/4 accepts files and metadata", %{project: project} do
+    test "create_stash/4 accepts files and tags", %{project: project} do
       assert {:ok, stash} =
                Memory.create_stash(project.id, "test", "summary",
                  files: ["lib/auth.ex"],
-                 metadata: %{priority: "high"}
+                 tags: ["high-priority", "auth"]
                )
 
       assert stash.files == ["lib/auth.ex"]
-      assert stash.metadata == %{priority: "high"}
+      assert stash.tags == ["high-priority", "auth"]
     end
 
     test "get_stash_by_name/2 retrieves stash by exact name", %{project: project} do
@@ -98,15 +98,15 @@ defmodule PopStash.MemoryTest do
       assert insight.project_id == project.id
     end
 
-    test "create_insight/3 accepts key and metadata", %{project: project} do
+    test "create_insight/3 accepts key and tags", %{project: project} do
       assert {:ok, insight} =
                Memory.create_insight(project.id, "Content",
                  key: "auth",
-                 metadata: %{verified: true}
+                 tags: ["verified", "important"]
                )
 
       assert insight.key == "auth"
-      assert insight.metadata == %{verified: true}
+      assert insight.tags == ["verified", "important"]
     end
 
     test "get_insight_by_key/2 retrieves insight by key", %{project: project} do
@@ -203,15 +203,15 @@ defmodule PopStash.MemoryTest do
       assert decision.project_id == project.id
     end
 
-    test "create_decision/4 accepts reasoning and metadata", %{project: project} do
+    test "create_decision/4 accepts reasoning and tags", %{project: project} do
       assert {:ok, decision} =
                Memory.create_decision(project.id, "database", "Use PostgreSQL",
                  reasoning: "Better JSON support than MySQL",
-                 metadata: %{alternatives_considered: ["MySQL", "SQLite"]}
+                 tags: ["database", "infrastructure"]
                )
 
       assert decision.reasoning == "Better JSON support than MySQL"
-      assert decision.metadata == %{alternatives_considered: ["MySQL", "SQLite"]}
+      assert decision.tags == ["database", "infrastructure"]
     end
 
     test "create_decision/4 normalizes topic (lowercase, trim)", %{project: project} do

@@ -36,13 +36,13 @@ defmodule PopStash.Projects do
   ## Options
 
     * `:description` - Optional description
-    * `:metadata` - Optional metadata map
+    * `:tags` - Optional list of tags
   """
   def create(name, opts \\ []) do
     attrs = %{
       name: name,
       description: Keyword.get(opts, :description),
-      metadata: Keyword.get(opts, :metadata, %{})
+      tags: Keyword.get(opts, :tags, [])
     }
 
     %Project{}
@@ -84,7 +84,7 @@ defmodule PopStash.Projects do
 
   defp create_changeset(project, attrs) do
     project
-    |> cast(attrs, [:name, :description, :metadata])
+    |> cast(attrs, [:name, :description, :tags])
     |> validate_required([:name])
     |> validate_length(:name, min: 1, max: 255)
   end

@@ -11,7 +11,7 @@ defmodule PopStash.Memory.Stash do
     field(:name, :string)
     field(:summary, :string)
     field(:files, {:array, :string}, default: [])
-    field(:metadata, :map, default: %{})
+    field(:tags, {:array, :string}, default: [])
     field(:expires_at, :utc_datetime_usec)
     field(:embedding, Pgvector.Ecto.Vector)
 

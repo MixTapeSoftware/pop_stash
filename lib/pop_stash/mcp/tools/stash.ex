@@ -18,7 +18,12 @@ defmodule PopStash.MCP.Tools.Stash do
           properties: %{
             name: %{type: "string", description: "Short name (e.g., 'auth-wip')"},
             summary: %{type: "string", description: "What you're working on"},
-            files: %{type: "array", items: %{type: "string"}}
+            files: %{type: "array", items: %{type: "string"}},
+            tags: %{
+              type: "array",
+              items: %{type: "string"},
+              description: "Optional tags for categorization"
+            }
           },
           required: ["name", "summary"]
         },
@@ -32,7 +37,8 @@ defmodule PopStash.MCP.Tools.Stash do
            project_id,
            args["name"],
            args["summary"],
-           files: Map.get(args, "files", [])
+           files: Map.get(args, "files", []),
+           tags: Map.get(args, "tags", [])
          ) do
       {:ok, stash} ->
         {:ok, "Stashed '#{stash.name}'. Use `pop` with name '#{stash.name}' to restore."}

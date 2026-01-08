@@ -32,6 +32,11 @@ defmodule PopStash.MCP.Tools.Decide do
             reasoning: %{
               type: "string",
               description: "Why this decision was made (optional but recommended)"
+            },
+            tags: %{
+              type: "array",
+              items: %{type: "string"},
+              description: "Optional tags for categorization (e.g., ['api', 'breaking-change'])"
             }
           },
           required: ["topic", "decision"]
@@ -42,7 +47,10 @@ defmodule PopStash.MCP.Tools.Decide do
   end
 
   def execute(args, %{project_id: project_id}) do
-    opts = if args["reasoning"], do: [reasoning: args["reasoning"]], else: []
+    opts =
+      []
+      |> maybe_add_opt(:reasoning, args["reasoning"])
+      |> maybe_add_opt(:tags, args["tags"])
 
     case Memory.create_decision(project_id, args["topic"], args["decision"], opts) do
       {:ok, decision} ->
@@ -61,4 +69,7 @@ defmodule PopStash.MCP.Tools.Decide do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, _} -> msg end)
     |> Enum.map_join(", ", fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end)
   end
+
+  defp maybe_add_opt(opts, _key, nil), do: opts
+  defp maybe_add_opt(opts, key, value), do: Keyword.put(opts, key, value)
 end

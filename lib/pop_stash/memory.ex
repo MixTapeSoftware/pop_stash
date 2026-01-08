@@ -22,7 +22,7 @@ defmodule PopStash.Memory do
 
   ## Options
     * `:files` - List of file paths
-    * `:metadata` - Optional metadata map
+    * `:tags` - Optional list of tags
     * `:expires_at` - Optional expiration datetime
   """
   def create_stash(project_id, name, summary, opts \\ []) do
@@ -33,10 +33,10 @@ defmodule PopStash.Memory do
         name: name,
         summary: summary,
         files: Keyword.get(opts, :files, []),
-        metadata: Keyword.get(opts, :metadata, %{}),
+        tags: Keyword.get(opts, :tags, []),
         expires_at: Keyword.get(opts, :expires_at)
       },
-      [:project_id, :name, :summary, :files, :metadata, :expires_at]
+      [:project_id, :name, :summary, :files, :tags, :expires_at]
     )
     |> validate_required([:project_id, :name, :summary])
     |> validate_length(:name, min: 1, max: 255)
@@ -50,7 +50,7 @@ defmodule PopStash.Memory do
   """
   def update_stash(stash, attrs) do
     stash
-    |> cast(attrs, [:name, :summary, :files, :metadata, :expires_at])
+    |> cast(attrs, [:name, :summary, :files, :tags, :expires_at])
     |> validate_required([:name, :summary])
     |> validate_length(:name, min: 1, max: 255)
     |> Repo.update()
@@ -108,7 +108,7 @@ defmodule PopStash.Memory do
 
   ## Options
     * `:key` - Optional semantic key for exact retrieval
-    * `:metadata` - Optional metadata map
+    * `:tags` - Optional list of tags
   """
   def create_insight(project_id, content, opts \\ []) do
     %Insight{}
@@ -117,9 +117,9 @@ defmodule PopStash.Memory do
         project_id: project_id,
         content: content,
         key: Keyword.get(opts, :key),
-        metadata: Keyword.get(opts, :metadata, %{})
+        tags: Keyword.get(opts, :tags, [])
       },
-      [:project_id, :content, :key, :metadata]
+      [:project_id, :content, :key, :tags]
     )
     |> validate_required([:project_id, :content])
     |> validate_length(:key, max: 255)
@@ -199,7 +199,7 @@ defmodule PopStash.Memory do
 
   ## Options
     * `:reasoning` - Why this decision was made (optional)
-    * `:metadata` - Optional metadata map
+    * `:tags` - Optional list of tags
   """
   def create_decision(project_id, topic, decision, opts \\ []) do
     %Decision{}
@@ -209,9 +209,9 @@ defmodule PopStash.Memory do
         topic: Decision.normalize_topic(topic),
         decision: decision,
         reasoning: Keyword.get(opts, :reasoning),
-        metadata: Keyword.get(opts, :metadata, %{})
+        tags: Keyword.get(opts, :tags, [])
       },
-      [:project_id, :topic, :decision, :reasoning, :metadata]
+      [:project_id, :topic, :decision, :reasoning, :tags]
     )
     |> validate_required([:project_id, :topic, :decision])
     |> validate_length(:topic, min: 1, max: 255)

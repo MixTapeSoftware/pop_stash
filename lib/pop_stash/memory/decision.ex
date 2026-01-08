@@ -13,7 +13,7 @@ defmodule PopStash.Memory.Decision do
     field(:topic, :string)
     field(:decision, :string)
     field(:reasoning, :string)
-    field(:metadata, :map, default: %{})
+    field(:tags, {:array, :string}, default: [])
     field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)

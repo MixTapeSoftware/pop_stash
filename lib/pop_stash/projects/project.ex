@@ -10,7 +10,7 @@ defmodule PopStash.Projects.Project do
   schema "projects" do
     field(:name, :string)
     field(:description, :string)
-    field(:metadata, :map, default: %{})
+    field(:tags, {:array, :string}, default: [])
 
     timestamps()
   end

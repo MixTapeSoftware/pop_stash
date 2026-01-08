@@ -11,7 +11,7 @@ defmodule PopStash.Memory.Insight do
   schema "insights" do
     field(:key, :string)
     field(:content, :string)
-    field(:metadata, :map, default: %{})
+    field(:tags, {:array, :string}, default: [])
     field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)
