@@ -1,8 +1,16 @@
 # PopStash
 
+Memory and context management for AI agents. Save context, record insights, document decisions—then retrieve them semantically or by exact match.
+
 **Status: Experimental**
 
-Memory and context management for AI agents. Save context, record insights, document decisions—then retrieve them semantically or by exact match.
+**Thesis**: recording and providing access to previous decisions and insights improves agent outcomes. 
+
+It's now common practice to record decisions, insights, plans, outcomes to Markdown files when working with LLM agents. PopStash turns
+those files into database records with embeddings that are then used to provide semantic search via TypeSense. This allows for flexible recovery
+of context without forcing the entire history into the context window.
+
+We also gain the ability to build tooling around the database and TypeSense index so that humans can evaluate, prune, and augment this data. Teams can connect to the same database, allowing for cross-organizational sharing of insights.
 
 ## What It Does
 
