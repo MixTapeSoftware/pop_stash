@@ -10,7 +10,7 @@ It's now common practice to record decisions, insights, plans, outcomes to Markd
 those files into database records with embeddings that are then used to provide semantic search via TypeSense. This allows for flexible recovery
 of context without forcing the entire history into the context window.
 
-We also gain the ability to build tooling around the database and TypeSense index so that humans can evaluate, prune, and augment this data. Teams can connect to the same database, allowing for cross-organizational sharing of insights.
+We also gain the ability to build tooling around the database and TypeSense index so that humans can evaluate, prune, and augment this data. Teams can connect to the same database, allowing for cross-organizational sharing of insights. [UI is forthcoming]
 
 ## What It Does
 
