@@ -19,6 +19,7 @@ PopStash is an MCP server that gives AI agents persistent memory:
 - **Stash/Pop**: Save and retrieve working context when switching tasks
 - **Insight/Recall**: Record and search persistent knowledge about your codebase  
 - **Decide/Get Decisions**: Document architectural decisions with full history
+- **Minimal Context Window Overhead (> 1%)**
 
 All retrieval supports both exact matching and semantic search powered by local embeddings.
 
