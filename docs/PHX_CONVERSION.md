@@ -274,60 +274,17 @@ defmodule PopStashWeb.Router do
     plug :put_root_layout, html: {PopStashWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug :assign_current_project
   end
 
   scope "/", PopStashWeb do
     pipe_through :browser
 
     get "/", PageController, :home
-    
-    live "/projects", ProjectLive.Index, :index
-    live "/projects/new", ProjectLive.Index, :new
-    
-    # Project-scoped routes (require valid project_id)
-    live "/:project_id/stashes", StashLive.Index, :index
-    live "/:project_id/stashes/new", StashLive.Index, :new
-    live "/:project_id/stashes/:id", StashLive.Show, :show
-    live "/:project_id/stashes/:id/edit", StashLive.Show, :edit
-    
-    live "/:project_id/insights", InsightLive.Index, :index
-    live "/:project_id/insights/new", InsightLive.Index, :new
-    live "/:project_id/insights/:id", InsightLive.Show, :show
-    live "/:project_id/insights/:id/edit", InsightLive.Show, :edit
-    
-    live "/:project_id/decisions", DecisionLive.Index, :index
-    live "/:project_id/decisions/new", DecisionLive.Index, :new
-    live "/:project_id/decisions/:topic", DecisionLive.Show, :show
-    
-    live "/:project_id/search", SearchLive.Index, :index
-  end
-
-  # Load current project into assigns if project_id is in path
-  # Called before each request in :browser pipeline
-  defp assign_current_project(conn, _opts) do
-    case conn.path_params do
-      %{"project_id" => project_id} ->
-        case PopStash.Projects.get(project_id) do
-          {:ok, project} -> 
-            assign(conn, :current_project, project)
-          {:error, :not_found} -> 
-            conn
-            |> put_flash(:error, "Project not found")
-            |> Phoenix.Controller.redirect(to: "/projects")
-            |> halt()
-        end
-      _ -> 
-        assign(conn, :current_project, nil)
-    end
   end
 end
 ```
 
-**Notes:**
-- Added `:new` and `:edit` live actions for modal forms
-- Improved `assign_current_project` to redirect on invalid project_id
-- MCP server (port 4001) is completely separate - no routing conflicts
+**Note:** Just a simple welcome page for now. LiveView routes will be added in future phases.
 
 ---
 
