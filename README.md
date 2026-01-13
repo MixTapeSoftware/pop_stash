@@ -25,47 +25,34 @@ All retrieval supports both exact matching and semantic search powered by local 
 
 ## Quick Start
 
-### Option A: Docker (Recommended)
-
-No Elixir installation required.
-
 ```bash
-# 1. Clone and start PopStash
+# 1. Clone and initialize PopStash
 git clone https://github.com/your-org/pop_stash.git
 cd pop_stash
-docker compose up -d
 
-# 2. Create a project for your codebase
+# Create a project for your codebase
 bin/init "My Project"
 # => Created project: abc123
 
-# 3. Install mcp-proxy (for Zed/Claude Desktop - skip if using Claude Code)
-uv tool install mcp-proxy      # recommended
-# or: pipx install mcp-proxy
-# or: pip install mcp-proxy
-# or: docker pull ghcr.io/sparfenyuk/mcp-proxy:latest
-```
-
-### Option B: Local Development
-
-Requires Elixir 1.18+.
-
-```bash
-# 1. Start dependencies (Postgres + Typesense)
-docker compose up -d db typesense
-
-# 2. Install dependencies and setup database
-mix deps.get
-mix ecto.setup
-
-# 3. Create a project for your codebase
-mix pop_stash.project.new "My Project"
-
-# 4. Start the Phoenix server
+# 2. Start PopStash
 bin/up
 ```
 
 > **Note**: On first boot, the server downloads the embedding model (~90MB). This may take a minute depending on your connection.
+
+### Optional: Install mcp-proxy (for Zed/Claude Desktop)
+
+If you're using Zed or Claude Desktop, you'll need mcp-proxy to bridge HTTP to the MCP protocol. Claude Code users can skip this step.
+
+```bash
+# Recommended
+uv tool install mcp-proxy
+
+# Alternative installation methods
+pipx install mcp-proxy
+pip install mcp-proxy
+docker pull ghcr.io/sparfenyuk/mcp-proxy:latest
+```
 
 ## MCP Client Configuration
 
@@ -81,7 +68,7 @@ Add to your workspace's `.mcp.json`:
 }
 ```
 
-#### Auto-Stash with Claude Hooks (Optional)
+#### Auto-Stash with Claude Hooks (Recommended)
 
 Use Claude hooks to automatically preserve context at session end. Add to `.claude/settings.json`:
 
@@ -93,7 +80,7 @@ Use Claude hooks to automatically preserve context at session end. Add to `.clau
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "If meaningful work occurred: stash WIP, record insights, document decisions. Be brief."
+            "prompt": "If meaningful work occurred: stash WIP, record insights, document decisions."
           }
         ]
       }

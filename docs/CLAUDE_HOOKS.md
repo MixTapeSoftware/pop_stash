@@ -185,7 +185,7 @@ Hook prompts add to the conversation. Keep them concise:
 ```json
 {
   "type": "prompt",
-  "prompt": "Stash WIP if meaningful. Be brief."
+  "prompt": "Stash WIP if meaningful."
 }
 ```
 
