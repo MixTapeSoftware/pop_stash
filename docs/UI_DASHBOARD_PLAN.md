@@ -319,7 +319,7 @@ Following design direction: slate background, white surfaces, border separation 
     <!-- Logo -->
     <div class="p-4 border-b border-slate-200">
       <h1 class="text-base font-semibold text-slate-900 tracking-tight">PopStash</h1>
-      <p class="text-xs text-slate-500">Memory Dashboard</p>
+      
     </div>
     
     <!-- Navigation -->

@@ -8,5 +8,5 @@
   out: "",
   threshold: "low",
   ignore: ["Config.HTTPS"],
-  ignore_files: []
+  ignore_files: ["lib/pop_stash_web/dashboard/markdown.ex"]
 ]

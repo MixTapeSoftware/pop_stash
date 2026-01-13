@@ -1,6 +1,8 @@
 defmodule PopStashWeb.Router do
   use PopStashWeb, :router
 
+  import PopStashWeb.Dashboard.Router
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -54,6 +56,13 @@ defmodule PopStashWeb.Router do
   # scope "/api", PopStashWeb do
   #   pipe_through :api
   # end
+
+  # PopStash Dashboard - mount with your own authentication!
+  # ⚠️  WARNING: No authentication by default. Secure this route!
+  scope "/pop_stash" do
+    pipe_through :browser
+    pop_stash_dashboard("/")
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:pop_stash, :dev_routes) do

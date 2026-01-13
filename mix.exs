@@ -78,6 +78,10 @@ defmodule PopStash.MixProject do
       # Typesense
       {:typesense_ex, git: "https://github.com/MixTapeSoftware/typesense_ex"},
 
+      # Markdown rendering for dashboard
+      {:earmark, "~> 1.4"},
+      {:html_sanitize_ex, "~> 1.4"},
+
       # Dev/test
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mimic, "~> 1.10", only: :test},
