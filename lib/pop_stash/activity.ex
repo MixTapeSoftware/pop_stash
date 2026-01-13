@@ -5,7 +5,7 @@ defmodule PopStash.Activity do
 
   import Ecto.Query
 
-  alias PopStash.Memory.{Decision, Insight, Stash}
+  alias PopStash.Memory.{Decision, Insight, SearchLog, Stash}
   alias PopStash.Projects.Project
   alias PopStash.Repo
 
@@ -15,7 +15,7 @@ defmodule PopStash.Activity do
 
     @type t :: %__MODULE__{
             id: String.t(),
-            type: :stash | :decision | :insight,
+            type: :stash | :decision | :insight | :search,
             title: String.t(),
             preview: String.t() | nil,
             project_id: String.t(),
@@ -36,13 +36,14 @@ defmodule PopStash.Activity do
   def list_recent(opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
     project_id = Keyword.get(opts, :project_id)
-    types = Keyword.get(opts, :types, [:stash, :decision, :insight])
+    types = Keyword.get(opts, :types, [:stash, :decision, :insight, :search])
 
     items = []
 
     items = if :stash in types, do: items ++ fetch_stashes(project_id, limit), else: items
     items = if :decision in types, do: items ++ fetch_decisions(project_id, limit), else: items
     items = if :insight in types, do: items ++ fetch_insights(project_id, limit), else: items
+    items = if :search in types, do: items ++ fetch_searches(project_id, limit), else: items
 
     items
     |> Enum.sort_by(& &1.inserted_at, {:desc, DateTime})
@@ -92,6 +93,24 @@ defmodule PopStash.Activity do
     }
   end
 
+  def to_item(%SearchLog{} = search) do
+    preview = "#{search.collection} • #{search.search_type}"
+
+    preview =
+      if search.result_count, do: "#{preview} • #{search.result_count} results", else: preview
+
+    %Item{
+      id: search.id,
+      type: :search,
+      title: search.query,
+      preview: preview,
+      project_id: search.project_id,
+      project_name: get_project_name(search.project_id),
+      inserted_at: search.inserted_at,
+      source: search
+    }
+  end
+
   # Private functions
 
   defp fetch_stashes(project_id, limit) do
@@ -125,7 +144,18 @@ defmodule PopStash.Activity do
     |> Enum.map(&to_item/1)
   end
 
+  defp fetch_searches(project_id, limit) do
+    SearchLog
+    |> maybe_filter_project(project_id)
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> preload(:project)
+    |> Repo.all()
+    |> Enum.map(&to_item/1)
+  end
+
   defp maybe_filter_project(query, nil), do: query
+
   defp maybe_filter_project(query, project_id), do: where(query, [q], q.project_id == ^project_id)
 
   defp get_project_name(project_id) do

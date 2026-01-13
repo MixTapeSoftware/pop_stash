@@ -6,6 +6,7 @@ defmodule PopStash.Projects.Project do
   """
 
   use PopStash.Schema
+  import Ecto.Changeset
 
   schema "projects" do
     field(:name, :string)
@@ -13,5 +14,15 @@ defmodule PopStash.Projects.Project do
     field(:tags, {:array, :string}, default: [])
 
     timestamps()
+  end
+
+  @doc """
+  Changeset for creating or updating a project.
+  """
+  def changeset(project, attrs) do
+    project
+    |> cast(attrs, [:name, :description, :tags])
+    |> validate_required([:name])
+    |> validate_length(:name, min: 1, max: 255)
   end
 end

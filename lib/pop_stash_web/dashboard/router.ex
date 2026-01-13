@@ -40,6 +40,21 @@ defmodule PopStashWeb.Dashboard.Router do
           # Home
           LiveRouter.live("/", PopStashWeb.Dashboard.HomeLive, :index)
 
+          # Projects
+          LiveRouter.live("/projects", PopStashWeb.Dashboard.ProjectLive.Index, :index)
+
+          LiveRouter.live(
+            "/projects/new",
+            PopStashWeb.Dashboard.ProjectLive.Index,
+            :new
+          )
+
+          LiveRouter.live(
+            "/projects/:id",
+            PopStashWeb.Dashboard.ProjectLive.Show,
+            :show
+          )
+
           # Stashes
           LiveRouter.live("/stashes", PopStashWeb.Dashboard.StashLive.Index, :index)
 

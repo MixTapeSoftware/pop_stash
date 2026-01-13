@@ -69,12 +69,18 @@ defmodule PopStashWeb.Dashboard.ActivityFeedComponent do
         
     <!-- Content -->
         <div class="flex-1 min-w-0">
-          <.link
-            navigate={item_path(item)}
-            class="block text-sm font-medium text-slate-900 hover:text-violet-600 truncate"
-          >
-            {item.title}
-          </.link>
+          <%= if item_path(item) do %>
+            <.link
+              navigate={item_path(item)}
+              class="block text-sm font-medium text-slate-900 hover:text-violet-600 truncate"
+            >
+              {item.title}
+            </.link>
+          <% else %>
+            <div class="block text-sm font-medium text-slate-900 truncate">
+              {item.title}
+            </div>
+          <% end %>
 
           <p :if={item.preview} class="text-xs text-slate-500 truncate mt-0.5">
             {item.preview}
@@ -110,26 +116,32 @@ defmodule PopStashWeb.Dashboard.ActivityFeedComponent do
   defp type_icon(:stash), do: "hero-archive-box"
   defp type_icon(:decision), do: "hero-check-badge"
   defp type_icon(:insight), do: "hero-light-bulb"
+  defp type_icon(:search), do: "hero-magnifying-glass"
 
   defp type_bg_class(:stash), do: "bg-blue-50"
   defp type_bg_class(:decision), do: "bg-green-50"
   defp type_bg_class(:insight), do: "bg-amber-50"
+  defp type_bg_class(:search), do: "bg-purple-50"
 
   defp type_icon_class(:stash), do: "text-blue-500"
   defp type_icon_class(:decision), do: "text-green-500"
   defp type_icon_class(:insight), do: "text-amber-500"
+  defp type_icon_class(:search), do: "text-purple-500"
 
   defp type_badge_class(:stash), do: "bg-blue-100 text-blue-700"
   defp type_badge_class(:decision), do: "bg-green-100 text-green-700"
   defp type_badge_class(:insight), do: "bg-amber-100 text-amber-700"
+  defp type_badge_class(:search), do: "bg-purple-100 text-purple-700"
 
   defp type_label(:stash), do: "Stash"
   defp type_label(:decision), do: "Decision"
   defp type_label(:insight), do: "Insight"
+  defp type_label(:search), do: "Search"
 
   defp item_path(%{type: :stash, id: id}), do: ~p"/pop_stash/stashes/#{id}"
   defp item_path(%{type: :decision, id: id}), do: ~p"/pop_stash/decisions/#{id}"
   defp item_path(%{type: :insight, id: id}), do: ~p"/pop_stash/insights/#{id}"
+  defp item_path(%{type: :search}), do: nil
 
   defp relative_time_string(datetime) do
     now = DateTime.utc_now()

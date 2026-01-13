@@ -309,13 +309,27 @@ defmodule PopStashWeb.Dashboard.Components do
   def stats_row(assigns) do
     ~H"""
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div
-        :for={stat <- @stats}
-        class="bg-white border border-slate-200 rounded-md p-4"
-      >
-        <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">{stat.title}</div>
-        <div class="text-2xl font-semibold text-slate-900 tabular-nums mt-1">{stat.value}</div>
-        <div :if={stat[:desc]} class="text-xs text-slate-400 mt-1">{stat.desc}</div>
+      <div :for={stat <- @stats}>
+        <%= if stat[:link] do %>
+          <.link
+            navigate={stat.link}
+            class="block bg-white border border-slate-200 rounded-md p-4 hover:border-violet-300 hover:shadow-sm transition-all cursor-pointer group"
+          >
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wide group-hover:text-violet-600 transition-colors">
+              {stat.title}
+            </div>
+            <div class="text-2xl font-semibold text-slate-900 tabular-nums mt-1 group-hover:text-violet-700 transition-colors">
+              {stat.value}
+            </div>
+            <div :if={stat[:desc]} class="text-xs text-slate-400 mt-1">{stat.desc}</div>
+          </.link>
+        <% else %>
+          <div class="bg-white border border-slate-200 rounded-md p-4">
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">{stat.title}</div>
+            <div class="text-2xl font-semibold text-slate-900 tabular-nums mt-1">{stat.value}</div>
+            <div :if={stat[:desc]} class="text-xs text-slate-400 mt-1">{stat.desc}</div>
+          </div>
+        <% end %>
       </div>
     </div>
     """

@@ -24,6 +24,11 @@
         </li>
 
         <li>
+          <.nav_link navigate={~p"/pop_stash/projects"} current_path={@current_path}>
+            <.icon name="hero-folder" class="size-4" /> Projects
+          </.nav_link>
+        </li>
+        <li>
           <.nav_link navigate={~p"/pop_stash/stashes"} current_path={@current_path}>
             <.icon name="hero-archive-box" class="size-4" /> Stashes
           </.nav_link>
@@ -68,6 +73,11 @@
           <li>
             <.nav_link navigate={~p"/pop_stash"} current_path={@current_path}>
               <.icon name="hero-home" class="size-4" /> Overview
+            </.nav_link>
+          </li>
+          <li>
+            <.nav_link navigate={~p"/pop_stash/projects"} current_path={@current_path}>
+              <.icon name="hero-folder" class="size-4" /> Projects
             </.nav_link>
           </li>
           <li>

@@ -345,34 +345,66 @@ defmodule PopStash.Memory do
   @doc false
   def log_search(project_id, query, collection, search_type, opts \\ []) do
     Task.start(fn ->
-      %SearchLog{}
-      |> cast(
-        %{
-          project_id: project_id,
-          query: query,
-          collection: to_string(collection),
-          search_type: to_string(search_type),
-          tool: Keyword.get(opts, :tool),
-          result_count: Keyword.get(opts, :result_count, 0),
-          found: Keyword.get(opts, :found, false),
-          duration_ms: Keyword.get(opts, :duration_ms)
-        },
-        [
-          :project_id,
-          :query,
-          :collection,
-          :search_type,
-          :tool,
-          :result_count,
-          :found,
-          :duration_ms
-        ]
-      )
-      |> validate_required([:project_id, :query, :collection, :search_type])
-      |> Repo.insert()
+      result =
+        %SearchLog{}
+        |> cast(
+          %{
+            project_id: project_id,
+            query: query,
+            collection: to_string(collection),
+            search_type: to_string(search_type),
+            tool: Keyword.get(opts, :tool),
+            result_count: Keyword.get(opts, :result_count, 0),
+            found: Keyword.get(opts, :found, false),
+            duration_ms: Keyword.get(opts, :duration_ms)
+          },
+          [
+            :project_id,
+            :query,
+            :collection,
+            :search_type,
+            :tool,
+            :result_count,
+            :found,
+            :duration_ms
+          ]
+        )
+        |> validate_required([:project_id, :query, :collection, :search_type])
+        |> Repo.insert()
+
+      case result do
+        {:ok, search_log} -> broadcast(:search_logged, search_log)
+        _ -> :ok
+      end
     end)
 
     :ok
+  end
+
+  @doc """
+  Lists recent search logs for a project.
+
+  ## Options
+    * `:limit` - Maximum items to return (default: 20)
+  """
+  def list_search_logs(project_id, opts \\ []) when is_binary(project_id) do
+    limit = Keyword.get(opts, :limit, 20)
+
+    SearchLog
+    |> where([s], s.project_id == ^project_id)
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> preload(:project)
+    |> Repo.all()
+  end
+
+  @doc """
+  Counts total searches for a project.
+  """
+  def count_searches(project_id) when is_binary(project_id) do
+    SearchLog
+    |> where([s], s.project_id == ^project_id)
+    |> Repo.aggregate(:count, :id)
   end
 
   ## Helpers
