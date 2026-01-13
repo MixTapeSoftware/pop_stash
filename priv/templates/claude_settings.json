@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before starting work, search for relevant architectural decisions and insights about this task using get_decisions and recall."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before stopping, evaluate if there is meaningful context to preserve. If so: (1) stash any work-in-progress with a descriptive name, (2) record any non-obvious insights discovered about the codebase, (3) document any architectural decisions made. Be concise and skip if this was a trivial session."
+          }
+        ]
+      }
+    ]
+  }
+}
