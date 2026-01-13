@@ -1,15 +1,21 @@
 defmodule PopStashWeb.Dashboard.HomeLive do
   @moduledoc """
-  Dashboard home/overview page showing memory statistics.
+  Dashboard home/overview page showing memory statistics and recent activity.
   """
 
   use PopStashWeb.Dashboard, :live_view
 
+  alias PopStash.Activity
   alias PopStash.Memory
   alias PopStash.Projects
 
   @impl true
   def mount(_params, _session, socket) do
+    # Subscribe to real-time updates
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(PopStash.PubSub, "memory:events")
+    end
+
     projects = Projects.list()
 
     socket =
@@ -18,7 +24,9 @@ defmodule PopStashWeb.Dashboard.HomeLive do
       |> assign(:current_path, "/pop_stash")
       |> assign(:projects, projects)
       |> assign(:selected_project_id, nil)
+      |> assign(:activity_items, [])
       |> load_stats()
+      |> load_activity()
 
     {:ok, socket}
   end
@@ -36,8 +44,85 @@ defmodule PopStashWeb.Dashboard.HomeLive do
       socket
       |> assign(:selected_project_id, project_id)
       |> load_stats()
+      |> load_activity()
 
     {:noreply, socket}
+  end
+
+  # Real-time event handlers
+  @impl true
+  def handle_info({:stash_created, stash}, socket) do
+    item = Activity.to_item(stash)
+    {:noreply, prepend_activity_item(socket, item)}
+  end
+
+  def handle_info({:stash_updated, _stash}, socket) do
+    # Optionally refresh the activity feed on updates
+    {:noreply, socket}
+  end
+
+  def handle_info({:decision_created, decision}, socket) do
+    item = Activity.to_item(decision)
+    {:noreply, prepend_activity_item(socket, item)}
+  end
+
+  def handle_info({:insight_created, insight}, socket) do
+    item = Activity.to_item(insight)
+    {:noreply, prepend_activity_item(socket, item)}
+  end
+
+  def handle_info({:insight_updated, _insight}, socket) do
+    # Optionally refresh the activity feed on updates
+    {:noreply, socket}
+  end
+
+  def handle_info({:stash_deleted, id}, socket) do
+    {:noreply, remove_activity_item(socket, id)}
+  end
+
+  def handle_info({:decision_deleted, id}, socket) do
+    {:noreply, remove_activity_item(socket, id)}
+  end
+
+  def handle_info({:insight_deleted, id}, socket) do
+    {:noreply, remove_activity_item(socket, id)}
+  end
+
+  def handle_info(_msg, socket) do
+    {:noreply, socket}
+  end
+
+  defp load_activity(socket) do
+    items =
+      Activity.list_recent(
+        limit: 20,
+        project_id: socket.assigns.selected_project_id
+      )
+
+    assign(socket, :activity_items, items)
+  end
+
+  defp prepend_activity_item(socket, item) do
+    # Check if item matches current project filter
+    if matches_project_filter?(socket, item) do
+      items = [item | socket.assigns.activity_items]
+      items = Enum.take(items, 20)
+      assign(socket, :activity_items, items)
+    else
+      socket
+    end
+  end
+
+  defp remove_activity_item(socket, item_id) do
+    items = Enum.reject(socket.assigns.activity_items, &(&1.id == item_id))
+    assign(socket, :activity_items, items)
+  end
+
+  defp matches_project_filter?(socket, item) do
+    case socket.assigns.selected_project_id do
+      nil -> true
+      project_id -> item.project_id == project_id
+    end
   end
 
   defp load_stats(socket) do
@@ -114,71 +199,99 @@ defmodule PopStashWeb.Dashboard.HomeLive do
 
       <.stats_row stats={@stats} />
 
-      <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Quick Actions -->
-        <.card>
-          <.section_header title="Quick Actions" />
-          <div class="space-y-2">
-            <.link_button
-              navigate={~p"/pop_stash/stashes/new"}
-              variant="secondary"
-              class="w-full justify-start"
-            >
-              <.icon name="hero-plus" class="size-4" /> New Stash
-            </.link_button>
-            <.link_button
-              navigate={~p"/pop_stash/insights/new"}
-              variant="secondary"
-              class="w-full justify-start"
-            >
-              <.icon name="hero-plus" class="size-4" /> New Insight
-            </.link_button>
-            <.link_button
-              navigate={~p"/pop_stash/decisions/new"}
-              variant="secondary"
-              class="w-full justify-start"
-            >
-              <.icon name="hero-plus" class="size-4" /> New Decision
-            </.link_button>
-          </div>
-        </.card>
+      <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Activity Feed (spans 2 columns) -->
+        <div class="lg:col-span-2">
+          <.card>
+            <.section_header title="Recent Activity">
+              <:actions>
+                <span class="text-xs text-slate-400">Live updates enabled</span>
+                <span class="relative flex h-2 w-2 ml-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75">
+                  </span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+              </:actions>
+            </.section_header>
+
+            <.live_component
+              module={PopStashWeb.Dashboard.ActivityFeedComponent}
+              id="activity-feed"
+              items={@activity_items}
+              limit={20}
+              project_id={@selected_project_id}
+              show_project={is_nil(@selected_project_id)}
+            />
+          </.card>
+        </div>
         
-    <!-- Recent Activity -->
-        <.card>
-          <.section_header title="Navigation" />
-          <div class="space-y-2">
-            <.link
-              navigate={~p"/pop_stash/stashes"}
-              class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
-            >
-              <.icon name="hero-archive-box" class="size-5 text-slate-400" />
-              <div>
-                <div class="text-sm font-medium text-slate-900">Stashes</div>
-                <div class="text-xs text-slate-500">Context snapshots for AI sessions</div>
-              </div>
-            </.link>
-            <.link
-              navigate={~p"/pop_stash/insights"}
-              class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
-            >
-              <.icon name="hero-light-bulb" class="size-5 text-slate-400" />
-              <div>
-                <div class="text-sm font-medium text-slate-900">Insights</div>
-                <div class="text-xs text-slate-500">Learned knowledge and patterns</div>
-              </div>
-            </.link>
-            <.link
-              navigate={~p"/pop_stash/decisions"}
-              class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
-            >
-              <.icon name="hero-check-badge" class="size-5 text-slate-400" />
-              <div>
-                <div class="text-sm font-medium text-slate-900">Decisions</div>
-                <div class="text-xs text-slate-500">Immutable decision records</div>
-              </div>
-            </.link>
-          </div>
-        </.card>
+    <!-- Sidebar -->
+        <div class="space-y-6">
+          <!-- Quick Actions -->
+          <.card>
+            <.section_header title="Quick Actions" />
+            <div class="space-y-2">
+              <.link_button
+                navigate={~p"/pop_stash/stashes/new"}
+                variant="secondary"
+                class="w-full justify-start"
+              >
+                <.icon name="hero-plus" class="size-4" /> New Stash
+              </.link_button>
+              <.link_button
+                navigate={~p"/pop_stash/insights/new"}
+                variant="secondary"
+                class="w-full justify-start"
+              >
+                <.icon name="hero-plus" class="size-4" /> New Insight
+              </.link_button>
+              <.link_button
+                navigate={~p"/pop_stash/decisions/new"}
+                variant="secondary"
+                class="w-full justify-start"
+              >
+                <.icon name="hero-plus" class="size-4" /> New Decision
+              </.link_button>
+            </div>
+          </.card>
+          
+    <!-- Navigation -->
+          <.card>
+            <.section_header title="Navigation" />
+            <div class="space-y-2">
+              <.link
+                navigate={~p"/pop_stash/stashes"}
+                class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
+              >
+                <.icon name="hero-archive-box" class="size-5 text-slate-400" />
+                <div>
+                  <div class="text-sm font-medium text-slate-900">Stashes</div>
+                  <div class="text-xs text-slate-500">Context snapshots for AI sessions</div>
+                </div>
+              </.link>
+              <.link
+                navigate={~p"/pop_stash/insights"}
+                class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
+              >
+                <.icon name="hero-light-bulb" class="size-5 text-slate-400" />
+                <div>
+                  <div class="text-sm font-medium text-slate-900">Insights</div>
+                  <div class="text-xs text-slate-500">Learned knowledge and patterns</div>
+                </div>
+              </.link>
+              <.link
+                navigate={~p"/pop_stash/decisions"}
+                class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
+              >
+                <.icon name="hero-check-badge" class="size-5 text-slate-400" />
+                <div>
+                  <div class="text-sm font-medium text-slate-900">Decisions</div>
+                  <div class="text-xs text-slate-500">Immutable decision records</div>
+                </div>
+              </.link>
+            </div>
+          </.card>
+        </div>
       </div>
     </div>
     """

@@ -5,8 +5,8 @@ services:
       dockerfile: Dockerfile.local
     volumes:
       - .:/app
-      - pop-sash-app-build:/app/_build
-      - pop-sash-app-deps:/app/deps
+      - pop-stash-app-build:/app/_build
+      - pop-stash-app-deps:/app/deps
     ports:
       - "127.0.0.1:4001:4001"
     environment:
@@ -28,7 +28,7 @@ services:
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
-      - pop-sash-pgdata:/var/lib/postgresql/data
+      - pop-stash-pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -45,7 +45,7 @@ services:
     ports:
       - "127.0.0.1:8108:8108"
     volumes:
-      - pop-sash-typesense:/data
+      - pop-stash-typesense:/data
     networks:
       - popstash
 
@@ -53,11 +53,11 @@ networks:
   popstash:
     name: popstash_network
 volumes:
-  pop-sash-app-build:
+  pop-stash-app-build:
     driver: local
-  pop-sash-app-deps:
+  pop-stash-app-deps:
     driver: local
-  pop-sash-pgdata:
+  pop-stash-pgdata:
     driver: local
-  pop-sash-typesense:
+  pop-stash-typesense:
     driver: local
