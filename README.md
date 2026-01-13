@@ -68,19 +68,31 @@ Add to your workspace's `.mcp.json`:
 }
 ```
 
-#### Auto-Stash with Claude Hooks (Recommended)
+#### Claude Hooks (Strongly Recommended)
 
-Use Claude hooks to automatically preserve context at session end. Add to `.claude/settings.json`:
+**⚠️ Configure hooks to ensure agents use PopStash effectively.**
+
+Add to your project's `.claude/settings.json`:
 
 ```json
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before starting work, search for relevant architectural decisions and insights about this task using get_decisions and recall."
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "If meaningful work occurred: stash WIP, record insights, document decisions."
+            "prompt": "Before stopping, evaluate if there is meaningful context to preserve. If so: (1) stash any work-in-progress with a descriptive name, (2) record any non-obvious insights discovered about the codebase, (3) document any architectural decisions made. Be concise and skip if this was a trivial session."
           }
         ]
       }
@@ -89,7 +101,9 @@ Use Claude hooks to automatically preserve context at session end. Add to `.clau
 }
 ```
 
-See [docs/CLAUDE_HOOKS.md](docs/CLAUDE_HOOKS.md) for more hook configurations.
+Without these hooks, agents may forget to recall previous context or preserve their work. The `SessionStart` hook ensures agents load relevant context before beginning work, and the `Stop` hook ensures knowledge is preserved at session end.
+
+See [docs/CLAUDE_HOOKS.md](docs/CLAUDE_HOOKS.md) for more configurations and best practices.
 
 ### Zed / Claude Desktop (via mcp-proxy)
 

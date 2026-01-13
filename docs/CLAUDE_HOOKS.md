@@ -1,14 +1,28 @@
 # Claude Hooks for PopStash
 
-Automate context preservation using Claude Code's hooks system. Hooks can trigger PopStash operations at key moments like session end or before context switches.
+**⚠️ IMPORTANT: Configure these hooks to ensure agents use PopStash effectively.**
 
-## Quick Setup
+Automate context management using Claude Code's hooks system. Without hooks, agents may forget to recall previous context or preserve their work. These hooks ensure every session starts with relevant context and ends with preserved knowledge.
+
+## Quick Setup (Recommended)
+
+**This configuration is strongly recommended for all PopStash projects.**
 
 Add to your project's `.claude/settings.json`:
 
 ```json
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before starting work, search for relevant architectural decisions and insights about this task using get_decisions and recall."
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -24,6 +38,27 @@ Add to your project's `.claude/settings.json`:
 ```
 
 ## Hook Types
+
+### `SessionStart` - Session Beginning (Recommended)
+
+Triggers at the start of a new session. Perfect for loading relevant context before starting work.
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before starting, search for relevant decisions and insights related to this task using recall and get_decisions."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ### `Stop` - Session End (Recommended)
 
@@ -92,17 +127,17 @@ Triggers after a tool completes. Can react to specific tool usage.
 
 ## Recommended Configurations
 
-### Minimal - Auto-Stash on Stop
+### Minimal - Context Recall on Start
 
 ```json
 {
   "hooks": {
-    "Stop": [
+    "SessionStart": [
       {
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "If there is meaningful work in progress, stash it with a descriptive name. If you learned something non-obvious about the codebase, record it as an insight. Only act if there's something valuable to save."
+            "prompt": "Search for relevant architectural decisions and insights related to this task using get_decisions and recall before starting work."
           }
         ]
       }
@@ -111,11 +146,21 @@ Triggers after a tool completes. Can react to specific tool usage.
 }
 ```
 
-### Standard - Stash + Decisions
+### Standard - Start with Context + Auto-Stash on Stop
 
 ```json
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before starting, search for relevant decisions and insights about this task area. Use get_decisions to find architectural decisions and recall to find related insights."
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -130,11 +175,21 @@ Triggers after a tool completes. Can react to specific tool usage.
 }
 ```
 
-### Full - Context-Aware with Pre-Recall
+### Full - Context-Aware Throughout Session
 
 ```json
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Start by searching for relevant context: (1) Use get_decisions to find architectural decisions about the task area, (2) Use recall to find related insights, (3) Use pop to check for recent work-in-progress stashes."
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "edit_file",
@@ -200,9 +255,34 @@ The AI will naturally skip if there's nothing to do:
 }
 ```
 
+### SessionStart Hook Best Practices
+
+The `SessionStart` hook is powerful but should be used carefully:
+
+- **Be specific about the task area**: Instead of "search for everything", prompt the agent to search for context related to the specific task
+- **Use semantic search**: The agent can use natural language to find relevant decisions/insights even if they don't know exact keys
+- **Balance recall with action**: Don't let context retrieval dominate the session - the prompt should encourage quick, relevant searches
+- **Let the agent judge relevance**: Trust the agent to determine which recalled context is actually useful
+
+Good example:
+```json
+{
+  "type": "prompt",
+  "prompt": "Briefly search for relevant decisions and insights about this task using get_decisions and recall."
+}
+```
+
+Too verbose:
+```json
+{
+  "type": "prompt",
+  "prompt": "Search for all decisions, then search for all insights, then search for all stashes, then summarize everything you found before starting work."
+}
+```
+
 ### Combine with AGENTS.md
 
-Hooks work best alongside AGENTS.md guidance. The hook handles "don't forget to stash" while AGENTS.md guides *what* to stash and *how* to name things.
+Hooks work best alongside AGENTS.md guidance. The hook handles "don't forget to recall context" while AGENTS.md guides *how* to effectively use that context.
 
 ## Example: Full Project Setup
 
@@ -210,6 +290,16 @@ Hooks work best alongside AGENTS.md guidance. The hook handles "don't forget to 
 ```json
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Search for relevant context before starting: (1) Use get_decisions for architectural decisions about this task area, (2) Use recall for related insights, (3) Use pop for recent WIP stashes."
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
