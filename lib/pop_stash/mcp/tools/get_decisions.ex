@@ -65,8 +65,11 @@ defmodule PopStash.MCP.Tools.GetDecisions do
 
     # Try exact topic match first
     case Memory.list_decisions(project_id, topic: topic, limit: limit) do
-      [] -> search_decisions_by_topic(project_id, topic, limit)
-      decisions -> format_decisions(decisions, topic, "exact")
+      [] ->
+        search_decisions_by_topic(project_id, topic, limit)
+
+      decisions ->
+        format_decisions(decisions, topic, "exact")
     end
   end
 
@@ -78,9 +81,26 @@ defmodule PopStash.MCP.Tools.GetDecisions do
 
   defp search_decisions_by_topic(project_id, topic, limit) do
     case Memory.search_decisions(project_id, topic, limit: limit) do
-      {:ok, []} -> format_decisions([], topic, "exact")
-      {:ok, results} -> format_decisions(results, topic, "semantic")
-      {:error, _reason} -> format_decisions([], topic, "exact")
+      {:ok, []} ->
+        Memory.log_search(project_id, topic, :decisions, :semantic,
+          tool: "get_decisions",
+          result_count: 0,
+          found: false
+        )
+
+        format_decisions([], topic, "exact")
+
+      {:ok, results} ->
+        Memory.log_search(project_id, topic, :decisions, :semantic,
+          tool: "get_decisions",
+          result_count: length(results),
+          found: true
+        )
+
+        format_decisions(results, topic, "semantic")
+
+      {:error, _reason} ->
+        format_decisions([], topic, "exact")
     end
   end
 

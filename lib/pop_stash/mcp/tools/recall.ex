@@ -55,15 +55,26 @@ defmodule PopStash.MCP.Tools.Recall do
         # Fall back to semantic search
         case Memory.search_insights(project_id, query, limit: limit) do
           {:ok, []} ->
+            Memory.log_search(project_id, query, :insights, :semantic,
+              tool: "recall",
+              result_count: 0,
+              found: false
+            )
+
             recent = Memory.list_insights(project_id, limit: 5)
             hint = build_hint(recent)
             {:ok, %{results: [], message: "No insights found matching '#{query}'. #{hint}"}}
 
           {:ok, results} ->
+            Memory.log_search(project_id, query, :insights, :semantic,
+              tool: "recall",
+              result_count: length(results),
+              found: true
+            )
+
             {:ok, %{results: Enum.map(results, &format_insight/1), match_type: "semantic"}}
 
           {:error, :embeddings_disabled} ->
-            # Graceful degradation
             {:error, "Semantic search unavailable. Use exact key match."}
 
           {:error, :timeout} ->

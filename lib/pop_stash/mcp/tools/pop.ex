@@ -55,11 +55,23 @@ defmodule PopStash.MCP.Tools.Pop do
         # Fall back to semantic search
         case Memory.search_stashes(project_id, query, limit: limit) do
           {:ok, []} ->
+            Memory.log_search(project_id, query, :stashes, :semantic,
+              tool: "pop",
+              result_count: 0,
+              found: false
+            )
+
             recent = Memory.list_stashes(project_id) |> Enum.take(5)
             hint = build_hint(recent)
             {:ok, %{results: [], message: "No stashes found matching '#{query}'. #{hint}"}}
 
           {:ok, results} ->
+            Memory.log_search(project_id, query, :stashes, :semantic,
+              tool: "pop",
+              result_count: length(results),
+              found: true
+            )
+
             {:ok, %{results: Enum.map(results, &format_stash/1), match_type: "semantic"}}
 
           {:error, :embeddings_disabled} ->
