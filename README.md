@@ -14,7 +14,7 @@ We also gain the ability to build tooling around the database and TypeSense inde
 
 ## What It Does
 
-PopStash is an MCP server that gives AI agents persistent memory:
+PopStash is an MCP server that gives AI agents a way to persist and retrieve context, insights, and decisions.:
 
 - **Stash/Pop**: Save and retrieve working context when switching tasks
 - **Insight/Recall**: Record and search persistent knowledge about your codebase  
@@ -32,17 +32,14 @@ No Elixir installation required.
 ```bash
 # 1. Clone and start PopStash
 git clone https://github.com/your-org/pop_stash.git
-cd pop_stash/service
+cd pop_stash
 docker compose up -d
 
-# 2. Run database migrations
-docker compose exec app bin/pop_stash eval "PopStash.Release.migrate()"
-
-# 3. Create a project for your codebase
-docker compose exec app bin/pop_stash eval 'PopStash.CLI.project_new("My Project")'
+# 2. Create a project for your codebase
+bin/init "My Project"
 # => Created project: abc123
 
-# 4. Install mcp-proxy (for Zed/Claude Desktop - skip if using Claude Code)
+# 3. Install mcp-proxy (for Zed/Claude Desktop - skip if using Claude Code)
 uv tool install mcp-proxy      # recommended
 # or: pipx install mcp-proxy
 # or: pip install mcp-proxy
@@ -61,11 +58,11 @@ docker compose up -d db typesense
 mix deps.get
 mix ecto.setup
 
-# 3. Start the MCP server
-mix run --no-halt
-
-# 4. Create a project for your codebase
+# 3. Create a project for your codebase
 mix pop_stash.project.new "My Project"
+
+# 4. Start the Phoenix server
+bin/up
 ```
 
 > **Note**: On first boot, the server downloads the embedding model (~90MB). This may take a minute depending on your connection.
@@ -74,7 +71,7 @@ mix pop_stash.project.new "My Project"
 
 ### Claude Code (direct HTTP)
 
-Add to your workspace's `.claude/mcp_servers.json`:
+Add to your workspace's `.mcp.json`:
 
 ```json
 {
@@ -254,6 +251,15 @@ See `config/config.exs` and `config/dev.exs` for:
 ## Development
 
 ```bash
+# Start development server
+bin/up
+
+# Stop services
+bin/stop
+
+# Clean up (stop and remove volumes)
+bin/cleanup
+
 # Run tests
 mix test
 
@@ -266,8 +272,9 @@ mix ecto.reset
 # Reindex search (after schema changes)
 mix pop_stash.reindex_search
 
-# List projects
-docker compose exec app bin/pop_stash eval "PopStash.CLI.project_list()"
+# Create/list projects (Docker)
+bin/init "Project Name"
+docker compose exec app mix pop_stash.project.list
 ```
 
 ## License

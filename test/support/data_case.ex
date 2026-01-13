@@ -1,12 +1,22 @@
 defmodule PopStash.DataCase do
   @moduledoc """
-  Test case for tests that require database access.
+  This module defines the setup for tests requiring
+  access to the application's data layer.
+
+  You may define functions here to be used as helpers in
+  your tests.
+
+  Finally, if the test case interacts with the database,
+  we enable the SQL sandbox, so changes done to the database
+  are reverted at the end of every test. If you are using
+  PostgreSQL, you can even run database tests asynchronously
+  by setting `use PopStash.DataCase, async: true`, although
+  this option is not recommended for other databases.
   """
 
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias PopStash.Repo
 
   using do
     quote do
@@ -28,7 +38,7 @@ defmodule PopStash.DataCase do
   Sets up the sandbox based on the test tags.
   """
   def setup_sandbox(tags) do
-    pid = Sandbox.start_owner!(Repo, shared: not tags[:async])
+    pid = Sandbox.start_owner!(PopStash.Repo, shared: not tags[:async])
     on_exit(fn -> Sandbox.stop_owner(pid) end)
   end
 
@@ -37,6 +47,8 @@ defmodule PopStash.DataCase do
 
       assert {:error, changeset} = Accounts.create_user(%{password: "short"})
       assert "password is too short" in errors_on(changeset).password
+      assert %{password: ["password is too short"]} = errors_on(changeset)
+
   """
   def errors_on(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {message, opts} ->

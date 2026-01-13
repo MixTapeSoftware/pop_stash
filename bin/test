@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+# Run tests locally (outside Docker), connecting to Docker databases
+# Test config will use localhost to connect to the exposed database ports
+export MIX_ENV=test
+unset IN_DOCKER
+
+mix deps.get
+mix compile
+mix test "$@"

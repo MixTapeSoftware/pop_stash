@@ -1,0 +1,55 @@
+ARG ELIXIR_VERSION=1.19
+ARG OTP_VERSION=28.3
+ARG DEBIAN_VERSION=trixie-20251208-slim
+ARG NODE_VERSION=25-alpine
+
+ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
+
+FROM ${BUILDER_IMAGE} as dev
+
+# Install build dependencies and development tools
+RUN apt-get update -y && apt-get install -y \
+    build-essential \
+    git \
+    inotify-tools \
+    curl \
+    postgresql-client \
+    default-mysql-client \
+    && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Install Node.js (needed for assets)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Install Claude Code CLI
+# The installer installs to ~/.local/bin/claude, so we ensure it's accessible
+RUN curl -fsSL https://claude.ai/install.sh | bash || true && \
+    mkdir -p /root/.local/bin /usr/local/bin && \
+    if [ -f /root/.local/bin/claude ]; then \
+        ln -sf /root/.local/bin/claude /usr/local/bin/claude && \
+        chmod +x /usr/local/bin/claude; \
+    fi
+
+# Ensure ~/.local/bin is in PATH for all users
+ENV PATH="/root/.local/bin:/usr/local/bin:${PATH}"
+
+# Install hex + rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+WORKDIR /app
+
+# Copy entrypoint script
+COPY bin/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set development environment
+ENV MIX_ENV=dev
+ENV LOCAL_DOCKER=true
+
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# Default command - can be overridden in docker-compose
+CMD ["mix", "phx.server"]

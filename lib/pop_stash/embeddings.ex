@@ -36,19 +36,24 @@ defmodule PopStash.Embeddings do
   Times out after 30 seconds to prevent indefinite blocking.
   """
   def embed(text) when is_binary(text) do
-    if enabled?() do
-      task =
-        Task.async(fn ->
-          %{embedding: embedding} = Nx.Serving.batched_run(__MODULE__, text)
-          Nx.to_list(embedding)
-        end)
+    cond do
+      not enabled?() ->
+        {:error, :embeddings_disabled}
 
-      case Task.yield(task, 30_000) || Task.shutdown(task) do
-        {:ok, vector} -> {:ok, vector}
-        nil -> {:error, :timeout}
-      end
-    else
-      {:error, :embeddings_disabled}
+      not ready?() ->
+        {:error, :embeddings_not_ready}
+
+      true ->
+        task =
+          Task.async(fn ->
+            %{embedding: embedding} = Nx.Serving.batched_run(__MODULE__, text)
+            Nx.to_list(embedding)
+          end)
+
+        case Task.yield(task, 30_000) || Task.shutdown(task) do
+          {:ok, vector} -> {:ok, vector}
+          nil -> {:error, :timeout}
+        end
     end
   rescue
     e -> {:error, Exception.message(e)}

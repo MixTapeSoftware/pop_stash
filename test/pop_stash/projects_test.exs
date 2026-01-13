@@ -20,10 +20,12 @@ defmodule PopStash.ProjectsTest do
       assert project.description == "A test project"
     end
 
-    test "rejects duplicate project name" do
-      {:ok, _} = Projects.create("Duplicate Name")
-      # Names can be duplicated, IDs are unique
-      assert {:ok, _} = Projects.create("Duplicate Name")
+    test "allows duplicate project names (IDs are unique)" do
+      {:ok, project1} = Projects.create("Duplicate Name")
+      {:ok, project2} = Projects.create("Duplicate Name")
+      # Both should succeed with different IDs
+      assert project1.id != project2.id
+      assert project1.name == project2.name
     end
   end
 

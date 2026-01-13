@@ -1,4 +1,24 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    volumes:
+      - .:/app
+      - pop-sash-app-build:/app/_build
+      - pop-sash-app-deps:/app/deps
+    ports:
+      - "127.0.0.1:4001:4001"
+    environment:
+      - MIX_ENV=dev
+      - LOCAL_DOCKER=true
+    depends_on:
+      - db
+      - typesense
+    command: ["mix", "phx.server"]
+    networks:
+      - popstash
+
   db:
     image: pgvector/pgvector:pg16
     environment:
@@ -8,7 +28,7 @@ services:
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pop-sash-pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -25,31 +45,19 @@ services:
     ports:
       - "127.0.0.1:8108:8108"
     volumes:
-      - typesense_data:/data
-    networks:
-      - popstash
-
-  app:
-    build: .
-    ports:
-      - "127.0.0.1:4001:4001"
-    environment:
-      DATABASE_URL: ecto://postgres:postgres@db:5432/pop_stash_dev
-      TYPESENSE_URL: http://typesense:8108
-      TYPESENSE_API_KEY: pop_stash_dev_key
-      MCP_PORT: "4001"
-    depends_on:
-      db:
-        condition: service_healthy
-      typesense:
-        condition: service_started
+      - pop-sash-typesense:/data
     networks:
       - popstash
 
 networks:
   popstash:
     name: popstash_network
-
 volumes:
-  pgdata:
-  typesense_data:
+  pop-sash-app-build:
+    driver: local
+  pop-sash-app-deps:
+    driver: local
+  pop-sash-pgdata:
+    driver: local
+  pop-sash-typesense:
+    driver: local

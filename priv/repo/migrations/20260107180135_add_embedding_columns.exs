@@ -22,7 +22,9 @@ defmodule PopStash.Repo.Migrations.AddEmbeddingColumns do
 
     # HNSW indexes for fast similarity search
     execute "CREATE INDEX stashes_embedding_idx ON stashes USING hnsw (embedding vector_cosine_ops)"
+
     execute "CREATE INDEX insights_embedding_idx ON insights USING hnsw (embedding vector_cosine_ops)"
+
     execute "CREATE INDEX decisions_embedding_idx ON decisions USING hnsw (embedding vector_cosine_ops)"
   end
 

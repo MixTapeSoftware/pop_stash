@@ -1,45 +1,34 @@
 defmodule PopStash.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
   @moduledoc false
+
   use Application
 
   @impl true
   def start(_type, _args) do
-    children =
-      [
-        PopStash.Repo,
-        {Phoenix.PubSub, name: PopStash.PubSub},
-        {Task.Supervisor, name: PopStash.TaskSupervisor, max_children: 50}
-      ]
-      |> maybe_add(typesense_enabled?(), {TypesenseEx, typesense_config()})
-      |> maybe_add(embeddings_enabled?(), embeddings_child_spec())
-      |> maybe_add(typesense_enabled?() and embeddings_enabled?(), PopStash.Search.Indexer)
-      |> maybe_add(start_server?(), {Bandit, plug: PopStash.MCP.Router, port: mcp_port()})
+    children = [
+      PopStashWeb.Telemetry,
+      PopStash.Repo,
+      {DNSCluster, query: Application.get_env(:pop_stash, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: PopStash.PubSub},
+      # Start a worker by calling: PopStash.Worker.start_link(arg)
+      # {PopStash.Worker, arg},
+      # Start to serve requests, typically the last entry
+      PopStashWeb.Endpoint
+    ]
 
-    Supervisor.start_link(children, strategy: :one_for_one, name: PopStash.Supervisor)
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: PopStash.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 
-  defp maybe_add(children, true, child), do: children ++ [child]
-  defp maybe_add(children, false, _child), do: children
-
-  defp typesense_enabled? do
-    Application.get_env(:pop_stash, :typesense, [])[:enabled] || false
-  end
-
-  defp embeddings_enabled? do
-    Application.get_env(:pop_stash, PopStash.Embeddings, [])[:enabled] || false
-  end
-
-  defp start_server?, do: Application.get_env(:pop_stash, :start_server, true)
-  defp mcp_port, do: Application.get_env(:pop_stash, :mcp_port, 4001)
-
-  defp typesense_config do
-    Application.get_env(:pop_stash, :typesense, [])
-    |> Keyword.delete(:enabled)
-    |> Map.new()
-  end
-
-  defp embeddings_child_spec do
-    {Nx.Serving,
-     serving: PopStash.Embeddings.serving(), name: PopStash.Embeddings, batch_timeout: 100}
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    PopStashWeb.Endpoint.config_change(changed, removed)
+    :ok
   end
 end

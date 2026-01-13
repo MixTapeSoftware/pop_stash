@@ -14,6 +14,7 @@ defmodule PopStash.Repo.Migrations.CreateProjects do
       timestamps(type: :utc_datetime_usec)
     end
 
+    # Projects can have duplicate names - IDs are the unique identifier
     create index(:projects, [:name])
   end
 end
