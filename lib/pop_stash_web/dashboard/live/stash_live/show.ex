@@ -107,66 +107,61 @@ defmodule PopStashWeb.Dashboard.StashLive.Show do
         </.page_header>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="max-w-5xl">
         <!-- Main Content -->
-        <div class="lg:col-span-2">
-          <.card>
-            <.section_header title="Summary" />
-            <.markdown content={@stash.summary} />
-          </.card>
+        <.card>
+          <.section_header title="Summary" />
+          <.markdown content={@stash.summary} />
+        </.card>
 
-          <%= if @stash.files && @stash.files != [] do %>
-            <.card class="mt-6">
-              <.section_header title="Files" />
-              <ul class="space-y-1">
-                <li :for={file <- @stash.files} class="flex items-center gap-2 py-1">
-                  <.icon name="hero-document" class="size-4 text-slate-400" />
-                  <span class="font-mono text-sm text-slate-700">{file}</span>
-                </li>
-              </ul>
-            </.card>
-          <% end %>
-        </div>
+        <%= if @stash.files && @stash.files != [] do %>
+          <.card class="mt-6">
+            <.section_header title="Files" />
+            <ul class="space-y-1">
+              <li :for={file <- @stash.files} class="flex items-center gap-2 py-1">
+                <.icon name="hero-document" class="size-4 text-slate-400" />
+                <span class="font-mono text-sm text-slate-700">{file}</span>
+              </li>
+            </ul>
+          </.card>
+        <% end %>
         
-    <!-- Sidebar -->
-        <div class="space-y-6">
-          <.card>
-            <.section_header title="Details" />
-            <dl class="divide-y divide-slate-100">
-              <.detail_row label="ID">
-                <span class="font-mono text-xs">{@stash.id}</span>
-              </.detail_row>
+    <!-- Details -->
+        <.card class="mt-6">
+          <dl class="divide-y divide-slate-100">
+            <.detail_row label="ID">
+              <span class="font-mono text-xs">{@stash.id}</span>
+            </.detail_row>
 
-              <.detail_row label="Project">
-                {@project.name}
-              </.detail_row>
+            <.detail_row label="Project">
+              {@project.name}
+            </.detail_row>
 
-              <.detail_row label="Tags">
-                <%= if @stash.tags && @stash.tags != [] do %>
-                  <.tag_badges tags={@stash.tags} />
-                <% else %>
-                  <span class="text-slate-400 text-sm">No tags</span>
-                <% end %>
-              </.detail_row>
+            <.detail_row label="Tags">
+              <%= if @stash.tags && @stash.tags != [] do %>
+                <.tag_badges tags={@stash.tags} />
+              <% else %>
+                <span class="text-slate-400 text-sm">No tags</span>
+              <% end %>
+            </.detail_row>
 
-              <.detail_row label="Expires At">
-                <%= if @stash.expires_at do %>
-                  <.timestamp datetime={@stash.expires_at} />
-                <% else %>
-                  <span class="text-slate-400 text-sm">Never</span>
-                <% end %>
-              </.detail_row>
+            <.detail_row label="Expires At">
+              <%= if @stash.expires_at do %>
+                <.timestamp datetime={@stash.expires_at} />
+              <% else %>
+                <span class="text-slate-400 text-sm">Never</span>
+              <% end %>
+            </.detail_row>
 
-              <.detail_row label="Created">
-                <.timestamp datetime={@stash.inserted_at} />
-              </.detail_row>
+            <.detail_row label="Created">
+              <.timestamp datetime={@stash.inserted_at} />
+            </.detail_row>
 
-              <.detail_row label="Updated">
-                <.timestamp datetime={@stash.updated_at} />
-              </.detail_row>
-            </dl>
-          </.card>
-        </div>
+            <.detail_row label="Updated">
+              <.timestamp datetime={@stash.updated_at} />
+            </.detail_row>
+          </dl>
+        </.card>
       </div>
       
     <!-- Edit Modal -->

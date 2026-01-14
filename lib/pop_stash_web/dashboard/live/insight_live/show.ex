@@ -107,54 +107,49 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
         </.page_header>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="max-w-5xl">
         <!-- Main Content -->
-        <div class="lg:col-span-2">
-          <.card>
-            <.section_header title="Content" />
-            <.markdown content={@insight.content} />
-          </.card>
-        </div>
+        <.card>
+          <.section_header title="Content" />
+          <.markdown content={@insight.content} />
+        </.card>
         
-    <!-- Sidebar -->
-        <div class="space-y-6">
-          <.card>
-            <.section_header title="Details" />
-            <dl class="divide-y divide-slate-100">
-              <.detail_row label="ID">
-                <span class="font-mono text-xs">{@insight.id}</span>
-              </.detail_row>
+    <!-- Details -->
+        <.card class="mt-6">
+          <dl class="divide-y divide-slate-100">
+            <.detail_row label="ID">
+              <span class="font-mono text-xs">{@insight.id}</span>
+            </.detail_row>
 
-              <.detail_row label="Key">
-                <%= if @insight.key do %>
-                  <span class="font-mono">{@insight.key}</span>
-                <% else %>
-                  <span class="text-slate-400 text-sm">No key</span>
-                <% end %>
-              </.detail_row>
+            <.detail_row label="Key">
+              <%= if @insight.key do %>
+                <span class="font-mono">{@insight.key}</span>
+              <% else %>
+                <span class="text-slate-400 text-sm">No key</span>
+              <% end %>
+            </.detail_row>
 
-              <.detail_row label="Project">
-                {@project.name}
-              </.detail_row>
+            <.detail_row label="Project">
+              {@project.name}
+            </.detail_row>
 
-              <.detail_row label="Tags">
-                <%= if @insight.tags && @insight.tags != [] do %>
-                  <.tag_badges tags={@insight.tags} />
-                <% else %>
-                  <span class="text-slate-400 text-sm">No tags</span>
-                <% end %>
-              </.detail_row>
+            <.detail_row label="Tags">
+              <%= if @insight.tags && @insight.tags != [] do %>
+                <.tag_badges tags={@insight.tags} />
+              <% else %>
+                <span class="text-slate-400 text-sm">No tags</span>
+              <% end %>
+            </.detail_row>
 
-              <.detail_row label="Created">
-                <.timestamp datetime={@insight.inserted_at} />
-              </.detail_row>
+            <.detail_row label="Created">
+              <.timestamp datetime={@insight.inserted_at} />
+            </.detail_row>
 
-              <.detail_row label="Updated">
-                <.timestamp datetime={@insight.updated_at} />
-              </.detail_row>
-            </dl>
-          </.card>
-        </div>
+            <.detail_row label="Updated">
+              <.timestamp datetime={@insight.updated_at} />
+            </.detail_row>
+          </dl>
+        </.card>
       </div>
       
     <!-- Edit Modal -->

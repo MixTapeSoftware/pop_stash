@@ -1,23 +1,42 @@
-<div class="flex h-screen">
+<div
+  id="alpine-dashboard"
+  phx-hook="AlpineHook"
+  class="flex h-screen"
+>
   <!-- Sidebar - border separation (Linear/Vercel style) -->
-  <aside class="hidden lg:flex lg:flex-col w-56 bg-slate-50 border-r border-slate-200">
-    <!-- Logo -->
-    <div class="p-4 border-b border-slate-200">
-      <.link navigate={~p"/pop_stash"} class="block">
+  <aside
+    id="sidebar"
+    class="hidden lg:flex lg:flex-col bg-slate-50 border-r border-slate-200 transition-all duration-300 w-56"
+  >
+    <!-- Logo / Toggle -->
+    <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+      <.link navigate={~p"/pop_stash"} class="block sidebar-expanded" style="display: block;">
         <h1 class="text-base font-semibold text-slate-900 tracking-tight">PopStash</h1>
       </.link>
+      <button
+        id="sidebar-toggle"
+        class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
+        title="Toggle sidebar"
+        phx-click={JS.dispatch("sidebar:toggle")}
+      >
+        <.icon name="hero-bars-3" class="size-4" />
+      </button>
     </div>
     
 <!-- Navigation -->
     <nav class="flex-1 p-3 overflow-y-auto">
       <ul class="space-y-1">
         <li>
-          <.nav_link navigate={~p"/pop_stash"} current_path={@current_path}>
-            <.icon name="hero-home" class="size-4" /> Overview
+          <.nav_link
+            navigate={~p"/pop_stash"}
+            current_path={@current_path}
+          >
+            <.icon name="hero-home" class="size-4 flex-shrink-0" />
+            <span class="sidebar-text truncate">Overview</span>
           </.nav_link>
         </li>
 
-        <li class="pt-4">
+        <li class="pt-4 sidebar-expanded">
           <span class="px-3 text-xs font-medium text-slate-400 uppercase tracking-wide">
             Memory
           </span>
@@ -25,29 +44,35 @@
 
         <li>
           <.nav_link navigate={~p"/pop_stash/projects"} current_path={@current_path}>
-            <.icon name="hero-folder" class="size-4" /> Projects
+            <.icon name="hero-folder" class="size-4 flex-shrink-0" />
+            <span class="sidebar-text truncate">Projects</span>
           </.nav_link>
         </li>
         <li>
           <.nav_link navigate={~p"/pop_stash/stashes"} current_path={@current_path}>
-            <.icon name="hero-archive-box" class="size-4" /> Stashes
+            <.icon name="hero-archive-box" class="size-4 flex-shrink-0" />
+            <span class="sidebar-text truncate">Stashes</span>
           </.nav_link>
         </li>
         <li>
           <.nav_link navigate={~p"/pop_stash/insights"} current_path={@current_path}>
-            <.icon name="hero-light-bulb" class="size-4" /> Insights
+            <.icon name="hero-light-bulb" class="size-4 flex-shrink-0" />
+            <span class="sidebar-text truncate">Insights</span>
           </.nav_link>
         </li>
         <li>
           <.nav_link navigate={~p"/pop_stash/decisions"} current_path={@current_path}>
-            <.icon name="hero-check-badge" class="size-4" /> Decisions
+            <.icon name="hero-check-badge" class="size-4 flex-shrink-0" />
+            <span class="sidebar-text truncate">
+              Decisions
+            </span>
           </.nav_link>
         </li>
       </ul>
     </nav>
     
 <!-- Footer -->
-    <div class="p-4 border-t border-slate-200">
+    <div class="p-4 border-t border-slate-200 sidebar-expanded">
       <p class="text-xs text-slate-400">PopStash v0.1.0</p>
     </div>
   </aside>
@@ -99,10 +124,12 @@
       </nav>
     </div>
     
-<!-- Main content -->
+<!-- Main content with wider max-width -->
     <main class="flex-1 overflow-y-auto bg-slate-50 p-6">
-      <.flash_group flash={@flash} />
-      {@inner_content}
+      <div class="max-w-[1600px] mx-auto">
+        <.flash_group flash={@flash} />
+        {@inner_content}
+      </div>
     </main>
   </div>
 </div>

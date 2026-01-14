@@ -125,9 +125,9 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
         </.page_header>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="max-w-5xl">
         <!-- Main Content -->
-        <div class="lg:col-span-2 space-y-6">
+        <div class="space-y-6">
           <.card>
             <.section_header title="Decision" />
             <.markdown content={@decision.decision} />
@@ -171,51 +171,48 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
           <% end %>
         </div>
         
-    <!-- Sidebar -->
-        <div class="space-y-6">
-          <.card>
-            <.section_header title="Details" />
-            <dl class="divide-y divide-slate-100">
-              <.detail_row label="ID">
-                <span class="font-mono text-xs">{@decision.id}</span>
-              </.detail_row>
+    <!-- Details -->
+        <.card class="mt-6">
+          <dl class="divide-y divide-slate-100">
+            <.detail_row label="ID">
+              <span class="font-mono text-xs">{@decision.id}</span>
+            </.detail_row>
 
-              <.detail_row label="Topic">
-                <span class="font-mono">{@decision.topic}</span>
-              </.detail_row>
+            <.detail_row label="Topic">
+              <span class="font-mono">{@decision.topic}</span>
+            </.detail_row>
 
-              <.detail_row label="Project">
-                {@project.name}
-              </.detail_row>
+            <.detail_row label="Project">
+              {@project.name}
+            </.detail_row>
 
-              <.detail_row label="Tags">
-                <%= if @decision.tags && @decision.tags != [] do %>
-                  <.tag_badges tags={@decision.tags} />
-                <% else %>
-                  <span class="text-slate-400 text-sm">No tags</span>
-                <% end %>
-              </.detail_row>
+            <.detail_row label="Tags">
+              <%= if @decision.tags && @decision.tags != [] do %>
+                <.tag_badges tags={@decision.tags} />
+              <% else %>
+                <span class="text-slate-400 text-sm">No tags</span>
+              <% end %>
+            </.detail_row>
 
-              <.detail_row label="Created">
-                <.timestamp datetime={@decision.inserted_at} />
-              </.detail_row>
-            </dl>
-          </.card>
-          
+            <.detail_row label="Created">
+              <.timestamp datetime={@decision.inserted_at} />
+            </.detail_row>
+          </dl>
+        </.card>
+        
     <!-- Immutability Notice -->
-          <.card class="bg-amber-50 border-amber-200">
-            <div class="flex gap-3">
-              <.icon name="hero-information-circle" class="size-5 text-amber-600 flex-shrink-0" />
-              <div>
-                <h3 class="text-sm font-medium text-amber-800">Immutable Record</h3>
-                <p class="text-xs text-amber-700 mt-1">
-                  Decisions are immutable by design. To update a decision, create a new one with the same topic.
-                  The history will be preserved.
-                </p>
-              </div>
+        <.card class="bg-amber-50 border-amber-200">
+          <div class="flex gap-3">
+            <.icon name="hero-information-circle" class="size-5 text-amber-600 flex-shrink-0" />
+            <div>
+              <h3 class="text-sm font-medium text-amber-800">Immutable Record</h3>
+              <p class="text-xs text-amber-700 mt-1">
+                Decisions are immutable by design. To update a decision, create a new one with the same topic.
+                The history will be preserved.
+              </p>
             </div>
-          </.card>
-        </div>
+          </div>
+        </.card>
       </div>
     </div>
     """

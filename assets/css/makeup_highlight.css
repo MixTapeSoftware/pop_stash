@@ -1,0 +1,310 @@
+/* Makeup Syntax Highlighting Styles */
+/* Based on a modern, readable color scheme */
+
+/* Container styles */
+pre.highlight {
+  background-color: #f6f8fa;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  line-height: 1.45;
+  font-size: 14px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  pre.highlight {
+    background-color: #161b22;
+    border-color: #30363d;
+  }
+}
+
+/* Code block styles */
+pre.highlight code {
+  background: none;
+  padding: 0;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: inherit;
+  color: #24292e;
+}
+
+@media (prefers-color-scheme: dark) {
+  pre.highlight code {
+    color: #c9d1d9;
+  }
+}
+
+/* Inline code */
+code.inline {
+  background-color: rgba(175, 184, 193, 0.2);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 85%;
+}
+
+/* Token styles - Light mode */
+
+/* Comments */
+.highlight .c, .highlight .cm, .highlight .cp, .highlight .c1, .highlight .cs {
+  color: #6a737d;
+  font-style: italic;
+}
+
+/* Errors */
+.highlight .err {
+  color: #cb2431;
+  background-color: #ffeef0;
+}
+
+/* Keywords */
+.highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kt, .highlight .kv {
+  color: #d73a49;
+  font-weight: 600;
+}
+
+/* Names */
+.highlight .n {
+  color: #24292e;
+}
+
+/* Name.Builtin */
+.highlight .nb {
+  color: #005cc5;
+}
+
+/* Name.Class */
+.highlight .nc, .highlight .nn {
+  color: #6f42c1;
+  font-weight: 600;
+}
+
+/* Name.Constant */
+.highlight .no {
+  color: #005cc5;
+}
+
+/* Name.Decorator */
+.highlight .nd {
+  color: #6f42c1;
+  font-weight: 600;
+}
+
+/* Name.Exception */
+.highlight .ne {
+  color: #cb2431;
+  font-weight: 600;
+}
+
+/* Name.Function */
+.highlight .nf {
+  color: #6f42c1;
+}
+
+/* Name.Variable */
+.highlight .nv, .highlight .vc, .highlight .vg, .highlight .vi {
+  color: #e36209;
+}
+
+/* Name.Tag */
+.highlight .nt {
+  color: #22863a;
+}
+
+/* Name.Attribute */
+.highlight .na {
+  color: #6f42c1;
+}
+
+/* Strings */
+.highlight .s, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .s2, .highlight .se, .highlight .sh, .highlight .s1 {
+  color: #032f62;
+}
+
+/* String.Interpol */
+.highlight .si {
+  color: #e36209;
+  font-weight: 600;
+}
+
+/* String.Regex */
+.highlight .sr {
+  color: #032f62;
+}
+
+/* String.Symbol */
+.highlight .ss {
+  color: #005cc5;
+}
+
+/* Numbers */
+.highlight .m, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .il, .highlight .mo, .highlight .mb, .highlight .mx {
+  color: #005cc5;
+}
+
+/* Operators */
+.highlight .o, .highlight .ow {
+  color: #d73a49;
+}
+
+/* Punctuation */
+.highlight .p {
+  color: #24292e;
+}
+
+/* Generic styles */
+.highlight .gd {
+  color: #cb2431;
+  background-color: #ffeef0;
+}
+
+.highlight .gi {
+  color: #22863a;
+  background-color: #f0fff4;
+}
+
+.highlight .ge {
+  font-style: italic;
+}
+
+.highlight .gs {
+  font-weight: bold;
+}
+
+/* Dark mode token styles */
+@media (prefers-color-scheme: dark) {
+  /* Comments */
+  .highlight .c, .highlight .cm, .highlight .cp, .highlight .c1, .highlight .cs {
+    color: #8b949e;
+  }
+
+  /* Errors */
+  .highlight .err {
+    color: #f85149;
+    background-color: rgba(248, 81, 73, 0.1);
+  }
+
+  /* Keywords */
+  .highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kt, .highlight .kv {
+    color: #ff7b72;
+  }
+
+  /* Names */
+  .highlight .n {
+    color: #c9d1d9;
+  }
+
+  /* Name.Builtin */
+  .highlight .nb {
+    color: #79c0ff;
+  }
+
+  /* Name.Class */
+  .highlight .nc, .highlight .nn {
+    color: #d2a8ff;
+  }
+
+  /* Name.Constant */
+  .highlight .no {
+    color: #79c0ff;
+  }
+
+  /* Name.Decorator */
+  .highlight .nd {
+    color: #d2a8ff;
+  }
+
+  /* Name.Exception */
+  .highlight .ne {
+    color: #f85149;
+  }
+
+  /* Name.Function */
+  .highlight .nf {
+    color: #d2a8ff;
+  }
+
+  /* Name.Variable */
+  .highlight .nv, .highlight .vc, .highlight .vg, .highlight .vi {
+    color: #ffa657;
+  }
+
+  /* Name.Tag */
+  .highlight .nt {
+    color: #7ee83f;
+  }
+
+  /* Name.Attribute */
+  .highlight .na {
+    color: #d2a8ff;
+  }
+
+  /* Strings */
+  .highlight .s, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .s2, .highlight .se, .highlight .sh, .highlight .s1 {
+    color: #a5d6ff;
+  }
+
+  /* String.Interpol */
+  .highlight .si {
+    color: #ffa657;
+  }
+
+  /* String.Regex */
+  .highlight .sr {
+    color: #a5d6ff;
+  }
+
+  /* String.Symbol */
+  .highlight .ss {
+    color: #79c0ff;
+  }
+
+  /* Numbers */
+  .highlight .m, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .il, .highlight .mo, .highlight .mb, .highlight .mx {
+    color: #79c0ff;
+  }
+
+  /* Operators */
+  .highlight .o, .highlight .ow {
+    color: #ff7b72;
+  }
+
+  /* Punctuation */
+  .highlight .p {
+    color: #c9d1d9;
+  }
+
+  /* Generic styles */
+  .highlight .gd {
+    color: #f85149;
+    background-color: rgba(248, 81, 73, 0.1);
+  }
+
+  .highlight .gi {
+    color: #7ee83f;
+    background-color: rgba(126, 232, 63, 0.1);
+  }
+
+  /* Inline code dark mode */
+  code.inline {
+    background-color: rgba(110, 118, 129, 0.4);
+    color: #c9d1d9;
+  }
+}
+
+/* Special Elixir/Erlang tokens that Makeup generates */
+.highlight .a {  /* Atom */
+  color: #005cc5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .highlight .a {
+    color: #79c0ff;
+  }
+}
+
+/* Whitespace - usually invisible but included for completeness */
+.highlight .w {
+  color: transparent;
+}

@@ -81,12 +81,16 @@ defmodule PopStash.MixProject do
       # Markdown rendering for dashboard
       {:earmark, "~> 1.4"},
       {:html_sanitize_ex, "~> 1.4"},
+      {:makeup, "~> 1.1"},
+      {:makeup_elixir, "~> 0.16"},
+      {:makeup_syntect, "~> 0.1"},
+      {:html_entities, "~> 0.5"},
 
       # Dev/test
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mimic, "~> 1.10", only: :test},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
-      {:tidewave, "~> 0.1", only: :dev}
+      {:tidewave, "~> 0.5", only: :dev}
     ]
   end
 

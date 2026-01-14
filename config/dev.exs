@@ -1,11 +1,19 @@
 import Config
+
+config :phoenix_live_view,
+  debug_heex_annotations: true,
+  debug_attributes: true
+
 local_docker = System.get_env("LOCAL_DOCKER") == "true"
-db_hostname = if local_docker, do: "db", else: "localhost"
+db_hostname = if local_docker, do: "db", else: "127.0.0.1"
+port = if local_docker, do: 5432, else: 5433
+
 # Configure your database
 config :pop_stash, PopStash.Repo,
   username: "postgres",
   password: "postgres",
   hostname: db_hostname,
+  port: port,
   database: "pop_stash_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,

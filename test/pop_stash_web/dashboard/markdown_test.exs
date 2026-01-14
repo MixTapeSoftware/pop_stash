@@ -26,8 +26,77 @@ defmodule PopStashWeb.Dashboard.MarkdownTest do
 
     test "renders code blocks" do
       {:safe, html} = Markdown.render("```elixir\ndefmodule Test do\nend\n```")
-      assert html =~ "<pre>"
-      assert html =~ "<code"
+      assert html =~ "<pre class=\"highlight\">"
+      assert html =~ "<code class=\"language-elixir\">"
+    end
+
+    test "highlights Elixir code with syntax classes" do
+      code = """
+      ```elixir
+      defmodule Example do
+        def hello(name) do
+          "Hello, \#{name}!"
+        end
+      end
+      ```
+      """
+
+      {:safe, html} = Markdown.render(code)
+      assert html =~ ~r/<pre class="highlight">/
+      assert html =~ ~r/<code class="language-elixir">/
+      # Check for syntax highlighting spans
+      assert html =~ ~r/<span class="kd">defmodule<\/span>/
+      assert html =~ ~r/<span class="nc">Example<\/span>/
+      assert html =~ ~r/<span class="kd">def<\/span>/
+      assert html =~ ~r/<span class="nf">hello<\/span>/
+    end
+
+    test "highlights JavaScript code with syntax classes" do
+      code = """
+      ```javascript
+      function greet(name) {
+        console.log(`Hello, ${name}!`);
+      }
+      ```
+      """
+
+      {:safe, html} = Markdown.render(code)
+      assert html =~ ~r/<pre class="highlight">/
+      assert html =~ ~r/<code class="language-javascript">/
+      # Check for syntax highlighting spans
+      assert html =~ ~r/<span class="kt">function<\/span>/
+      assert html =~ ~r/<span class="nf">greet<\/span>/
+      assert html =~ ~r/<span class="nb">console<\/span>/
+    end
+
+    test "highlights Python code with syntax classes" do
+      code = """
+      ```python
+      def greet(name):
+          print(f"Hello, {name}!")
+      ```
+      """
+
+      {:safe, html} = Markdown.render(code)
+      assert html =~ ~r/<pre class="highlight">/
+      assert html =~ ~r/<code class="language-python">/
+      # Check for syntax highlighting spans
+      assert html =~ ~r/<span class="kt">def<\/span>/
+      assert html =~ ~r/<span class="nf">greet<\/span>/
+    end
+
+    test "falls back to escaped code for unsupported languages" do
+      code = """
+      ```unknownlang
+      some code here
+      ```
+      """
+
+      {:safe, html} = Markdown.render(code)
+      assert html =~ ~r/<pre class="highlight">/
+      assert html =~ ~r/<code class="language-unknownlang">/
+      # Should still contain the code, but HTML-escaped
+      assert html =~ "some code here"
     end
 
     test "renders inline code" do

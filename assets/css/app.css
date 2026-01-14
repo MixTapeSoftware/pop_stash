@@ -6,6 +6,9 @@
 @source "../js";
 @source "../../lib/pop_stash_web";
 
+/* Import syntax highlighting styles for Makeup */
+@import "./makeup_highlight.css";
+
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";
@@ -14,7 +17,7 @@
    curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
    Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
 @plugin "../vendor/daisyui" {
-    themes: false;
+  themes: false;
 }
 
 /* daisyUI theme plugin. You can update this file by fetching the latest version with:
@@ -22,73 +25,73 @@
   We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
   on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
 @plugin "../vendor/daisyui-theme" {
-    name: "dark";
-    default: false;
-    prefersdark: true;
-    color-scheme: "dark";
-    --color-base-100: oklch(30.33% 0.016 252.42);
-    --color-base-200: oklch(25.26% 0.014 253.1);
-    --color-base-300: oklch(20.15% 0.012 254.09);
-    --color-base-content: oklch(97.807% 0.029 256.847);
-    --color-primary: oklch(58% 0.233 277.117);
-    --color-primary-content: oklch(96% 0.018 272.314);
-    --color-secondary: oklch(58% 0.233 277.117);
-    --color-secondary-content: oklch(96% 0.018 272.314);
-    --color-accent: oklch(60% 0.25 292.717);
-    --color-accent-content: oklch(96% 0.016 293.756);
-    --color-neutral: oklch(37% 0.044 257.287);
-    --color-neutral-content: oklch(98% 0.003 247.858);
-    --color-info: oklch(58% 0.158 241.966);
-    --color-info-content: oklch(97% 0.013 236.62);
-    --color-success: oklch(60% 0.118 184.704);
-    --color-success-content: oklch(98% 0.014 180.72);
-    --color-warning: oklch(66% 0.179 58.318);
-    --color-warning-content: oklch(98% 0.022 95.277);
-    --color-error: oklch(58% 0.253 17.585);
-    --color-error-content: oklch(96% 0.015 12.422);
-    --radius-selector: 0.25rem;
-    --radius-field: 0.25rem;
-    --radius-box: 0.5rem;
-    --size-selector: 0.21875rem;
-    --size-field: 0.21875rem;
-    --border: 1.5px;
-    --depth: 1;
-    --noise: 0;
+  name: "dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: oklch(30.33% 0.016 252.42);
+  --color-base-200: oklch(25.26% 0.014 253.1);
+  --color-base-300: oklch(20.15% 0.012 254.09);
+  --color-base-content: oklch(97.807% 0.029 256.847);
+  --color-primary: oklch(58% 0.233 277.117);
+  --color-primary-content: oklch(96% 0.018 272.314);
+  --color-secondary: oklch(58% 0.233 277.117);
+  --color-secondary-content: oklch(96% 0.018 272.314);
+  --color-accent: oklch(60% 0.25 292.717);
+  --color-accent-content: oklch(96% 0.016 293.756);
+  --color-neutral: oklch(37% 0.044 257.287);
+  --color-neutral-content: oklch(98% 0.003 247.858);
+  --color-info: oklch(58% 0.158 241.966);
+  --color-info-content: oklch(97% 0.013 236.62);
+  --color-success: oklch(60% 0.118 184.704);
+  --color-success-content: oklch(98% 0.014 180.72);
+  --color-warning: oklch(66% 0.179 58.318);
+  --color-warning-content: oklch(98% 0.022 95.277);
+  --color-error: oklch(58% 0.253 17.585);
+  --color-error-content: oklch(96% 0.015 12.422);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1.5px;
+  --depth: 1;
+  --noise: 0;
 }
 
 @plugin "../vendor/daisyui-theme" {
-    name: "light";
-    default: true;
-    prefersdark: false;
-    color-scheme: "light";
-    --color-base-100: oklch(98% 0 0);
-    --color-base-200: oklch(96% 0.001 286.375);
-    --color-base-300: oklch(92% 0.004 286.32);
-    --color-base-content: oklch(21% 0.006 285.885);
-    --color-primary: oklch(70% 0.213 47.604);
-    --color-primary-content: oklch(98% 0.016 73.684);
-    --color-secondary: oklch(55% 0.027 264.364);
-    --color-secondary-content: oklch(98% 0.002 247.839);
-    --color-accent: oklch(0% 0 0);
-    --color-accent-content: oklch(100% 0 0);
-    --color-neutral: oklch(44% 0.017 285.786);
-    --color-neutral-content: oklch(98% 0 0);
-    --color-info: oklch(62% 0.214 259.815);
-    --color-info-content: oklch(97% 0.014 254.604);
-    --color-success: oklch(70% 0.14 182.503);
-    --color-success-content: oklch(98% 0.014 180.72);
-    --color-warning: oklch(66% 0.179 58.318);
-    --color-warning-content: oklch(98% 0.022 95.277);
-    --color-error: oklch(58% 0.253 17.585);
-    --color-error-content: oklch(96% 0.015 12.422);
-    --radius-selector: 0.25rem;
-    --radius-field: 0.25rem;
-    --radius-box: 0.5rem;
-    --size-selector: 0.21875rem;
-    --size-field: 0.21875rem;
-    --border: 1.5px;
-    --depth: 1;
-    --noise: 0;
+  name: "light";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(98% 0 0);
+  --color-base-200: oklch(96% 0.001 286.375);
+  --color-base-300: oklch(92% 0.004 286.32);
+  --color-base-content: oklch(21% 0.006 285.885);
+  --color-primary: oklch(70% 0.213 47.604);
+  --color-primary-content: oklch(98% 0.016 73.684);
+  --color-secondary: oklch(55% 0.027 264.364);
+  --color-secondary-content: oklch(98% 0.002 247.839);
+  --color-accent: oklch(0% 0 0);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(44% 0.017 285.786);
+  --color-neutral-content: oklch(98% 0 0);
+  --color-info: oklch(62% 0.214 259.815);
+  --color-info-content: oklch(97% 0.014 254.604);
+  --color-success: oklch(70% 0.14 182.503);
+  --color-success-content: oklch(98% 0.014 180.72);
+  --color-warning: oklch(66% 0.179 58.318);
+  --color-warning-content: oklch(98% 0.022 95.277);
+  --color-error: oklch(58% 0.253 17.585);
+  --color-error-content: oklch(96% 0.015 12.422);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1.5px;
+  --depth: 1;
+  --noise: 0;
 }
 
 /* Add variants based on LiveView classes */
@@ -102,37 +105,400 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session],
 [data-phx-teleported-src] {
-    display: contents;
+  display: contents;
 }
 
 /* This file is for your main application CSS */
 
 /* Activity Feed Animations */
 @keyframes slide-in {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-slide-in {
-    animation: slide-in 0.3s ease-out;
+  animation: slide-in 0.3s ease-out;
 }
 
 /* Optional: Highlight new items briefly */
 @keyframes highlight-new {
-    0% {
-        background-color: rgb(245 243 255); /* violet-50 */
-    }
-    100% {
-        background-color: transparent;
-    }
+  0% {
+    background-color: rgb(245 243 255); /* violet-50 */
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 .highlight-new {
-    animation: highlight-new 2s ease-out;
+  animation: highlight-new 2s ease-out;
+}
+
+/* Makeup Syntax Highlighting Styles */
+/* Base styles for highlighted code */
+.makeup {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/* Code block container */
+pre code.makeup {
+  display: block;
+  padding: 0;
+  background: transparent;
+  color: #e5e7eb;
+}
+
+/* Syntax highlighting tokens - Light theme compatible */
+.highlight .hll {
+  background-color: #ffffcc;
+}
+.highlight .c {
+  color: #6b7280;
+  font-style: italic;
+} /* Comment */
+.highlight .err {
+  color: #ef4444;
+  font-weight: bold;
+} /* Error */
+.highlight .k {
+  color: #8b5cf6;
+  font-weight: bold;
+} /* Keyword */
+.highlight .o {
+  color: #64748b;
+} /* Operator */
+.highlight .cm {
+  color: #6b7280;
+  font-style: italic;
+} /* Comment.Multiline */
+.highlight .cp {
+  color: #6b7280;
+  font-weight: bold;
+} /* Comment.Preproc */
+.highlight .c1 {
+  color: #6b7280;
+  font-style: italic;
+} /* Comment.Single */
+.highlight .cs {
+  color: #6b7280;
+  font-weight: bold;
+  font-style: italic;
+} /* Comment.Special */
+.highlight .gd {
+  color: #ef4444;
+} /* Generic.Deleted */
+.highlight .ge {
+  font-style: italic;
+} /* Generic.Emph */
+.highlight .gr {
+  color: #ef4444;
+} /* Generic.Error */
+.highlight .gh {
+  color: #1e293b;
+  font-weight: bold;
+} /* Generic.Heading */
+.highlight .gi {
+  color: #10b981;
+} /* Generic.Inserted */
+.highlight .go {
+  color: #6b7280;
+} /* Generic.Output */
+.highlight .gp {
+  color: #1e293b;
+  font-weight: bold;
+} /* Generic.Prompt */
+.highlight .gs {
+  font-weight: bold;
+} /* Generic.Strong */
+.highlight .gu {
+  color: #64748b;
+  font-weight: bold;
+} /* Generic.Subheading */
+.highlight .gt {
+  color: #ef4444;
+} /* Generic.Traceback */
+.highlight .kc {
+  color: #8b5cf6;
+  font-weight: bold;
+} /* Keyword.Constant */
+.highlight .kd {
+  color: #8b5cf6;
+  font-weight: bold;
+} /* Keyword.Declaration */
+.highlight .kn {
+  color: #8b5cf6;
+  font-weight: bold;
+} /* Keyword.Namespace */
+.highlight .kp {
+  color: #8b5cf6;
+} /* Keyword.Pseudo */
+.highlight .kr {
+  color: #8b5cf6;
+  font-weight: bold;
+} /* Keyword.Reserved */
+.highlight .kt {
+  color: #f59e0b;
+} /* Keyword.Type */
+.highlight .m {
+  color: #3b82f6;
+} /* Literal.Number */
+.highlight .s {
+  color: #10b981;
+} /* Literal.String */
+.highlight .na {
+  color: #0ea5e9;
+} /* Name.Attribute */
+.highlight .nb {
+  color: #06b6d4;
+} /* Name.Builtin */
+.highlight .nc {
+  color: #f59e0b;
+  font-weight: bold;
+} /* Name.Class */
+.highlight .no {
+  color: #ef4444;
+} /* Name.Constant */
+.highlight .nd {
+  color: #8b5cf6;
+} /* Name.Decorator */
+.highlight .ni {
+  color: #64748b;
+  font-weight: bold;
+} /* Name.Entity */
+.highlight .ne {
+  color: #ef4444;
+  font-weight: bold;
+} /* Name.Exception */
+.highlight .nf {
+  color: #3b82f6;
+} /* Name.Function */
+.highlight .nl {
+  color: #64748b;
+  font-weight: bold;
+} /* Name.Label */
+.highlight .nn {
+  color: #0ea5e9;
+} /* Name.Namespace */
+.highlight .nt {
+  color: #8b5cf6;
+  font-weight: bold;
+} /* Name.Tag */
+.highlight .nv {
+  color: #0ea5e9;
+} /* Name.Variable */
+.highlight .ow {
+  color: #8b5cf6;
+  font-weight: bold;
+} /* Operator.Word */
+.highlight .w {
+  color: #94a3b8;
+} /* Text.Whitespace */
+.highlight .mf {
+  color: #3b82f6;
+} /* Literal.Number.Float */
+.highlight .mh {
+  color: #3b82f6;
+} /* Literal.Number.Hex */
+.highlight .mi {
+  color: #3b82f6;
+} /* Literal.Number.Integer */
+.highlight .mo {
+  color: #3b82f6;
+} /* Literal.Number.Oct */
+.highlight .sb {
+  color: #10b981;
+} /* Literal.String.Backtick */
+.highlight .sc {
+  color: #10b981;
+} /* Literal.String.Char */
+.highlight .sd {
+  color: #10b981;
+  font-style: italic;
+} /* Literal.String.Doc */
+.highlight .s2 {
+  color: #10b981;
+} /* Literal.String.Double */
+.highlight .se {
+  color: #f59e0b;
+  font-weight: bold;
+} /* Literal.String.Escape */
+.highlight .sh {
+  color: #10b981;
+} /* Literal.String.Heredoc */
+.highlight .si {
+  color: #f59e0b;
+} /* Literal.String.Interpol */
+.highlight .sx {
+  color: #10b981;
+} /* Literal.String.Other */
+.highlight .sr {
+  color: #ec4899;
+} /* Literal.String.Regex */
+.highlight .s1 {
+  color: #10b981;
+} /* Literal.String.Single */
+.highlight .ss {
+  color: #8b5cf6;
+} /* Literal.String.Symbol */
+.highlight .bp {
+  color: #06b6d4;
+} /* Name.Builtin.Pseudo */
+.highlight .vc {
+  color: #0ea5e9;
+} /* Name.Variable.Class */
+.highlight .vg {
+  color: #0ea5e9;
+} /* Name.Variable.Global */
+.highlight .vi {
+  color: #0ea5e9;
+} /* Name.Variable.Instance */
+.highlight .il {
+  color: #3b82f6;
+} /* Literal.Number.Integer.Long */
+
+/* Inline code styling - ensure good contrast */
+code:not(.makeup) {
+  color: #1e293b !important;
+}
+
+/* Fix list items styling in prose */
+.prose li > code {
+  color: #1e293b !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Markdown content styling */
+.markdown-content {
+  @apply text-sm leading-relaxed max-w-none;
+}
+
+/* Headings */
+.markdown-content h1 {
+  @apply text-2xl font-semibold tracking-tight text-slate-900 mt-8 mb-4;
+}
+
+.markdown-content h2 {
+  @apply text-xl font-semibold tracking-tight text-slate-900 mt-6 mb-3;
+}
+
+.markdown-content h3 {
+  @apply text-lg font-semibold tracking-tight text-slate-900 mt-4 mb-2;
+}
+
+/* Paragraphs and text */
+.markdown-content p {
+  @apply text-slate-700 mb-4;
+}
+
+.markdown-content strong {
+  @apply text-slate-900 font-semibold;
+}
+
+/* Lists */
+.markdown-content ul {
+  @apply list-disc list-inside mb-4 text-slate-700;
+}
+
+.markdown-content ol {
+  @apply list-decimal list-inside mb-4 text-slate-700;
+}
+
+.markdown-content li {
+  @apply mb-1;
+}
+
+/* Links */
+.markdown-content a {
+  @apply text-violet-600 no-underline hover:underline;
+}
+
+/* Inline code */
+.markdown-content code:not(pre code) {
+  @apply font-mono text-xs text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200;
+}
+
+/* Code blocks */
+.markdown-content pre {
+  @apply bg-slate-50 text-slate-900 rounded-lg border border-slate-200 p-4 mb-4 overflow-x-auto;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0 border-0 text-sm text-slate-800;
+}
+
+/* Override syntax highlighting colors for light code blocks */
+.markdown-content pre code .n {
+  color: #334155 !important; /* slate-700 */
+}
+
+.markdown-content pre code .c,
+.markdown-content pre code .cm,
+.markdown-content pre code .cp,
+.markdown-content pre code .c1,
+.markdown-content pre code .cs {
+  color: #64748b !important; /* slate-500 */
+  font-style: italic;
+}
+
+.markdown-content pre code .k,
+.markdown-content pre code .kd,
+.markdown-content pre code .kn,
+.markdown-content pre code .kp,
+.markdown-content pre code .kr,
+.markdown-content pre code .kt,
+.markdown-content pre code .kv {
+  color: #7c3aed !important; /* violet-600 */
+  font-weight: 600;
+}
+
+.markdown-content pre code .s,
+.markdown-content pre code .sb,
+.markdown-content pre code .sc,
+.markdown-content pre code .sd,
+.markdown-content pre code .s2,
+.markdown-content pre code .se,
+.markdown-content pre code .sh,
+.markdown-content pre code .s1 {
+  color: #059669 !important; /* emerald-600 */
+}
+
+.markdown-content pre code .o,
+.markdown-content pre code .ow {
+  color: #dc2626 !important; /* red-600 */
+}
+
+.markdown-content pre code .m,
+.markdown-content pre code .mf,
+.markdown-content pre code .mh,
+.markdown-content pre code .mi,
+.markdown-content pre code .il,
+.markdown-content pre code .mo,
+.markdown-content pre code .mb,
+.markdown-content pre code .mx {
+  color: #2563eb !important; /* blue-600 */
+}
+
+.markdown-content pre code .nf {
+  color: #7c3aed !important; /* violet-600 */
+}
+
+.markdown-content pre code .w {
+  color: #475569 !important; /* slate-600 for whitespace */
+}
+
+/* Remove all background colors from syntax highlighting spans */
+.markdown-content pre code span {
+  background-color: transparent !important;
+}
+
+/* Horizontal rule */
+.markdown-content hr {
+  @apply border-t border-slate-200 my-8;
 }

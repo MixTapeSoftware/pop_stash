@@ -26,10 +26,25 @@ import {hooks as colocatedHooks} from "phoenix-colocated/pop_stash"
 import topbar from "../vendor/topbar"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+// Alpine.js integration hook
+const AlpineHook = {
+  mounted() {
+    if (window.Alpine) {
+      window.Alpine.initTree(this.el)
+    }
+  },
+  updated() {
+    if (window.Alpine) {
+      window.Alpine.initTree(this.el)
+    }
+  }
+}
+
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, AlpineHook},
 })
 
 // Show progress bar on live navigation and form submits
@@ -45,6 +60,70 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
+
+// Initialize Alpine.js when it's loaded
+document.addEventListener('alpine:init', () => {
+  console.log('Alpine initialized')
+})
+
+// Wait for Alpine to be available
+if (window.Alpine) {
+  window.Alpine.start()
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.Alpine) {
+      window.Alpine.start()
+    }
+  })
+}
+
+// Handle LiveView DOM updates
+window.addEventListener("phx:page-loading-stop", () => {
+  if (window.Alpine) {
+    window.Alpine.initTree(document.body)
+  }
+})
+
+// Sidebar collapse functionality
+function initSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+  
+  if (sidebar) {
+    updateSidebarState(sidebar, collapsed);
+  }
+}
+
+function updateSidebarState(sidebar, collapsed) {
+  if (collapsed) {
+    sidebar.classList.remove('w-56');
+    sidebar.classList.add('w-16');
+    document.querySelectorAll('.sidebar-text, .sidebar-expanded').forEach(el => {
+      el.style.display = 'none';
+    });
+  } else {
+    sidebar.classList.remove('w-16');
+    sidebar.classList.add('w-56');
+    document.querySelectorAll('.sidebar-text, .sidebar-expanded').forEach(el => {
+      el.style.display = '';
+    });
+  }
+}
+
+// Listen for sidebar toggle events
+window.addEventListener('sidebar:toggle', () => {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) {
+    const isCollapsed = sidebar.classList.contains('w-16');
+    const newState = !isCollapsed;
+    localStorage.setItem('sidebarCollapsed', newState);
+    updateSidebarState(sidebar, newState);
+  }
+});
+
+// Initialize on DOM ready and after LiveView updates
+document.addEventListener('DOMContentLoaded', initSidebar);
+window.addEventListener('phx:page-loading-stop', initSidebar);
 
 // The lines below enable quality of life phoenix_live_reload
 // development features:

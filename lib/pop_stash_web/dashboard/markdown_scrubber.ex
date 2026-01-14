@@ -19,7 +19,7 @@ defmodule PopStashWeb.Dashboard.MarkdownScrubber do
   Meta.allow_tag_with_these_attributes("em", [])
   Meta.allow_tag_with_these_attributes("u", [])
   Meta.allow_tag_with_these_attributes("del", [])
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_these_attributes("span", ["class"])
 
   # Headings
   Meta.allow_tag_with_these_attributes("h1", [])
@@ -33,7 +33,7 @@ defmodule PopStashWeb.Dashboard.MarkdownScrubber do
   Meta.allow_tag_with_these_attributes("p", [])
   Meta.allow_tag_with_these_attributes("br", [])
   Meta.allow_tag_with_these_attributes("blockquote", [])
-  Meta.allow_tag_with_these_attributes("pre", [])
+  Meta.allow_tag_with_these_attributes("pre", ["class"])
   Meta.allow_tag_with_these_attributes("code", ["class"])
   Meta.allow_tag_with_these_attributes("hr", [])
   Meta.allow_tag_with_these_attributes("div", [])
