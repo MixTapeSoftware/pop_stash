@@ -167,7 +167,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
 
     #{plan.body}
     #{tags}
-    *Created: #{timestamp}*
+    *Created: #{timestamp}* (thread_id: #{plan.thread_id})
     """
   end
 
@@ -192,7 +192,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
     """
     **#{plan.title}** (#{plan.version})
     #{preview}
-    *Created: #{timestamp}#{tags}*
+    *Created: #{timestamp}#{tags}* (thread_id: #{plan.thread_id})
     """
   end
 

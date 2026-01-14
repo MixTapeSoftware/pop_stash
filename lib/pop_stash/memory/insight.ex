@@ -8,10 +8,15 @@ defmodule PopStash.Memory.Insight do
 
   use PopStash.Schema
 
+  @thread_prefix "ithr"
+
+  def thread_prefix, do: @thread_prefix
+
   schema "insights" do
     field(:key, :string)
     field(:content, :string)
     field(:tags, {:array, :string}, default: [])
+    field(:thread_id, :string)
     field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)

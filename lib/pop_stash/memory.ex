@@ -21,6 +21,7 @@ defmodule PopStash.Memory do
   alias PopStash.Memory.Insight
   alias PopStash.Memory.Plan
   alias PopStash.Memory.SearchLog
+  alias PopStash.Memory.Thread
   alias PopStash.Repo
   alias PopStash.Search.Typesense
 
@@ -32,9 +33,12 @@ defmodule PopStash.Memory do
   ## Options
     * `:files` - List of file paths
     * `:tags` - Optional list of tags
+    * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
     * `:expires_at` - Optional expiration datetime
   """
   def create_context(project_id, name, summary, opts \\ []) do
+    thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Context.thread_prefix())
+
     %Context{}
     |> cast(
       %{
@@ -43,11 +47,12 @@ defmodule PopStash.Memory do
         summary: summary,
         files: Keyword.get(opts, :files, []),
         tags: Keyword.get(opts, :tags, []),
+        thread_id: thread_id,
         expires_at: Keyword.get(opts, :expires_at)
       },
-      [:project_id, :name, :summary, :files, :tags, :expires_at]
+      [:project_id, :name, :summary, :files, :tags, :thread_id, :expires_at]
     )
-    |> validate_required([:project_id, :name, :summary])
+    |> validate_required([:project_id, :name, :summary, :thread_id])
     |> validate_length(:name, min: 1, max: 255)
     |> foreign_key_constraint(:project_id)
     |> Repo.insert()
@@ -118,19 +123,23 @@ defmodule PopStash.Memory do
   ## Options
     * `:key` - Optional semantic key for exact retrieval
     * `:tags` - Optional list of tags
+    * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
   """
   def create_insight(project_id, content, opts \\ []) do
+    thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Insight.thread_prefix())
+
     %Insight{}
     |> cast(
       %{
         project_id: project_id,
         content: content,
         key: Keyword.get(opts, :key),
-        tags: Keyword.get(opts, :tags, [])
+        tags: Keyword.get(opts, :tags, []),
+        thread_id: thread_id
       },
-      [:project_id, :content, :key, :tags]
+      [:project_id, :content, :key, :tags, :thread_id]
     )
-    |> validate_required([:project_id, :content])
+    |> validate_required([:project_id, :content, :thread_id])
     |> validate_length(:key, max: 255)
     |> foreign_key_constraint(:project_id)
     |> Repo.insert()
@@ -209,8 +218,11 @@ defmodule PopStash.Memory do
   ## Options
     * `:reasoning` - Why this decision was made (optional)
     * `:tags` - Optional list of tags
+    * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
   """
   def create_decision(project_id, topic, decision, opts \\ []) do
+    thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Decision.thread_prefix())
+
     %Decision{}
     |> cast(
       %{
@@ -218,11 +230,12 @@ defmodule PopStash.Memory do
         topic: Decision.normalize_topic(topic),
         decision: decision,
         reasoning: Keyword.get(opts, :reasoning),
-        tags: Keyword.get(opts, :tags, [])
+        tags: Keyword.get(opts, :tags, []),
+        thread_id: thread_id
       },
-      [:project_id, :topic, :decision, :reasoning, :tags]
+      [:project_id, :topic, :decision, :reasoning, :tags, :thread_id]
     )
-    |> validate_required([:project_id, :topic, :decision])
+    |> validate_required([:project_id, :topic, :decision, :thread_id])
     |> validate_length(:topic, min: 1, max: 255)
     |> foreign_key_constraint(:project_id)
     |> Repo.insert()
@@ -329,8 +342,11 @@ defmodule PopStash.Memory do
 
   ## Options
     * `:tags` - Optional list of tags
+    * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
   """
   def create_plan(project_id, title, version, body, opts \\ []) do
+    thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Plan.thread_prefix())
+
     %Plan{}
     |> cast(
       %{
@@ -338,11 +354,12 @@ defmodule PopStash.Memory do
         title: title,
         version: version,
         body: body,
-        tags: Keyword.get(opts, :tags, [])
+        tags: Keyword.get(opts, :tags, []),
+        thread_id: thread_id
       },
-      [:project_id, :title, :version, :body, :tags]
+      [:project_id, :title, :version, :body, :tags, :thread_id]
     )
-    |> validate_required([:project_id, :title, :version, :body])
+    |> validate_required([:project_id, :title, :version, :body, :thread_id])
     |> validate_length(:title, min: 1, max: 255)
     |> validate_length(:version, min: 1, max: 50)
     |> unique_constraint([:project_id, :title, :version])

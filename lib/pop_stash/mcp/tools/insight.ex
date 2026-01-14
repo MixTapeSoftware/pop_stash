@@ -22,6 +22,11 @@ defmodule PopStash.MCP.Tools.Insight do
               type: "array",
               items: %{type: "string"},
               description: "Optional tags for categorization"
+            },
+            thread_id: %{
+              type: "string",
+              description:
+                "Optional thread ID to connect revisions (omit for new, pass back for revisions)"
             }
           },
           required: ["content"]
@@ -36,11 +41,14 @@ defmodule PopStash.MCP.Tools.Insight do
       []
       |> maybe_add_opt(:key, args["key"])
       |> maybe_add_opt(:tags, args["tags"])
+      |> maybe_add_opt(:thread_id, args["thread_id"])
 
     case Memory.create_insight(project_id, args["content"], opts) do
       {:ok, insight} ->
         key_text = if insight.key, do: " (key: #{insight.key})", else: ""
-        {:ok, "Insight saved#{key_text}. Use `recall` to retrieve."}
+
+        {:ok,
+         "Insight saved#{key_text}. Use `recall` to retrieve. (thread_id: #{insight.thread_id})"}
 
       {:error, changeset} ->
         {:error, format_errors(changeset)}

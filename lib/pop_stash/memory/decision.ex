@@ -9,11 +9,16 @@ defmodule PopStash.Memory.Decision do
 
   use PopStash.Schema
 
+  @thread_prefix "dthr"
+
+  def thread_prefix, do: @thread_prefix
+
   schema "decisions" do
     field(:topic, :string)
     field(:decision, :string)
     field(:reasoning, :string)
     field(:tags, {:array, :string}, default: [])
+    field(:thread_id, :string)
     field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)

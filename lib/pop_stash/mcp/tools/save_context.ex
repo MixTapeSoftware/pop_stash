@@ -23,6 +23,11 @@ defmodule PopStash.MCP.Tools.SaveContext do
               type: "array",
               items: %{type: "string"},
               description: "Optional tags for categorization"
+            },
+            thread_id: %{
+              type: "string",
+              description:
+                "Optional thread ID to connect revisions (omit for new, pass back for revisions)"
             }
           },
           required: ["name", "summary"]
@@ -33,21 +38,25 @@ defmodule PopStash.MCP.Tools.SaveContext do
   end
 
   def execute(args, %{project_id: project_id}) do
-    case Memory.create_context(
-           project_id,
-           args["name"],
-           args["summary"],
-           files: Map.get(args, "files", []),
-           tags: Map.get(args, "tags", [])
-         ) do
+    opts =
+      [
+        files: Map.get(args, "files", []),
+        tags: Map.get(args, "tags", [])
+      ]
+      |> maybe_add_thread_id(args["thread_id"])
+
+    case Memory.create_context(project_id, args["name"], args["summary"], opts) do
       {:ok, context} ->
         {:ok,
-         "Saved context '#{context.name}'. Use `restore_context` with name '#{context.name}' to restore."}
+         "Saved context '#{context.name}'. Use `restore_context` with name '#{context.name}' to restore. (thread_id: #{context.thread_id})"}
 
       {:error, changeset} ->
         {:error, format_errors(changeset)}
     end
   end
+
+  defp maybe_add_thread_id(opts, nil), do: opts
+  defp maybe_add_thread_id(opts, thread_id), do: Keyword.put(opts, :thread_id, thread_id)
 
   defp format_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, _} -> msg end)

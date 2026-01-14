@@ -46,6 +46,11 @@ defmodule PopStash.MCP.Tools.SavePlan do
               type: "array",
               items: %{type: "string"},
               description: "Optional tags for categorization"
+            },
+            thread_id: %{
+              type: "string",
+              description:
+                "Optional thread ID to connect revisions (omit for new, pass back for revisions)"
             }
           },
           required: ["title", "version", "body"]
@@ -56,13 +61,11 @@ defmodule PopStash.MCP.Tools.SavePlan do
   end
 
   def execute(args, %{project_id: project_id}) do
-    case Memory.create_plan(
-           project_id,
-           args["title"],
-           args["version"],
-           args["body"],
-           tags: Map.get(args, "tags", [])
-         ) do
+    opts =
+      [tags: Map.get(args, "tags", [])]
+      |> maybe_add_thread_id(args["thread_id"])
+
+    case Memory.create_plan(project_id, args["title"], args["version"], args["body"], opts) do
       {:ok, plan} ->
         {:ok,
          """
@@ -70,6 +73,7 @@ defmodule PopStash.MCP.Tools.SavePlan do
 
          Use `get_plan` with title "#{plan.title}" to retrieve it.
          Use `search_plans` to find plans by content.
+         (thread_id: #{plan.thread_id})
          """}
 
       {:error, %Ecto.Changeset{errors: [project_id: _]}} ->
@@ -82,6 +86,9 @@ defmodule PopStash.MCP.Tools.SavePlan do
         {:error, "Failed to save plan: #{inspect(reason)}"}
     end
   end
+
+  defp maybe_add_thread_id(opts, nil), do: opts
+  defp maybe_add_thread_id(opts, thread_id), do: Keyword.put(opts, :thread_id, thread_id)
 
   defp format_errors(changeset) do
     errors =

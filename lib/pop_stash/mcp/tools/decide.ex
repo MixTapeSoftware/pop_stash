@@ -37,6 +37,11 @@ defmodule PopStash.MCP.Tools.Decide do
               type: "array",
               items: %{type: "string"},
               description: "Optional tags for categorization (e.g., ['api', 'breaking-change'])"
+            },
+            thread_id: %{
+              type: "string",
+              description:
+                "Optional thread ID to connect revisions (omit for new, pass back for revisions)"
             }
           },
           required: ["topic", "decision"]
@@ -51,6 +56,7 @@ defmodule PopStash.MCP.Tools.Decide do
       []
       |> maybe_add_opt(:reasoning, args["reasoning"])
       |> maybe_add_opt(:tags, args["tags"])
+      |> maybe_add_opt(:thread_id, args["thread_id"])
 
     case Memory.create_decision(project_id, args["topic"], args["decision"], opts) do
       {:ok, decision} ->
@@ -58,6 +64,7 @@ defmodule PopStash.MCP.Tools.Decide do
          """
          Decision recorded for topic "#{decision.topic}".
          Use `get_decisions` to retrieve decisions by topic.
+         (thread_id: #{decision.thread_id})
          """}
 
       {:error, changeset} ->

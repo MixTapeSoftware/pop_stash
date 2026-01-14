@@ -145,6 +145,6 @@ defmodule PopStash.MCP.Tools.GetDecisions do
       end
 
     timestamp = Calendar.strftime(decision.inserted_at, "%Y-%m-%d %H:%M UTC")
-    with_reasoning <> "*Recorded: #{timestamp}*"
+    with_reasoning <> "*Recorded: #{timestamp}* (thread_id: #{decision.thread_id})"
   end
 end

@@ -7,11 +7,16 @@ defmodule PopStash.Memory.Context do
 
   use PopStash.Schema
 
+  @thread_prefix "cthr"
+
+  def thread_prefix, do: @thread_prefix
+
   schema "contexts" do
     field(:name, :string)
     field(:summary, :string)
     field(:files, {:array, :string}, default: [])
     field(:tags, {:array, :string}, default: [])
+    field(:thread_id, :string)
     field(:expires_at, :utc_datetime_usec)
     field(:embedding, Pgvector.Ecto.Vector)
 

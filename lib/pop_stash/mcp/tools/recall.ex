@@ -92,6 +92,7 @@ defmodule PopStash.MCP.Tools.Recall do
       id: insight.id,
       key: insight.key,
       content: insight.content,
+      thread_id: insight.thread_id,
       created_at: insight.inserted_at
     }
   end

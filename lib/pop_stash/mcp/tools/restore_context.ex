@@ -93,6 +93,7 @@ defmodule PopStash.MCP.Tools.RestoreContext do
       name: context.name,
       summary: context.summary,
       files: Map.get(context, :files, []),
+      thread_id: context.thread_id,
       created_at: context.inserted_at
     }
   end
