@@ -7,6 +7,7 @@ config :phoenix_live_view,
 local_docker = System.get_env("LOCAL_DOCKER") == "true"
 db_hostname = if local_docker, do: "db", else: "127.0.0.1"
 port = if local_docker, do: 5432, else: 5433
+typesense_hostname = if local_docker, do: "typesense", else: "127.0.0.1"
 
 # Configure your database
 config :pop_stash, PopStash.Repo,
@@ -148,3 +149,15 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Override Typesense hostname for Docker vs local development
+config :pop_stash, :typesense,
+  api_key: "pop_stash_dev_key",
+  nodes: [
+    %{
+      host: typesense_hostname,
+      port: 8108,
+      protocol: "http"
+    }
+  ],
+  enabled: true

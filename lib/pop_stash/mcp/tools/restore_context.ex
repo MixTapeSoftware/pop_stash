@@ -20,6 +20,7 @@ defmodule PopStash.MCP.Tools.RestoreContext do
         - Use natural language like "changes to the login page" for semantic search
         - Semantic search finds conceptually similar contexts, not just keyword matches
         - To exclude words in your query explicitly, prefix the word with the - operator, e.g. "electric car" -tesla.
+        - IMPORTANT: Keep search queries brief (under ~100 words). Long queries may fail or fall back to keyword-only search.
 
         Returns a ranked list of matching contexts with match_type indicator.
         """,

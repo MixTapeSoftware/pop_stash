@@ -30,6 +30,7 @@ defmodule PopStash.MCP.Tools.SearchPlans do
         - Ask questions (e.g., "how should we handle errors?")
         - Use descriptive phrases (e.g., "database migration strategy")
         - To exclude words, prefix with - (e.g., "deployment -docker")
+        - IMPORTANT: Keep search queries brief (under ~100 words). Long queries may fail or fall back to keyword-only search.
         """,
         inputSchema: %{
           type: "object",

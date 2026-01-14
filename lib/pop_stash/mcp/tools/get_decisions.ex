@@ -21,6 +21,7 @@ defmodule PopStash.MCP.Tools.GetDecisions do
         - To exclude words in your query explicitly, prefix the word with the - operator, e.g. "electric car" -tesla.
         - Use list_topics to discover available topic names
         - Omit topic to list recent decisions
+        - IMPORTANT: Keep search queries brief (under ~100 words). Long queries may fail or fall back to keyword-only search.
 
         Topics are matched case-insensitively for exact matches.
         """,

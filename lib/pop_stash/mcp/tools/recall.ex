@@ -20,6 +20,7 @@ defmodule PopStash.MCP.Tools.Recall do
         - Use natural language like "how authentication works" for semantic search
         - Semantic search finds conceptually similar content, not just keyword matches
         - To exclude words in your query explicitly, prefix the word with the - operator, e.g. "electric car" -tesla.
+        - IMPORTANT: Keep search queries brief (under ~100 words). Long queries may fail or fall back to keyword-only search.
 
         Returns a ranked list of matching insights with match_type indicator.
         """,

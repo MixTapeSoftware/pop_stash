@@ -46,12 +46,26 @@ defmodule PopStash.Search.Typesense do
     ]
   }
 
+  @plans_schema %{
+    name: "plans",
+    fields: [
+      %{name: "id", type: "string"},
+      %{name: "project_id", type: "string", facet: true},
+      %{name: "title", type: "string"},
+      %{name: "version", type: "string"},
+      %{name: "body", type: "string"},
+      %{name: "embedding", type: "float[]", num_dim: 384},
+      %{name: "created_at", type: "int64"}
+    ]
+  }
+
   ## Collection management
 
   def ensure_collections do
     with :ok <- ensure_collection(@contexts_schema),
-         :ok <- ensure_collection(@insights_schema) do
-      ensure_collection(@decisions_schema)
+         :ok <- ensure_collection(@insights_schema),
+         :ok <- ensure_collection(@decisions_schema) do
+      ensure_collection(@plans_schema)
     end
   end
 
@@ -71,7 +85,7 @@ defmodule PopStash.Search.Typesense do
   end
 
   def drop_collections do
-    for collection <- ["contexts", "insights", "decisions"] do
+    for collection <- ["contexts", "insights", "decisions", "plans"] do
       Collections.delete(collection)
     end
 
@@ -118,6 +132,20 @@ defmodule PopStash.Search.Typesense do
     }
 
     index_document("decisions", document)
+  end
+
+  def index_plan(plan, embedding \\ nil) do
+    document = %{
+      id: plan.id,
+      project_id: plan.project_id,
+      title: plan.title,
+      version: plan.version,
+      body: plan.body,
+      embedding: embedding || plan.embedding || List.duplicate(0.0, 384),
+      created_at: DateTime.to_unix(plan.inserted_at)
+    }
+
+    index_document("plans", document)
   end
 
   defp index_document(collection, document) do
@@ -181,6 +209,22 @@ defmodule PopStash.Search.Typesense do
       {:ok, %{"found" => 0}} ->
         {:ok, []}
 
+      {:ok, %{"message" => "Query string exceeds" <> _}} ->
+        # Query string too long (vector search via GET), fall back to keyword search only
+        search_params_no_vector = Map.delete(search_params, :vector_query)
+
+        case Documents.search(collection, search_params_no_vector) do
+          {:ok, %{"hits" => hits}} ->
+            results = Enum.map(hits, &extract_document(&1, collection))
+            {:ok, results}
+
+          {:ok, %{"found" => 0}} ->
+            {:ok, []}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -189,6 +233,7 @@ defmodule PopStash.Search.Typesense do
   defp query_fields("contexts"), do: "name,summary"
   defp query_fields("insights"), do: "key,content"
   defp query_fields("decisions"), do: "topic,decision,reasoning"
+  defp query_fields("plans"), do: "title,version,body"
 
   defp format_vector(embedding) when is_list(embedding) do
     "[" <> Enum.map_join(embedding, ",", &to_string/1) <> "]"
@@ -198,9 +243,17 @@ defmodule PopStash.Search.Typesense do
     base = %{id: doc["id"], inserted_at: DateTime.from_unix!(doc["created_at"])}
 
     case collection do
-      "contexts" -> Map.merge(base, %{name: doc["name"], summary: doc["summary"]})
-      "insights" -> Map.merge(base, %{key: doc["key"], content: doc["content"]})
-      "decisions" -> Map.merge(base, %{topic: doc["topic"], decision: doc["decision"]})
+      "contexts" ->
+        Map.merge(base, %{name: doc["name"], summary: doc["summary"]})
+
+      "insights" ->
+        Map.merge(base, %{key: doc["key"], content: doc["content"]})
+
+      "decisions" ->
+        Map.merge(base, %{topic: doc["topic"], decision: doc["decision"]})
+
+      "plans" ->
+        Map.merge(base, %{title: doc["title"], version: doc["version"], body: doc["body"]})
     end
   end
 

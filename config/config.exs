@@ -78,7 +78,7 @@ config :pop_stash, :typesense,
   api_key: "pop_stash_dev_key",
   nodes: [
     %{
-      host: "localhost",
+      host: "127.0.0.1",
       port: 8108,
       protocol: "http"
     }

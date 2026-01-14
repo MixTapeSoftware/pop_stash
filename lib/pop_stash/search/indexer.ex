@@ -59,6 +59,16 @@ defmodule PopStash.Search.Indexer do
     {:noreply, state}
   end
 
+  def handle_info({:plan_created, plan}, state) do
+    index_async(plan, &index_plan/1)
+    {:noreply, state}
+  end
+
+  def handle_info({:plan_updated, plan}, state) do
+    index_async(plan, &index_plan/1)
+    {:noreply, state}
+  end
+
   def handle_info({:context_deleted, context_id}, state) do
     Typesense.delete_document("contexts", context_id)
     {:noreply, state}
@@ -71,6 +81,11 @@ defmodule PopStash.Search.Indexer do
 
   def handle_info({:decision_deleted, decision_id}, state) do
     Typesense.delete_document("decisions", decision_id)
+    {:noreply, state}
+  end
+
+  def handle_info({:plan_deleted, plan_id}, state) do
+    Typesense.delete_document("plans", plan_id)
     {:noreply, state}
   end
 
@@ -124,6 +139,20 @@ defmodule PopStash.Search.Indexer do
     else
       {:error, reason} ->
         Logger.warning("Failed to index decision #{decision.id}: #{inspect(reason)}")
+        :error
+    end
+  end
+
+  defp index_plan(plan) do
+    text = "#{plan.title} #{plan.version} #{plan.body}"
+
+    with {:ok, embedding} <- Embeddings.embed(text),
+         :ok <- update_embedding(plan, embedding),
+         :ok <- Typesense.index_plan(plan, embedding) do
+      :ok
+    else
+      {:error, reason} ->
+        Logger.warning("Failed to index plan #{plan.id}: #{inspect(reason)}")
         :error
     end
   end
