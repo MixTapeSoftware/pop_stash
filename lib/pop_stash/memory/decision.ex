@@ -17,6 +17,7 @@ defmodule PopStash.Memory.Decision do
     field(:title, :string)
     field(:body, :string)
     field(:reasoning, :string)
+    field(:files, {:array, :string}, default: [])
     field(:tags, {:array, :string}, default: [])
     field(:thread_id, :string)
     field(:embedding, Pgvector.Ecto.Vector)

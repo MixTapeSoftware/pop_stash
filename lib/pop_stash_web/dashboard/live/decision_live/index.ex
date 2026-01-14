@@ -140,7 +140,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
   end
 
   defp build_topic_filter_opts(nil), do: []
-  defp build_topic_filter_opts(topic), do: [topic: topic]
+  defp build_topic_filter_opts(title), do: [title: title]
 
   defp filter_decisions_by_search(decisions, ""), do: decisions
 
@@ -150,8 +150,8 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
   end
 
   defp decision_matches_query?(decision, query) do
-    matches_field?(decision.topic, query) ||
-      matches_field?(decision.decision, query) ||
+    matches_field?(decision.title, query) ||
+      matches_field?(decision.body, query) ||
       matches_field?(decision.reasoning, query) ||
       matches_tags?(decision.tags, query)
   end
@@ -163,7 +163,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
   defp matches_tags?(tags, query), do: Enum.any?(tags, &matches_field?(&1, query))
 
   defp load_topics(socket) do
-    topics =
+    titles =
       case socket.assigns.selected_project_id do
         nil ->
           socket.assigns.projects
@@ -175,7 +175,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
           Memory.list_decision_titles(project_id)
       end
 
-    assign(socket, :topics, topics)
+    assign(socket, :titles, titles)
   end
 
   @impl true
@@ -208,18 +208,18 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
           </select>
         </form>
 
-        <form :if={@topics != []} phx-change="filter_topic" class="flex-shrink-0">
+        <form :if={@titles != []} phx-change="filter_topic" class="flex-shrink-0">
           <select
             name="topic"
             class="px-3 py-2 text-sm bg-white border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
           >
-            <option value="">All Topics</option>
+            <option value="">All Titles</option>
             <option
-              :for={topic <- @topics}
-              value={topic}
-              selected={@filter_topic == topic}
+              :for={title <- @titles}
+              value={title}
+              selected={@filter_topic == title}
             >
-              {topic}
+              {title}
             </option>
           </select>
         </form>
@@ -317,7 +317,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
           id={:new}
           decision={@decision}
           projects={@projects}
-          topics={@topics}
+          titles={@titles}
           action={:new}
           return_to={~p"/pop_stash/decisions"}
         />

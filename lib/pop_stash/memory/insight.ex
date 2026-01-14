@@ -15,6 +15,7 @@ defmodule PopStash.Memory.Insight do
   schema "insights" do
     field(:title, :string)
     field(:body, :string)
+    field(:files, {:array, :string}, default: [])
     field(:tags, {:array, :string}, default: [])
     field(:thread_id, :string)
     field(:embedding, Pgvector.Ecto.Vector)

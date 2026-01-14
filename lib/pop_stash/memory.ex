@@ -122,6 +122,7 @@ defmodule PopStash.Memory do
 
   ## Options
     * `:title` - Optional title for the insight
+    * `:files` - Optional list of file paths
     * `:tags` - Optional list of tags
     * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
   """
@@ -134,10 +135,11 @@ defmodule PopStash.Memory do
         project_id: project_id,
         body: body,
         title: Keyword.get(opts, :title),
+        files: Keyword.get(opts, :files, []),
         tags: Keyword.get(opts, :tags, []),
         thread_id: thread_id
       },
-      [:project_id, :body, :title, :tags, :thread_id]
+      [:project_id, :body, :title, :files, :tags, :thread_id]
     )
     |> validate_required([:project_id, :body, :thread_id])
     |> validate_length(:title, max: 255)

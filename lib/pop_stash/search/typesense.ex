@@ -14,8 +14,8 @@ defmodule PopStash.Search.Typesense do
     fields: [
       %{name: "id", type: "string"},
       %{name: "project_id", type: "string", facet: true},
-      %{name: "name", type: "string"},
-      %{name: "summary", type: "string"},
+      %{name: "title", type: "string"},
+      %{name: "body", type: "string"},
       %{name: "embedding", type: "float[]", num_dim: 384},
       %{name: "created_at", type: "int64"}
     ]
@@ -26,8 +26,8 @@ defmodule PopStash.Search.Typesense do
     fields: [
       %{name: "id", type: "string"},
       %{name: "project_id", type: "string", facet: true},
-      %{name: "key", type: "string", optional: true},
-      %{name: "content", type: "string"},
+      %{name: "title", type: "string", optional: true},
+      %{name: "body", type: "string"},
       %{name: "embedding", type: "float[]", num_dim: 384},
       %{name: "created_at", type: "int64"}
     ]
@@ -38,8 +38,8 @@ defmodule PopStash.Search.Typesense do
     fields: [
       %{name: "id", type: "string"},
       %{name: "project_id", type: "string", facet: true},
-      %{name: "topic", type: "string"},
-      %{name: "decision", type: "string"},
+      %{name: "title", type: "string"},
+      %{name: "body", type: "string"},
       %{name: "reasoning", type: "string", optional: true},
       %{name: "embedding", type: "float[]", num_dim: 384},
       %{name: "created_at", type: "int64"}
@@ -98,8 +98,8 @@ defmodule PopStash.Search.Typesense do
     document = %{
       id: context.id,
       project_id: context.project_id,
-      name: context.name,
-      summary: context.summary || "",
+      title: context.title,
+      body: context.body || "",
       embedding: embedding || context.embedding || List.duplicate(0.0, 384),
       created_at: DateTime.to_unix(context.inserted_at)
     }
@@ -111,8 +111,8 @@ defmodule PopStash.Search.Typesense do
     document = %{
       id: insight.id,
       project_id: insight.project_id,
-      key: insight.key,
-      content: insight.content,
+      title: insight.title,
+      body: insight.body,
       embedding: embedding || insight.embedding || List.duplicate(0.0, 384),
       created_at: DateTime.to_unix(insight.inserted_at)
     }
@@ -124,8 +124,8 @@ defmodule PopStash.Search.Typesense do
     document = %{
       id: decision.id,
       project_id: decision.project_id,
-      topic: decision.topic,
-      decision: decision.decision,
+      title: decision.title,
+      body: decision.body,
       reasoning: decision.reasoning,
       embedding: embedding || decision.embedding || List.duplicate(0.0, 384),
       created_at: DateTime.to_unix(decision.inserted_at)

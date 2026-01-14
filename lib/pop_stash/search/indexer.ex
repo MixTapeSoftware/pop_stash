@@ -102,7 +102,7 @@ defmodule PopStash.Search.Indexer do
   end
 
   defp index_context(context) do
-    text = "#{context.name} #{context.summary || ""}"
+    text = "#{context.title} #{context.body || ""}"
 
     with {:ok, embedding} <- Embeddings.embed(text),
          :ok <- update_embedding(context, embedding),
@@ -116,7 +116,7 @@ defmodule PopStash.Search.Indexer do
   end
 
   defp index_insight(insight) do
-    text = "#{insight.key || ""} #{insight.content}"
+    text = "#{insight.title || ""} #{insight.body}"
 
     with {:ok, embedding} <- Embeddings.embed(text),
          :ok <- update_embedding(insight, embedding),
@@ -130,7 +130,7 @@ defmodule PopStash.Search.Indexer do
   end
 
   defp index_decision(decision) do
-    text = "#{decision.topic} #{decision.decision} #{decision.reasoning || ""}"
+    text = "#{decision.title} #{decision.body} #{decision.reasoning || ""}"
 
     with {:ok, embedding} <- Embeddings.embed(text),
          :ok <- update_embedding(decision, embedding),

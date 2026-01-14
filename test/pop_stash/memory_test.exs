@@ -169,8 +169,8 @@ defmodule PopStash.MemoryTest do
       {:ok, context1} = Memory.get_context_by_title(project1.id, "shared-name")
       {:ok, context2} = Memory.get_context_by_title(project2.id, "shared-name")
 
-      assert context1.summary == "Project 1 context"
-      assert context2.summary == "Project 2 context"
+      assert context1.body == "Project 1 context"
+      assert context2.body == "Project 2 context"
     end
 
     test "insights are isolated by project" do
@@ -183,8 +183,8 @@ defmodule PopStash.MemoryTest do
       {:ok, insight1} = Memory.get_insight_by_title(project1.id, "shared")
       {:ok, insight2} = Memory.get_insight_by_title(project2.id, "shared")
 
-      assert insight1.content == "Insight 1"
-      assert insight2.content == "Insight 2"
+      assert insight1.body == "Insight 1"
+      assert insight2.body == "Insight 2"
     end
   end
 
@@ -219,9 +219,9 @@ defmodule PopStash.MemoryTest do
       assert {:ok, d2} = Memory.create_decision(project.id, "Auth", "Decision 2")
       assert {:ok, d3} = Memory.create_decision(project.id, "auth", "Decision 3")
 
-      assert d1.topic == "auth"
-      assert d2.topic == "auth"
-      assert d3.topic == "auth"
+      assert d1.title == "auth"
+      assert d2.title == "auth"
+      assert d3.title == "auth"
     end
 
     test "get_decision/1 retrieves decision by ID", %{project: project} do

@@ -30,15 +30,15 @@ defmodule PopStashWeb.Dashboard.DecisionLive.FormComponent do
           />
 
           <div>
-            <label for={@form[:topic].id} class="block text-xs font-medium text-slate-600 mb-1">
-              Topic
+            <label for={@form[:title].id} class="block text-xs font-medium text-slate-600 mb-1">
+              Title
             </label>
             <input
               type="text"
-              name={@form[:topic].name}
-              id={@form[:topic].id}
-              value={Phoenix.HTML.Form.normalize_value("text", @form[:topic].value)}
-              list="topic-suggestions"
+              name={@form[:title].name}
+              id={@form[:title].id}
+              value={Phoenix.HTML.Form.normalize_value("text", @form[:title].value)}
+              list="title-suggestions"
               placeholder="e.g., database-choice, auth-strategy, api-design"
               class={[
                 "w-full px-3 py-2 text-sm text-slate-900 font-mono",
@@ -47,17 +47,17 @@ defmodule PopStashWeb.Dashboard.DecisionLive.FormComponent do
                 "placeholder:text-slate-400"
               ]}
             />
-            <datalist id="topic-suggestions">
-              <option :for={topic <- @topics} value={topic} />
+            <datalist id="title-suggestions">
+              <option :for={title <- @titles} value={title} />
             </datalist>
             <p class="text-xs text-slate-400 mt-1">
-              Topics are normalized (lowercased, trimmed) for consistent matching
+              Titles are normalized (lowercased, trimmed) for consistent matching
             </p>
           </div>
 
           <.textarea
-            field={@form[:decision]}
-            label="Decision"
+            field={@form[:body]}
+            label="Body"
             rows={4}
             placeholder="What was decided? Be specific and clear..."
           />
@@ -101,8 +101,8 @@ defmodule PopStashWeb.Dashboard.DecisionLive.FormComponent do
 
     form_data = %{
       "project_id" => decision.project_id,
-      "topic" => decision.topic,
-      "decision" => decision.decision,
+      "title" => decision.title,
+      "body" => decision.body,
       "reasoning" => decision.reasoning,
       "tags" => tags_string
     }
@@ -127,8 +127,8 @@ defmodule PopStashWeb.Dashboard.DecisionLive.FormComponent do
 
   defp save_decision(socket, params) do
     project_id = params["project_id"]
-    topic = params["topic"]
-    decision = params["decision"]
+    title = params["title"]
+    body = params["body"]
 
     opts =
       [
@@ -137,7 +137,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.FormComponent do
       ]
       |> Enum.reject(fn {_k, v} -> is_nil(v) end)
 
-    case Memory.create_decision(project_id, topic, decision, opts) do
+    case Memory.create_decision(project_id, title, body, opts) do
       {:ok, created_decision} ->
         {:noreply,
          socket

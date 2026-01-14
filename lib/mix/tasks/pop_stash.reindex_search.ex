@@ -88,7 +88,7 @@ defmodule Mix.Tasks.PopStash.ReindexSearch do
   defp index_context(context, opts) do
     embedding =
       get_or_generate_embedding(context, opts, fn c ->
-        "#{c.name} #{c.summary || ""}"
+        "#{c.title} #{c.body || ""}"
       end)
 
     Typesense.index_context(context, embedding)
@@ -97,7 +97,7 @@ defmodule Mix.Tasks.PopStash.ReindexSearch do
   defp index_insight(insight, opts) do
     embedding =
       get_or_generate_embedding(insight, opts, fn i ->
-        "#{i.key || ""} #{i.content}"
+        "#{i.title || ""} #{i.body}"
       end)
 
     Typesense.index_insight(insight, embedding)
@@ -106,7 +106,7 @@ defmodule Mix.Tasks.PopStash.ReindexSearch do
   defp index_decision(decision, opts) do
     embedding =
       get_or_generate_embedding(decision, opts, fn d ->
-        "#{d.topic} #{d.decision} #{d.reasoning || ""}"
+        "#{d.title} #{d.body} #{d.reasoning || ""}"
       end)
 
     Typesense.index_decision(decision, embedding)
