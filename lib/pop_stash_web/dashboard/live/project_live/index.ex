@@ -96,11 +96,13 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
     contexts_count = length(Memory.list_contexts(project.id))
     insights_count = length(Memory.list_insights(project.id))
     decisions_count = length(Memory.list_decisions(project.id))
+    plans_count = length(Memory.list_plans(project.id))
 
     Map.merge(project, %{
       contexts_count: contexts_count,
       insights_count: insights_count,
-      decisions_count: decisions_count
+      decisions_count: decisions_count,
+      plans_count: plans_count
     })
   end
 
@@ -170,14 +172,17 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
           </:col>
           <:col :let={project} label="Stats">
             <div class="flex gap-3 text-xs text-slate-600">
-              <span title="Stashes">
-                {project.stashes_count} <.icon name="hero-archive-box" class="size-3 inline" />
+              <span title="Contexts">
+                {project.contexts_count} <.icon name="hero-archive-box" class="size-3 inline" />
               </span>
               <span title="Insights">
                 {project.insights_count} <.icon name="hero-light-bulb" class="size-3 inline" />
               </span>
               <span title="Decisions">
                 {project.decisions_count} <.icon name="hero-check-badge" class="size-3 inline" />
+              </span>
+              <span title="Plans">
+                {project.plans_count} <.icon name="hero-map" class="size-3 inline" />
               </span>
             </div>
           </:col>

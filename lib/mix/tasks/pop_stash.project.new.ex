@@ -67,6 +67,37 @@ defmodule Mix.Tasks.PopStash.Project.New do
     }
 
     ─────────────────────────────────────────────────────────────────────────────
+    RECOMMENDED HOOKS CONFIGURATION
+    ─────────────────────────────────────────────────────────────────────────────
+
+    Add to your project's .claude/settings.json to ensure agents use PopStash:
+
+    {
+      "hooks": {
+        "SessionStart": [
+          {
+            "hooks": [
+              {
+                "type": "prompt",
+                "prompt": "Before starting work, search for previous decisions, insights or current plans that might apply to this task."
+              }
+            ]
+          }
+        ],
+        "Stop": [
+          {
+            "hooks": [
+              {
+                "type": "prompt",
+                "prompt": "If meaningful work occurred: save plans, record insights, document decisions, and/or save a compacted current context."
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+    ─────────────────────────────────────────────────────────────────────────────
     AGENTS.md PROMPT
     ─────────────────────────────────────────────────────────────────────────────
 

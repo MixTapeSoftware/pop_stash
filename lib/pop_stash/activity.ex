@@ -5,7 +5,7 @@ defmodule PopStash.Activity do
 
   import Ecto.Query
 
-  alias PopStash.Memory.{Context, Decision, Insight, SearchLog}
+  alias PopStash.Memory.{Context, Decision, Insight, Plan, SearchLog}
   alias PopStash.Projects.Project
   alias PopStash.Repo
 
@@ -15,7 +15,7 @@ defmodule PopStash.Activity do
 
     @type t :: %__MODULE__{
             id: String.t(),
-            type: :context | :decision | :insight | :search,
+            type: :context | :decision | :insight | :plan | :search,
             title: String.t(),
             preview: String.t() | nil,
             project_id: String.t(),
@@ -36,13 +36,14 @@ defmodule PopStash.Activity do
   def list_recent(opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
     project_id = Keyword.get(opts, :project_id)
-    types = Keyword.get(opts, :types, [:context, :decision, :insight, :search])
+    types = Keyword.get(opts, :types, [:context, :decision, :insight, :plan, :search])
 
     items = []
 
     items = if :context in types, do: items ++ fetch_contexts(project_id, limit), else: items
     items = if :decision in types, do: items ++ fetch_decisions(project_id, limit), else: items
     items = if :insight in types, do: items ++ fetch_insights(project_id, limit), else: items
+    items = if :plan in types, do: items ++ fetch_plans(project_id, limit), else: items
     items = if :search in types, do: items ++ fetch_searches(project_id, limit), else: items
 
     items
@@ -93,6 +94,19 @@ defmodule PopStash.Activity do
     }
   end
 
+  def to_item(%Plan{} = plan) do
+    %Item{
+      id: plan.id,
+      type: :plan,
+      title: "#{plan.title} (#{plan.version})",
+      preview: truncate(plan.body, 100),
+      project_id: plan.project_id,
+      project_name: get_project_name(plan.project_id),
+      inserted_at: plan.inserted_at,
+      source: plan
+    }
+  end
+
   def to_item(%SearchLog{} = search) do
     preview = "#{search.collection} • #{search.search_type}"
 
@@ -124,9 +138,27 @@ defmodule PopStash.Activity do
     |> Enum.map(&to_item/1)
   end
 
+  defp fetch_decisions(nil, limit) do
+    Decision
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> preload(:project)
+    |> Repo.all()
+    |> Enum.map(&to_item/1)
+  end
+
   defp fetch_decisions(project_id, limit) do
     Decision
-    |> maybe_filter_project(project_id)
+    |> where([d], d.project_id == ^project_id)
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> preload(:project)
+    |> Repo.all()
+    |> Enum.map(&to_item/1)
+  end
+
+  defp fetch_insights(nil, limit) do
+    Insight
     |> order_by(desc: :inserted_at)
     |> limit(^limit)
     |> preload(:project)
@@ -136,7 +168,35 @@ defmodule PopStash.Activity do
 
   defp fetch_insights(project_id, limit) do
     Insight
-    |> maybe_filter_project(project_id)
+    |> where([i], i.project_id == ^project_id)
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> preload(:project)
+    |> Repo.all()
+    |> Enum.map(&to_item/1)
+  end
+
+  defp fetch_plans(nil, limit) do
+    Plan
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> preload(:project)
+    |> Repo.all()
+    |> Enum.map(&to_item/1)
+  end
+
+  defp fetch_plans(project_id, limit) do
+    Plan
+    |> where([p], p.project_id == ^project_id)
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> preload(:project)
+    |> Repo.all()
+    |> Enum.map(&to_item/1)
+  end
+
+  defp fetch_searches(nil, limit) do
+    SearchLog
     |> order_by(desc: :inserted_at)
     |> limit(^limit)
     |> preload(:project)

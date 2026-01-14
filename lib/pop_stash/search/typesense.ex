@@ -155,6 +155,12 @@ defmodule PopStash.Search.Typesense do
     end
   end
 
+  def search_plans(project_id, query, opts \\ []) do
+    with {:ok, embedding} <- PopStash.Embeddings.embed(query) do
+      hybrid_search("plans", project_id, query, embedding, opts)
+    end
+  end
+
   def hybrid_search(collection, project_id, query, embedding, opts) do
     limit = Keyword.get(opts, :limit, 10)
 

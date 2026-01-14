@@ -1,9 +1,16 @@
 defmodule PopStash.Memory do
   @moduledoc """
-  Context for memory operations: stashes and insights.
+  Context for memory operations: contexts, insights, decisions, and plans.
 
-  Handles saving and retrieving context across sessions.
+  Handles saving and retrieving memory data across sessions.
   Supports both exact matching and semantic search via Typesense.
+
+  ## Memory Types
+
+  - **Contexts** - Temporary working context for tasks (formerly stashes)
+  - **Insights** - Persistent knowledge about the codebase
+  - **Decisions** - Immutable architectural decisions with history
+  - **Plans** - Versioned project documentation and roadmaps
   """
 
   import Ecto.Changeset
@@ -12,6 +19,7 @@ defmodule PopStash.Memory do
   alias PopStash.Memory.Context
   alias PopStash.Memory.Decision
   alias PopStash.Memory.Insight
+  alias PopStash.Memory.Plan
   alias PopStash.Memory.SearchLog
   alias PopStash.Repo
   alias PopStash.Search.Typesense
@@ -314,6 +322,143 @@ defmodule PopStash.Memory do
     |> Repo.all()
   end
 
+  ## Plans
+
+  @doc """
+  Creates a plan with a title, version, and body content.
+
+  ## Options
+    * `:tags` - Optional list of tags
+  """
+  def create_plan(project_id, title, version, body, opts \\ []) do
+    %Plan{}
+    |> cast(
+      %{
+        project_id: project_id,
+        title: title,
+        version: version,
+        body: body,
+        tags: Keyword.get(opts, :tags, [])
+      },
+      [:project_id, :title, :version, :body, :tags]
+    )
+    |> validate_required([:project_id, :title, :version, :body])
+    |> validate_length(:title, min: 1, max: 255)
+    |> validate_length(:version, min: 1, max: 50)
+    |> unique_constraint([:project_id, :title, :version])
+    |> foreign_key_constraint(:project_id)
+    |> Repo.insert()
+    |> tap_ok(&broadcast(:plan_created, &1))
+  end
+
+  @doc """
+  Gets a specific plan by title and version.
+  """
+  def get_plan(project_id, title, version)
+      when is_binary(project_id) and is_binary(title) and is_binary(version) do
+    Plan
+    |> where([p], p.project_id == ^project_id and p.title == ^title and p.version == ^version)
+    |> Repo.one()
+    |> wrap_result()
+  end
+
+  @doc """
+  Gets the latest version of a plan by title.
+  """
+  def get_latest_plan(project_id, title) when is_binary(project_id) and is_binary(title) do
+    Plan
+    |> where([p], p.project_id == ^project_id and p.title == ^title)
+    |> order_by(desc: :inserted_at)
+    |> limit(1)
+    |> Repo.one()
+    |> wrap_result()
+  end
+
+  @doc """
+  Lists all plans for a project.
+
+  ## Options
+    * `:limit` - Maximum number of plans to return (default: 50)
+    * `:title` - Filter by title (exact match)
+  """
+  def list_plans(project_id, opts \\ []) when is_binary(project_id) do
+    limit = Keyword.get(opts, :limit, 50)
+    title = Keyword.get(opts, :title)
+
+    Plan
+    |> where([p], p.project_id == ^project_id)
+    |> maybe_filter_plan_title(title)
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  defp maybe_filter_plan_title(query, nil), do: query
+
+  defp maybe_filter_plan_title(query, title) do
+    where(query, [p], p.title == ^title)
+  end
+
+  @doc """
+  Lists all versions of a plan by title.
+  Returns most recent version first.
+  """
+  def list_plan_versions(project_id, title) when is_binary(project_id) and is_binary(title) do
+    Plan
+    |> where([p], p.project_id == ^project_id and p.title == ^title)
+    |> order_by(desc: :inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Updates the body content of a plan.
+  """
+  def update_plan(plan_id, body) when is_binary(plan_id) and is_binary(body) do
+    case Repo.get(Plan, plan_id) do
+      nil ->
+        {:error, :not_found}
+
+      plan ->
+        plan
+        |> cast(%{body: body}, [:body])
+        |> validate_required([:body])
+        |> Repo.update()
+        |> tap_ok(&broadcast(:plan_updated, &1))
+    end
+  end
+
+  @doc """
+  Deletes a plan by ID.
+  """
+  def delete_plan(plan_id) when is_binary(plan_id) do
+    case Repo.get(Plan, plan_id) do
+      nil ->
+        {:error, :not_found}
+
+      plan ->
+        case Repo.delete(plan) do
+          {:ok, _} ->
+            broadcast(:plan_deleted, plan.id)
+            :ok
+
+          error ->
+            error
+        end
+    end
+  end
+
+  @doc """
+  Lists all unique plan titles for a project.
+  """
+  def list_plan_titles(project_id) when is_binary(project_id) do
+    Plan
+    |> where([p], p.project_id == ^project_id)
+    |> select([p], p.title)
+    |> distinct(true)
+    |> order_by(asc: :title)
+    |> Repo.all()
+  end
+
   ## Search
 
   @doc """
@@ -338,6 +483,14 @@ defmodule PopStash.Memory do
   """
   def search_decisions(project_id, query, opts \\ []) do
     Typesense.search_decisions(project_id, query, opts)
+  end
+
+  @doc """
+  Search plans by semantic similarity.
+  Returns ranked list of matching plans.
+  """
+  def search_plans(project_id, query, opts \\ []) do
+    Typesense.search_plans(project_id, query, opts)
   end
 
   ## Search Logging
@@ -379,6 +532,22 @@ defmodule PopStash.Memory do
     end)
 
     :ok
+  end
+
+  @doc """
+  Lists all recent search logs across all projects.
+
+  ## Options
+    * `:limit` - Maximum items to return (default: 50)
+  """
+  def list_all_search_logs(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+
+    SearchLog
+    |> order_by(desc: :inserted_at)
+    |> limit(^limit)
+    |> preload(:project)
+    |> Repo.all()
   end
 
   @doc """

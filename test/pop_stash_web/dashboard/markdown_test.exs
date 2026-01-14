@@ -5,11 +5,11 @@ defmodule PopStashWeb.Dashboard.MarkdownTest do
 
   describe "render/1" do
     test "returns empty safe tuple for nil" do
-      assert Markdown.render(nil) == {:safe, ""}
+      assert Markdown.render(nil) == {:safe, []}
     end
 
     test "returns empty safe tuple for empty string" do
-      assert Markdown.render("") == {:safe, ""}
+      assert Markdown.render("") == {:safe, []}
     end
 
     test "renders basic markdown" do
@@ -178,29 +178,29 @@ defmodule PopStashWeb.Dashboard.MarkdownTest do
 
   describe "preview/2" do
     test "returns empty safe tuple for nil" do
-      assert Markdown.preview(nil) == {:safe, ""}
+      assert Markdown.preview(nil) == {:safe, []}
     end
 
     test "returns empty safe tuple for empty string" do
-      assert Markdown.preview("") == {:safe, ""}
+      assert Markdown.preview("") == {:safe, []}
     end
 
     test "truncates long content with ellipsis" do
       long_text = String.duplicate("a", 300)
-      {:safe, html} = Markdown.preview(long_text, 200)
+      {:safe, html} = Markdown.preview(long_text, max_length: 200)
       # Should be truncated - the ellipsis might be Unicode or ASCII
       assert String.length(html) < String.length(long_text) + 50
     end
 
     test "does not truncate short content" do
       short_text = "Short text"
-      {:safe, html} = Markdown.preview(short_text, 200)
+      {:safe, html} = Markdown.preview(short_text, max_length: 200)
       assert html =~ "Short text"
     end
 
     test "respects custom max_length" do
       text = String.duplicate("a", 50)
-      {:safe, html} = Markdown.preview(text, 10)
+      {:safe, html} = Markdown.preview(text, max_length: 10)
       # Truncated output should be shorter than original
       assert String.length(html) < 50
     end

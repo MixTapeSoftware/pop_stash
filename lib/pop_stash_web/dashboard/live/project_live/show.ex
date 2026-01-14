@@ -113,14 +113,78 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
     insights = Memory.list_insights(project_id)
     decisions = Memory.list_decisions(project_id)
 
+    # Calculate recent activity (last 7 days)
+    now = DateTime.utc_now()
+    week_ago = DateTime.add(now, -7, :day)
+
+    recent_contexts = Enum.filter(contexts, &(DateTime.compare(&1.inserted_at, week_ago) == :gt))
+    recent_insights = Enum.filter(insights, &(DateTime.compare(&1.inserted_at, week_ago) == :gt))
+
+    recent_decisions =
+      Enum.filter(decisions, &(DateTime.compare(&1.inserted_at, week_ago) == :gt))
+
+    # Get the most recent item for each category
+    latest_context = List.first(Enum.sort_by(contexts, & &1.inserted_at, {:desc, DateTime}))
+    latest_insight = List.first(Enum.sort_by(insights, & &1.inserted_at, {:desc, DateTime}))
+    latest_decision = List.first(Enum.sort_by(decisions, & &1.inserted_at, {:desc, DateTime}))
+
     stats = [
-      %{title: "Contexts", value: length(contexts)},
-      %{title: "Insights", value: length(insights)},
-      %{title: "Decisions", value: length(decisions)}
+      %{
+        title: "Contexts",
+        value: length(contexts),
+        desc: build_stat_description(length(recent_contexts), latest_context, "context", "week"),
+        link: ~p"/pop_stash/contexts?project_id=#{project_id}"
+      },
+      %{
+        title: "Insights",
+        value: length(insights),
+        desc: build_stat_description(length(recent_insights), latest_insight, "insight", "week"),
+        link: ~p"/pop_stash/insights?project_id=#{project_id}"
+      },
+      %{
+        title: "Decisions",
+        value: length(decisions),
+        desc:
+          build_stat_description(length(recent_decisions), latest_decision, "decision", "week"),
+        link: ~p"/pop_stash/decisions?project_id=#{project_id}"
+      }
     ]
 
     assign(socket, :stats, stats)
   end
+
+  defp build_stat_description(recent_count, latest_item, _item_type, period) do
+    recent_text = format_recent_count(recent_count, period)
+    latest_text = format_latest_time(latest_item)
+    recent_text <> latest_text
+  end
+
+  defp format_recent_count(0, period), do: "None this #{period}"
+  defp format_recent_count(count, period), do: "#{count} this #{period}"
+
+  defp format_latest_time(nil), do: ""
+
+  defp format_latest_time(latest_item) do
+    days_ago = div(DateTime.diff(DateTime.utc_now(), latest_item.inserted_at), 86_400)
+    ", last added #{format_time_ago(days_ago)}"
+  end
+
+  defp format_time_ago(0), do: "today"
+  defp format_time_ago(1), do: "yesterday"
+  defp format_time_ago(days) when days < 7, do: "#{days} days ago"
+
+  defp format_time_ago(days) when days < 30 do
+    weeks = div(days, 7)
+    "#{weeks} #{pluralize("week", weeks)} ago"
+  end
+
+  defp format_time_ago(days) do
+    months = div(days, 30)
+    "#{months} #{pluralize("month", months)} ago"
+  end
+
+  defp pluralize(word, 1), do: word
+  defp pluralize(word, _), do: "#{word}s"
 
   defp load_activity(socket) do
     items = Activity.list_recent(limit: 20, project_id: socket.assigns.project.id)
@@ -136,6 +200,13 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
   defp remove_activity_item(socket, item_id) do
     items = Enum.reject(socket.assigns.activity_items, &(&1.id == item_id))
     assign(socket, :activity_items, items)
+  end
+
+  defp get_stat_value(stats, title) do
+    case Enum.find(stats, &(&1.title == title)) do
+      nil -> 0
+      stat -> stat.value
+    end
   end
 
   @impl true
@@ -224,9 +295,9 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
             >
               <.icon name="hero-archive-box" class="size-6 text-slate-400" />
               <div>
-                <div class="text-sm font-medium text-slate-900">View Stashes</div>
+                <div class="text-sm font-medium text-slate-900">View Contexts</div>
                 <div class="text-xs text-slate-500">
-                  {Enum.find(@stats, &(&1.title == "Stashes")).value} stashes
+                  {get_stat_value(@stats, "Contexts")} saved contexts
                 </div>
               </div>
             </.link>
@@ -239,7 +310,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
               <div>
                 <div class="text-sm font-medium text-slate-900">View Insights</div>
                 <div class="text-xs text-slate-500">
-                  {Enum.find(@stats, &(&1.title == "Insights")).value} insights
+                  {get_stat_value(@stats, "Insights")} insights
                 </div>
               </div>
             </.link>
@@ -252,7 +323,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
               <div>
                 <div class="text-sm font-medium text-slate-900">View Decisions</div>
                 <div class="text-xs text-slate-500">
-                  {Enum.find(@stats, &(&1.title == "Decisions")).value} decisions
+                  {get_stat_value(@stats, "Decisions")} decisions
                 </div>
               </div>
             </.link>

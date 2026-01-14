@@ -41,22 +41,16 @@ Major enhancements:
 - Added "Searches" stat card showing total queries across all projects or for selected project
 - Displays search count alongside stashes, insights, and decisions
 
-#### Recent Searches Sidebar
-- New "Recent Searches" card in the sidebar
-- Shows last 5 searches for selected project
-- Displays query text, collection type, and result count
-- Auto-updates when new searches are logged
+
 
 #### Real-Time Updates
 - Added `handle_info/2` for `:search_logged` events
 - Searches appear in activity feed immediately when logged
-- Recent searches sidebar updates automatically
 - Integrated with existing PubSub subscription
 
 #### State Management
-- Added `:recent_searches` to socket assigns
-- Added `load_recent_searches/1` helper function
-- Loads searches on mount and project selection change
+- Searches integrated into unified activity feed
+- No separate state management needed for searches
 
 ## Features
 
@@ -66,17 +60,7 @@ Shows total number of searches:
 - Per-project count (when project selected)
 - Displayed as stat card with "Total queries" description
 
-### 2. Recent Searches Quick Access
-Sidebar widget showing:
-- Query text (truncated with tooltip)
-- Collection searched (stashes, insights, decisions)
-- Result count
-- Purple magnifying glass icon
-- Scrollable list (max 5 items)
-- "No recent searches" empty state
-- "Select a project" prompt when viewing all projects
-
-### 3. Searches in Activity Feed
+### 2. Searches in Activity Feed
 Search logs now appear in the unified activity feed:
 - Shows alongside stashes, insights, and decisions
 - Purple badge with "Search" label
@@ -92,10 +76,10 @@ When a search is logged via `Memory.log_search/4`:
 1. Search log is inserted into database (async)
 2. `:search_logged` event is broadcast via PubSub
 3. Dashboard receives event and:
-   - Converts search log to activity item
-   - Prepends to activity feed (if matches project filter)
-   - Reloads recent searches sidebar
-4. Updates appear instantly without page refresh
+   3. **Real-time feed update:**
+      - Converts search log to activity item
+      - Prepends to activity feed (if matches project filter)
+   4. Updates appear instantly without page refresh
 
 ## UI Design
 
@@ -104,8 +88,8 @@ When a search is logged via `Memory.log_search/4`:
 - Consistent with other activity types (blue for stashes, green for decisions, amber for insights)
 
 ### Layout
-- Recent searches widget positioned in sidebar below "Quick Actions"
-- Above "Navigation" section
+- Searches appear in unified activity feed
+- Purple theme distinguishes them from other activity types
 - Compact display with icon + text layout
 - Hover states for better interactivity
 
@@ -138,7 +122,6 @@ To test the feature:
 4. Perform searches via MCP tools (recall, search, etc.)
 5. Observe:
    - Search count increments in stats
-   - Recent searches appear in sidebar
    - Searches show in activity feed with real-time updates
 
 ## Integration Points
@@ -157,9 +140,7 @@ Subscribes to `"memory:events"` topic for:
 
 ## Performance Considerations
 
-- Search logging is async via `Task.start/1` (non-blocking)
-- Recent searches limited to 5 items per project
-- Activity feed limited to 20 items total
+- Activity feed limited to 20 items total (includes searches)
 - Database queries use indexes on `project_id` and `inserted_at`
 - No N+1 queries (uses `preload(:project)`)
 

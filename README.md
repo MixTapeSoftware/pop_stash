@@ -14,11 +14,12 @@ We also gain the ability to build tooling around the database and TypeSense inde
 
 ## What It Does
 
-PopStash is an MCP server that gives AI agents a way to persist and retrieve context, insights, and decisions.:
+PopStash is an MCP server that gives AI agents a way to persist and retrieve context, insights, decisions, and plans:
 
 - **Save/Restore Context**: Save and retrieve working context when switching tasks
 - **Insight/Recall**: Record and search persistent knowledge about your codebase  
 - **Decide/Get Decisions**: Document architectural decisions with full history
+- **Plan/Version Plans**: Create and manage versioned project plans and documentation
 - **Minimal Context Window Overhead (> 1%)**
 
 All retrieval supports both exact matching and semantic search powered by local embeddings.
@@ -47,6 +48,38 @@ If you're using Zed or Claude Desktop, you'll need mcp-proxy to bridge HTTP to t
 ```bash
 # Recommended
 uv tool install mcp-proxy
+```
+
+## Configuration
+
+### IP Access Control
+
+PopStash restricts MCP endpoint access to localhost and common Docker networks by default for security. If you're running PopStash in a Docker container and seeing "Rejected request from non-allowed IP" errors, you may need to configure the allowed IPs.
+
+**Default allowed IPs:**
+- `127.0.0.1` (IPv4 localhost)
+- `::1` (IPv6 localhost)
+- `10.x.x.x` (Docker/private networks)
+- `172.16.x.x - 172.31.x.x` (Docker bridge networks)
+- `192.168.x.x` (Local networks)
+
+**To allow additional IPs**, add them to your `config/dev.exs`:
+
+```elixir
+config :pop_stash, :allowed_ips, [
+  # ... default IPs ...
+  {160, 79, 104, 10},        # Specific IP address
+  {:range, {172, 32, 0, 0}}  # Custom IP range
+]
+```
+
+**To disable IP checking** (development only, NOT recommended for production):
+
+```elixir
+config :pop_stash, :skip_localhost_check, true
+```
+
+If you see rejected IP warnings in your logs, check the IP address and add it to the allowlist if it's from a trusted source. Public IP addresses (like `160.x.x.x`) should only be added if you understand the security implications.
 
 # Alternative installation methods
 pipx install mcp-proxy
@@ -82,7 +115,7 @@ Add to your project's `.claude/settings.json`:
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before starting work, search for relevant architectural decisions and insights about this task using get_decisions and recall."
+            "prompt": "Before starting work, search for previous decisions, insights or current plans that might apply to this task."
           }
         ]
       }
@@ -92,7 +125,7 @@ Add to your project's `.claude/settings.json`:
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before stopping, evaluate if there is meaningful context to preserve. If so: (1) save any work-in-progress context with a descriptive name, (2) record any non-obvious insights discovered about the codebase, (3) document any architectural decisions made. Be concise and skip if this was a trivial session."
+            "prompt": "If meaningful work occurred: save plans, record insights, document decisions, and/or save a compacted current context."
           }
         ]
       }
@@ -168,6 +201,15 @@ context across sessions and preserve important knowledge about this codebase.
   this way?", onboarding to a new part of the codebase
 - Decisions are immutable - new decisions on the same topic preserve history
 
+**`save_plan` / `get_plan` / `search_plans` - Project Plans & Roadmaps**
+- SAVE_PLAN when: documenting project roadmaps, creating architecture design docs,
+  planning feature implementations, tracking milestones across iterations
+- GET_PLAN when: need to review the current roadmap, want to see plan history,
+  looking for specific architecture documentation
+- SEARCH_PLANS when: exploring plans by concept, unsure of exact plan title,
+  discovering related planning documents
+- Plans are versioned - same title can have multiple versions to track evolution
+
 ### Best Practices
 
 1. **Be proactive**: Don't wait to be asked. Save context before it's lost.
@@ -175,6 +217,7 @@ context across sessions and preserve important knowledge about this codebase.
 3. **Atomic insights**: One concept per insight. Easier to find and stays relevant.
 4. **Descriptive keys**: Use hierarchical keys like "auth/session-handling" or "api/rate-limits".
 5. **Link decisions to code**: Reference specific files/functions when documenting decisions.
+6. **Version plans meaningfully**: Use semantic versions (v1.0, v2.0) or dates (2024-01-15) for plan versions.
 ```
 
 </details>
@@ -189,10 +232,13 @@ context across sessions and preserve important knowledge about this codebase.
 | `recall` | Retrieve insights by key or semantic search | `key` (string - exact or query), `limit` (number, default: 5) |
 | `decide` | Record an architectural decision | `topic` (string), `decision` (string), `reasoning` (string, optional) |
 | `get_decisions` | Query decisions by topic or semantic search | `topic` (string, optional), `limit` (number, default: 10), `list_topics` (boolean) |
+| `save_plan` | Save a versioned project plan or roadmap | `title` (string), `version` (string), `body` (string), `tags` (array, optional) |
+| `get_plan` | Retrieve plans by title or search for plans | `title` (string, optional), `version` (string, optional), `list_titles` (boolean), `all_versions` (boolean) |
+| `search_plans` | Search plans using semantic similarity | `query` (string), `limit` (number, default: 10) |
 
 ### Search Behavior
 
-All retrieval tools (`pop`, `recall`, `get_decisions`) support:
+All retrieval tools (`restore_context`, `recall`, `get_decisions`, `get_plan`, `search_plans`) support:
 - **Exact match**: Use precise names/keys/topics for direct lookup
 - **Semantic search**: Use natural language queries to find conceptually similar content
 - **Exclusion**: Prefix words with `-` to exclude them (e.g., "auth -oauth")

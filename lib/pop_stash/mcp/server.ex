@@ -14,7 +14,10 @@ defmodule PopStash.MCP.Server do
     PopStash.MCP.Tools.Insight,
     PopStash.MCP.Tools.Recall,
     PopStash.MCP.Tools.Decide,
-    PopStash.MCP.Tools.GetDecisions
+    PopStash.MCP.Tools.GetDecisions,
+    PopStash.MCP.Tools.SavePlan,
+    PopStash.MCP.Tools.GetPlan,
+    PopStash.MCP.Tools.SearchPlans
   ]
 
   @type message :: map()

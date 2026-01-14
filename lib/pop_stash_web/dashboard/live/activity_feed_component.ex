@@ -117,31 +117,37 @@ defmodule PopStashWeb.Dashboard.ActivityFeedComponent do
   defp type_icon(:decision), do: "hero-check-badge"
   defp type_icon(:insight), do: "hero-light-bulb"
   defp type_icon(:search), do: "hero-magnifying-glass"
+  defp type_icon(:plan), do: "hero-map"
 
   defp type_bg_class(:context), do: "bg-blue-50"
   defp type_bg_class(:decision), do: "bg-green-50"
   defp type_bg_class(:insight), do: "bg-amber-50"
   defp type_bg_class(:search), do: "bg-purple-50"
+  defp type_bg_class(:plan), do: "bg-indigo-50"
 
   defp type_icon_class(:context), do: "text-blue-500"
   defp type_icon_class(:decision), do: "text-green-500"
   defp type_icon_class(:insight), do: "text-amber-500"
   defp type_icon_class(:search), do: "text-purple-500"
+  defp type_icon_class(:plan), do: "text-indigo-500"
 
-  defp type_badge_class(:context), do: "bg-blue-100 text-blue-700"
-  defp type_badge_class(:decision), do: "bg-green-100 text-green-700"
-  defp type_badge_class(:insight), do: "bg-amber-100 text-amber-700"
-  defp type_badge_class(:search), do: "bg-purple-100 text-purple-700"
+  defp type_badge_class(:context), do: "bg-blue-100 text-blue-800"
+  defp type_badge_class(:decision), do: "bg-green-100 text-green-800"
+  defp type_badge_class(:insight), do: "bg-amber-100 text-amber-800"
+  defp type_badge_class(:search), do: "bg-purple-100 text-purple-800"
+  defp type_badge_class(:plan), do: "bg-indigo-100 text-indigo-800"
 
   defp type_label(:context), do: "Context"
   defp type_label(:decision), do: "Decision"
   defp type_label(:insight), do: "Insight"
   defp type_label(:search), do: "Search"
+  defp type_label(:plan), do: "Plan"
 
   defp item_path(%{type: :context, id: id}), do: ~p"/pop_stash/contexts/#{id}"
   defp item_path(%{type: :decision, id: id}), do: ~p"/pop_stash/decisions/#{id}"
   defp item_path(%{type: :insight, id: id}), do: ~p"/pop_stash/insights/#{id}"
   defp item_path(%{type: :search}), do: nil
+  defp item_path(%{type: :plan, id: id}), do: ~p"/pop_stash/plans/#{id}"
 
   defp relative_time_string(datetime) do
     now = DateTime.utc_now()

@@ -19,7 +19,7 @@ defmodule PopStash.ActivityTest do
     end
 
     test "returns items sorted by inserted_at descending", %{project: project} do
-      {:ok, context1} = Memory.create_context(project.id, "context1", "First context")
+      {:ok, _context1} = Memory.create_context(project.id, "context1", "First context")
       Process.sleep(10)
       {:ok, _insight1} = Memory.create_insight(project.id, "First insight")
       Process.sleep(10)
@@ -51,7 +51,7 @@ defmodule PopStash.ActivityTest do
       items = Activity.list_recent(project_id: project.id)
 
       assert length(items) == 1
-      assert hd(items).title == "Project 1 insight"
+      assert hd(items).title == "Insight"
     end
 
     test "includes all projects when project_id is nil", %{project: project} do
@@ -198,7 +198,7 @@ defmodule PopStash.ActivityTest do
 
       item = Activity.to_item(insight)
 
-      assert item.title == "This is a long insight content"
+      assert item.title == "Insight"
     end
 
     test "truncates long content for preview", %{project: project} do
@@ -264,7 +264,7 @@ defmodule PopStash.ActivityTest do
       assert item.id == search_log.id
       assert item.type == :search
       assert item.title == "test query"
-      assert item.preview == "insights search (5 results)"
+      assert item.preview == "insights • semantic • 5 results"
       assert item.project_id == project.id
       assert item.project_name == "Test Project"
       assert item.inserted_at == search_log.inserted_at
@@ -284,7 +284,7 @@ defmodule PopStash.ActivityTest do
       [search_log] = Memory.list_search_logs(project.id)
       item = Activity.to_item(search_log)
 
-      assert item.preview == "insights search (not found)"
+      assert item.preview == "insights • semantic • 0 results"
     end
   end
 end

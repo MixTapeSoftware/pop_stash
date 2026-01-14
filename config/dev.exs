@@ -80,6 +80,54 @@ config :pop_stash, PopStashWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :pop_stash, dev_routes: true
 
+# Configure allowed IPs for MCP endpoints
+# By default, this includes common Docker and private network ranges.
+#
+# If you need to allow additional IPs (e.g., if your Docker setup uses unusual networking),
+# you can add specific IPs or ranges here. For example:
+#   {160, 79, 104, 10}  # Specific IP address
+#   {:range, {172, 32, 0, 0}}  # Custom range
+#
+# To disable IP checking entirely (NOT recommended for production):
+#   config :pop_stash, :skip_localhost_check, true
+#
+config :pop_stash, :allowed_ips, [
+  # IPv4 localhost
+  {127, 0, 0, 1},
+  # IPv6 localhost
+  {0, 0, 0, 0, 0, 0, 0, 1},
+  # 10.x.x.x Docker/private networks
+  {:range, {10, 0, 0, 0}},
+  # 172.16.x.x - 172.31.x.x Docker bridge networks
+  {:range, {172, 16, 0, 0}},
+  {:range, {172, 17, 0, 0}},
+  {:range, {172, 18, 0, 0}},
+  {:range, {172, 19, 0, 0}},
+  {:range, {172, 20, 0, 0}},
+  {:range, {172, 21, 0, 0}},
+  {:range, {172, 22, 0, 0}},
+  {:range, {172, 23, 0, 0}},
+  {:range, {172, 24, 0, 0}},
+  {:range, {172, 25, 0, 0}},
+  {:range, {172, 26, 0, 0}},
+  {:range, {172, 27, 0, 0}},
+  {:range, {172, 28, 0, 0}},
+  {:range, {172, 29, 0, 0}},
+  {:range, {172, 30, 0, 0}},
+  {:range, {172, 31, 0, 0}},
+  # 192.168.x.x local networks
+  {:range, {192, 168, 0, 0}},
+  # Anthropic CIDR block 160.79.104.0/21 (for Claude Code)
+  {:range, {160, 79, 104, 0}},
+  {:range, {160, 79, 105, 0}},
+  {:range, {160, 79, 106, 0}},
+  {:range, {160, 79, 107, 0}},
+  {:range, {160, 79, 108, 0}},
+  {:range, {160, 79, 109, 0}},
+  {:range, {160, 79, 110, 0}},
+  {:range, {160, 79, 111, 0}}
+]
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
 

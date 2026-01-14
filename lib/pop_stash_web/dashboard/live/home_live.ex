@@ -25,10 +25,8 @@ defmodule PopStashWeb.Dashboard.HomeLive do
       |> assign(:projects, projects)
       |> assign(:selected_project_id, nil)
       |> assign(:activity_items, [])
-      |> assign(:recent_searches, [])
       |> load_stats()
       |> load_activity()
-      |> load_recent_searches()
 
     {:ok, socket}
   end
@@ -47,7 +45,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
       |> assign(:selected_project_id, project_id)
       |> load_stats()
       |> load_activity()
-      |> load_recent_searches()
 
     {:noreply, socket}
   end
@@ -69,6 +66,16 @@ defmodule PopStashWeb.Dashboard.HomeLive do
     {:noreply, prepend_activity_item(socket, item)}
   end
 
+  def handle_info({:plan_created, plan}, socket) do
+    item = Activity.to_item(plan)
+    {:noreply, prepend_activity_item(socket, item)}
+  end
+
+  def handle_info({:plan_updated, _plan}, socket) do
+    # Optionally refresh the activity feed on updates
+    {:noreply, socket}
+  end
+
   def handle_info({:insight_created, insight}, socket) do
     item = Activity.to_item(insight)
     {:noreply, prepend_activity_item(socket, item)}
@@ -82,12 +89,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
   def handle_info({:search_logged, search_log}, socket) do
     item = Activity.to_item(search_log)
 
-    socket =
-      socket
-      |> prepend_activity_item(item)
-      |> load_recent_searches()
-
-    {:noreply, socket}
+    {:noreply, prepend_activity_item(socket, item)}
   end
 
   def handle_info({:stash_deleted, id}, socket) do
@@ -99,6 +101,10 @@ defmodule PopStashWeb.Dashboard.HomeLive do
   end
 
   def handle_info({:insight_deleted, id}, socket) do
+    {:noreply, remove_activity_item(socket, id)}
+  end
+
+  def handle_info({:plan_deleted, id}, socket) do
     {:noreply, remove_activity_item(socket, id)}
   end
 
@@ -114,16 +120,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
       )
 
     assign(socket, :activity_items, items)
-  end
-
-  defp load_recent_searches(socket) do
-    searches =
-      case socket.assigns.selected_project_id do
-        nil -> []
-        project_id -> Memory.list_search_logs(project_id, limit: 5)
-      end
-
-    assign(socket, :recent_searches, searches)
   end
 
   defp prepend_activity_item(socket, item) do
@@ -173,6 +169,12 @@ defmodule PopStashWeb.Dashboard.HomeLive do
           |> Enum.map(&length(Memory.list_decisions(&1)))
           |> Enum.sum()
 
+        total_plans =
+          projects
+          |> Enum.map(& &1.id)
+          |> Enum.map(&length(Memory.list_plans(&1)))
+          |> Enum.sum()
+
         total_searches =
           projects
           |> Enum.map(& &1.id)
@@ -184,31 +186,43 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             title: "Projects",
             value: length(projects),
             desc: "Total projects",
+            icon: "hero-folder",
             link: ~p"/pop_stash/projects"
           },
           %{
             title: "Contexts",
             value: total_stashes,
             desc: "Across all projects",
+            icon: "hero-archive-box",
             link: ~p"/pop_stash/contexts"
           },
           %{
             title: "Insights",
             value: total_insights,
             desc: "Across all projects",
+            icon: "hero-light-bulb",
             link: ~p"/pop_stash/insights"
           },
           %{
             title: "Decisions",
             value: total_decisions,
             desc: "Across all projects",
+            icon: "hero-check-badge",
             link: ~p"/pop_stash/decisions"
+          },
+          %{
+            title: "Plans",
+            value: total_plans,
+            desc: "Across all projects",
+            icon: "hero-map",
+            link: ~p"/pop_stash/plans"
           },
           %{
             title: "Searches",
             value: total_searches,
             desc: "Total queries",
-            link: nil
+            icon: "hero-magnifying-glass",
+            link: ~p"/pop_stash/searches"
           }
         ]
 
@@ -218,13 +232,35 @@ defmodule PopStashWeb.Dashboard.HomeLive do
         contexts = Memory.list_contexts(project_id)
         insights = Memory.list_insights(project_id)
         decisions = Memory.list_decisions(project_id)
+        plans = Memory.list_plans(project_id)
         searches_count = Memory.count_searches(project_id)
 
         stats = [
-          %{title: "Contexts", value: length(contexts), link: ~p"/pop_stash/contexts"},
-          %{title: "Insights", value: length(insights), link: ~p"/pop_stash/insights"},
-          %{title: "Decisions", value: length(decisions), link: ~p"/pop_stash/decisions"},
-          %{title: "Searches", value: searches_count, link: nil}
+          %{
+            title: "Contexts",
+            value: length(contexts),
+            icon: "hero-archive-box",
+            link: ~p"/pop_stash/contexts"
+          },
+          %{
+            title: "Insights",
+            value: length(insights),
+            icon: "hero-light-bulb",
+            link: ~p"/pop_stash/insights"
+          },
+          %{
+            title: "Decisions",
+            value: length(decisions),
+            icon: "hero-check-badge",
+            link: ~p"/pop_stash/decisions"
+          },
+          %{title: "Plans", value: length(plans), icon: "hero-map", link: ~p"/pop_stash/plans"},
+          %{
+            title: "Searches",
+            value: searches_count,
+            icon: "hero-magnifying-glass",
+            link: ~p"/pop_stash/searches"
+          }
         ]
 
         assign(socket, :stats, stats)
@@ -294,7 +330,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
                 variant="secondary"
                 class="w-full justify-start"
               >
-                <.icon name="hero-plus" class="size-4" /> New Stash
+                <.icon name="hero-plus" class="size-4" /> New Context
               </.link_button>
               <.link_button
                 navigate={~p"/pop_stash/insights/new"}
@@ -310,80 +346,13 @@ defmodule PopStashWeb.Dashboard.HomeLive do
               >
                 <.icon name="hero-plus" class="size-4" /> New Decision
               </.link_button>
-            </div>
-          </.card>
-          
-    <!-- Recent Searches -->
-          <.card>
-            <.section_header title="Recent Searches" />
-            <div class="space-y-1 max-h-64 overflow-y-auto">
-              <%= if @recent_searches == [] && @selected_project_id do %>
-                <div class="text-sm text-slate-400 text-center py-4">
-                  No recent searches
-                </div>
-              <% else %>
-                <%= if @selected_project_id do %>
-                  <%= for search <- @recent_searches do %>
-                    <div class="flex items-start gap-2 p-2 rounded hover:bg-slate-50 transition-colors">
-                      <.icon
-                        name="hero-magnifying-glass"
-                        class="size-4 text-purple-400 mt-0.5 flex-shrink-0"
-                      />
-                      <div class="min-w-0 flex-1">
-                        <div class="text-sm text-slate-900 truncate" title={search.query}>
-                          {search.query}
-                        </div>
-                        <div class="text-xs text-slate-500">
-                          {search.collection} • {if search.result_count,
-                            do: "#{search.result_count} results",
-                            else: "0 results"}
-                        </div>
-                      </div>
-                    </div>
-                  <% end %>
-                <% else %>
-                  <div class="text-sm text-slate-400 text-center py-4">
-                    Select a project to view searches
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-          </.card>
-          
-    <!-- Navigation -->
-          <.card>
-            <.section_header title="Navigation" />
-            <div class="space-y-2">
-              <.link
-                navigate={~p"/pop_stash/contexts"}
-                class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
+              <.link_button
+                navigate={~p"/pop_stash/plans/new"}
+                variant="secondary"
+                class="w-full justify-start"
               >
-                <.icon name="hero-archive-box" class="size-5 text-slate-400" />
-                <div>
-                  <div class="text-sm font-medium text-slate-900">Stashes</div>
-                  <div class="text-xs text-slate-500">Context snapshots for AI sessions</div>
-                </div>
-              </.link>
-              <.link
-                navigate={~p"/pop_stash/insights"}
-                class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
-              >
-                <.icon name="hero-light-bulb" class="size-5 text-slate-400" />
-                <div>
-                  <div class="text-sm font-medium text-slate-900">Insights</div>
-                  <div class="text-xs text-slate-500">Learned knowledge and patterns</div>
-                </div>
-              </.link>
-              <.link
-                navigate={~p"/pop_stash/decisions"}
-                class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
-              >
-                <.icon name="hero-check-badge" class="size-5 text-slate-400" />
-                <div>
-                  <div class="text-sm font-medium text-slate-900">Decisions</div>
-                  <div class="text-xs text-slate-500">Immutable decision records</div>
-                </div>
-              </.link>
+                <.icon name="hero-plus" class="size-4" /> New Plan
+              </.link_button>
             </div>
           </.card>
         </div>
