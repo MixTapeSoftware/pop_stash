@@ -65,7 +65,7 @@ defmodule PopStash.MCP.Tools.RecallTest do
 
       assert Map.has_key?(result, :id)
       assert Map.has_key?(result, :title)
-      assert Map.has_key?(result, :content)
+      assert Map.has_key?(result, :body)
       assert Map.has_key?(result, :created_at)
       assert result.id == insight.id
     end

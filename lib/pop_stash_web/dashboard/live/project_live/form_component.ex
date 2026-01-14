@@ -19,7 +19,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.FormComponent do
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:changeset, changeset)
+     |> assign(:form, to_form(changeset))
      |> assign(:tags_input, Enum.join(project.tags || [], ", "))}
   end
 
@@ -34,7 +34,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.FormComponent do
 
     {:noreply,
      socket
-     |> assign(:changeset, changeset)
+     |> assign(:form, to_form(changeset))
      |> assign(:tags_input, project_params["tags_input"] || "")}
   end
 
@@ -59,7 +59,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.FormComponent do
          |> push_navigate(to: socket.assigns.return_to)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, :changeset, changeset)}
+        {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end
 
@@ -80,7 +80,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.FormComponent do
     ~H"""
     <div>
       <.form
-        for={@changeset}
+        for={@form}
         id="project-form"
         phx-target={@myself}
         phx-change="validate"
@@ -88,14 +88,14 @@ defmodule PopStashWeb.Dashboard.ProjectLive.FormComponent do
       >
         <div class="space-y-4">
           <.input
-            field={@changeset[:name]}
+            field={@form[:name]}
             type="text"
             label="Name"
             placeholder="My Project"
           />
 
           <.textarea
-            field={@changeset[:description]}
+            field={@form[:description]}
             label="Description"
             placeholder="A brief description of this project..."
             rows={3}

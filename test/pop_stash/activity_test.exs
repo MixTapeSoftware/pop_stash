@@ -168,8 +168,8 @@ defmodule PopStash.ActivityTest do
     test "handles nil body", %{project: project} do
       {:ok, context} = Memory.create_context(project.id, "context", "short")
 
-      # Manually set summary to nil for testing
-      context = %{context | summary: nil}
+      # Manually set body to nil for testing
+      context = %{context | body: nil}
       item = Activity.to_item(context)
 
       assert item.preview == nil

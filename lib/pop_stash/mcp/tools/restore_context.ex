@@ -90,8 +90,8 @@ defmodule PopStash.MCP.Tools.RestoreContext do
   defp format_context(context) do
     %{
       id: context.id,
-      name: context.name,
-      summary: context.summary,
+      name: context.title,
+      summary: context.body,
       files: Map.get(context, :files, []),
       thread_id: context.thread_id,
       created_at: context.inserted_at
@@ -101,6 +101,6 @@ defmodule PopStash.MCP.Tools.RestoreContext do
   defp build_hint([]), do: "No contexts yet."
 
   defp build_hint(recent) do
-    "Recent contexts: " <> Enum.map_join(recent, ", ", & &1.name)
+    "Recent contexts: " <> Enum.map_join(recent, ", ", & &1.title)
   end
 end

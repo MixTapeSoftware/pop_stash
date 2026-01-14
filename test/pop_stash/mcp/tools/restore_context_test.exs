@@ -28,7 +28,7 @@ defmodule PopStash.MCP.Tools.RestoreContextTest do
           files: ["lib/auth.ex"]
         )
 
-      result = RestoreContext.execute(%{"title" => "auth-work"}, %{project_id: project.id})
+      result = RestoreContext.execute(%{"name" => "auth-work"}, %{project_id: project.id})
 
       assert {:ok, %{results: [found], match_type: "exact"}} = result
       assert found.id == context.id
@@ -44,16 +44,16 @@ defmodule PopStash.MCP.Tools.RestoreContextTest do
     } do
       {:ok, _} = Memory.create_context(project.id, "other-context", "Some summary")
 
-      result = RestoreContext.execute(%{"title" => "nonexistent"}, %{project_id: project.id})
+      result = RestoreContext.execute(%{"name" => "nonexistent"}, %{project_id: project.id})
 
       # Since embeddings are disabled, semantic search returns error
-      assert {:error, "Semantic search unavailable. Use exact title match."} = result
+      assert {:error, "Semantic search unavailable. Use exact name match."} = result
     end
 
     test "returns error when no contexts exist", %{project: project} do
-      result = RestoreContext.execute(%{"title" => "anything"}, %{project_id: project.id})
+      result = RestoreContext.execute(%{"name" => "anything"}, %{project_id: project.id})
 
-      assert {:error, "Semantic search unavailable. Use exact title match."} = result
+      assert {:error, "Semantic search unavailable. Use exact name match."} = result
     end
   end
 
@@ -65,7 +65,7 @@ defmodule PopStash.MCP.Tools.RestoreContextTest do
         )
 
       {:ok, %{results: [result]}} =
-        RestoreContext.execute(%{"title" => "test-context"}, %{project_id: project.id})
+        RestoreContext.execute(%{"name" => "test-context"}, %{project_id: project.id})
 
       assert Map.has_key?(result, :id)
       assert Map.has_key?(result, :name)
@@ -80,7 +80,7 @@ defmodule PopStash.MCP.Tools.RestoreContextTest do
       {:ok, _context} = Memory.create_context(project.id, "no-files", "No files context")
 
       {:ok, %{results: [result]}} =
-        RestoreContext.execute(%{"title" => "no-files"}, %{project_id: project.id})
+        RestoreContext.execute(%{"name" => "no-files"}, %{project_id: project.id})
 
       assert result.files == []
     end

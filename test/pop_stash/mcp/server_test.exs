@@ -86,7 +86,7 @@ defmodule PopStash.MCP.ServerTest do
     test "unknown tool returns error", %{context: context} do
       assert {:error, %{error: %{code: -32_601}}} =
                Server.handle_message(
-                 msg("tools/call", params: %{"title" => "nope", "arguments" => %{}}),
+                 msg("tools/call", params: %{"name" => "nope", "arguments" => %{}}),
                  context
                )
     end
@@ -111,7 +111,7 @@ defmodule PopStash.MCP.ServerTest do
         "id" => 1,
         "method" => "tools/call",
         "params" => %{
-          "title" => "decide",
+          "name" => "decide",
           "arguments" => %{
             "title" => "testing",
             "body" => "Use ExUnit",
@@ -121,7 +121,7 @@ defmodule PopStash.MCP.ServerTest do
       }
 
       assert {:ok, response} = Server.handle_message(message, context)
-      assert [%{text: text}] = response.result.body
+      assert [%{text: text}] = response.result.content
       assert text =~ "Decision recorded"
     end
 
@@ -132,7 +132,7 @@ defmodule PopStash.MCP.ServerTest do
         "id" => 1,
         "method" => "tools/call",
         "params" => %{
-          "title" => "decide",
+          "name" => "decide",
           "arguments" => %{"title" => "auth", "body" => "Use Guardian"}
         }
       }
@@ -145,13 +145,13 @@ defmodule PopStash.MCP.ServerTest do
         "id" => 2,
         "method" => "tools/call",
         "params" => %{
-          "title" => "get_decisions",
+          "name" => "get_decisions",
           "arguments" => %{"title" => "auth"}
         }
       }
 
       assert {:ok, response} = Server.handle_message(query_msg, context)
-      assert [%{text: text}] = response.result.body
+      assert [%{text: text}] = response.result.content
       assert text =~ "Use Guardian"
     end
   end
