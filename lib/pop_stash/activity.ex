@@ -5,7 +5,7 @@ defmodule PopStash.Activity do
 
   import Ecto.Query
 
-  alias PopStash.Memory.{Decision, Insight, SearchLog, Stash}
+  alias PopStash.Memory.{Context, Decision, Insight, SearchLog}
   alias PopStash.Projects.Project
   alias PopStash.Repo
 
@@ -15,7 +15,7 @@ defmodule PopStash.Activity do
 
     @type t :: %__MODULE__{
             id: String.t(),
-            type: :stash | :decision | :insight | :search,
+            type: :context | :decision | :insight | :search,
             title: String.t(),
             preview: String.t() | nil,
             project_id: String.t(),
@@ -36,11 +36,11 @@ defmodule PopStash.Activity do
   def list_recent(opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
     project_id = Keyword.get(opts, :project_id)
-    types = Keyword.get(opts, :types, [:stash, :decision, :insight, :search])
+    types = Keyword.get(opts, :types, [:context, :decision, :insight, :search])
 
     items = []
 
-    items = if :stash in types, do: items ++ fetch_stashes(project_id, limit), else: items
+    items = if :context in types, do: items ++ fetch_contexts(project_id, limit), else: items
     items = if :decision in types, do: items ++ fetch_decisions(project_id, limit), else: items
     items = if :insight in types, do: items ++ fetch_insights(project_id, limit), else: items
     items = if :search in types, do: items ++ fetch_searches(project_id, limit), else: items
@@ -54,16 +54,16 @@ defmodule PopStash.Activity do
   Converts a raw entity to an activity item.
   Used for real-time updates when a new item is created.
   """
-  def to_item(%Stash{} = stash) do
+  def to_item(%Context{} = context) do
     %Item{
-      id: stash.id,
-      type: :stash,
-      title: stash.name,
-      preview: truncate(stash.summary, 100),
-      project_id: stash.project_id,
-      project_name: get_project_name(stash.project_id),
-      inserted_at: stash.inserted_at,
-      source: stash
+      id: context.id,
+      type: :context,
+      title: context.name,
+      preview: truncate(context.summary, 100),
+      project_id: context.project_id,
+      project_name: get_project_name(context.project_id),
+      inserted_at: context.inserted_at,
+      source: context
     }
   end
 
@@ -113,8 +113,8 @@ defmodule PopStash.Activity do
 
   # Private functions
 
-  defp fetch_stashes(project_id, limit) do
-    Stash
+  defp fetch_contexts(project_id, limit) do
+    Context
     |> maybe_filter_project(project_id)
     |> where([s], is_nil(s.expires_at) or s.expires_at > ^DateTime.utc_now())
     |> order_by(desc: :inserted_at)

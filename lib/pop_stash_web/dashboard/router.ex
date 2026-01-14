@@ -55,24 +55,24 @@ defmodule PopStashWeb.Dashboard.Router do
             :show
           )
 
-          # Stashes
-          LiveRouter.live("/stashes", PopStashWeb.Dashboard.StashLive.Index, :index)
+          # Contexts
+          LiveRouter.live("/contexts", PopStashWeb.Dashboard.ContextLive.Index, :index)
 
           LiveRouter.live(
-            "/stashes/new",
-            PopStashWeb.Dashboard.StashLive.Index,
+            "/contexts/new",
+            PopStashWeb.Dashboard.ContextLive.Index,
             :new
           )
 
           LiveRouter.live(
-            "/stashes/:id",
-            PopStashWeb.Dashboard.StashLive.Show,
+            "/contexts/:id",
+            PopStashWeb.Dashboard.ContextLive.Show,
             :show
           )
 
           LiveRouter.live(
-            "/stashes/:id/edit",
-            PopStashWeb.Dashboard.StashLive.Show,
+            "/contexts/:id/edit",
+            PopStashWeb.Dashboard.ContextLive.Show,
             :edit
           )
 

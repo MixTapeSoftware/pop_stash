@@ -1,6 +1,6 @@
-defmodule PopStashWeb.Dashboard.StashLive.Index do
+defmodule PopStashWeb.Dashboard.ContextLive.Index do
   @moduledoc """
-  LiveView for listing and managing stashes.
+  LiveView for listing and managing contexts.
   """
 
   use PopStashWeb.Dashboard, :live_view
@@ -18,12 +18,12 @@ defmodule PopStashWeb.Dashboard.StashLive.Index do
 
     socket =
       socket
-      |> assign(:page_title, "Stashes")
-      |> assign(:current_path, "/pop_stash/stashes")
+      |> assign(:page_title, "Contexts")
+      |> assign(:current_path, "/pop_stash/contexts")
       |> assign(:projects, projects)
       |> assign(:selected_project_id, nil)
       |> assign(:search_query, "")
-      |> load_stashes()
+      |> load_contexts()
 
     {:ok, socket}
   end
@@ -36,13 +36,13 @@ defmodule PopStashWeb.Dashboard.StashLive.Index do
   defp apply_action(socket, :index, _params) do
     socket
     |> assign(:show_modal, false)
-    |> assign(:stash, nil)
+    |> assign(:context, nil)
   end
 
   defp apply_action(socket, :new, _params) do
     socket
     |> assign(:show_modal, true)
-    |> assign(:stash, %Memory.Stash{})
+    |> assign(:context, %Memory.Context{})
   end
 
   @impl true
@@ -52,7 +52,7 @@ defmodule PopStashWeb.Dashboard.StashLive.Index do
     socket =
       socket
       |> assign(:selected_project_id, project_id)
-      |> load_stashes()
+      |> load_contexts()
 
     {:noreply, socket}
   end
@@ -61,77 +61,77 @@ defmodule PopStashWeb.Dashboard.StashLive.Index do
     socket =
       socket
       |> assign(:search_query, query)
-      |> load_stashes()
+      |> load_contexts()
 
     {:noreply, socket}
   end
 
   def handle_event("delete", %{"id" => id}, socket) do
-    case Memory.delete_stash(id) do
+    case Memory.delete_context(id) do
       :ok ->
         {:noreply,
          socket
-         |> put_flash(:info, "Stash deleted successfully")
-         |> load_stashes()}
+         |> put_flash(:info, "Context deleted successfully")
+         |> load_contexts()}
 
       {:error, _reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete stash")}
+        {:noreply, put_flash(socket, :error, "Failed to delete context")}
     end
   end
 
   def handle_event("close_modal", _, socket) do
-    {:noreply, push_patch(socket, to: ~p"/pop_stash/stashes")}
+    {:noreply, push_patch(socket, to: ~p"/pop_stash/contexts")}
   end
 
   @impl true
-  def handle_info({:stash_created, _stash}, socket) do
-    {:noreply, load_stashes(socket)}
+  def handle_info({:context_created, _context}, socket) do
+    {:noreply, load_contexts(socket)}
   end
 
-  def handle_info({:stash_updated, _stash}, socket) do
-    {:noreply, load_stashes(socket)}
+  def handle_info({:context_updated, _context}, socket) do
+    {:noreply, load_contexts(socket)}
   end
 
-  def handle_info({:stash_deleted, _id}, socket) do
-    {:noreply, load_stashes(socket)}
+  def handle_info({:context_deleted, _id}, socket) do
+    {:noreply, load_contexts(socket)}
   end
 
   def handle_info(_msg, socket) do
     {:noreply, socket}
   end
 
-  defp load_stashes(socket) do
-    stashes =
+  defp load_contexts(socket) do
+    contexts =
       socket
-      |> fetch_stashes()
-      |> filter_stashes_by_search(socket.assigns.search_query)
+      |> fetch_contexts()
+      |> filter_contexts_by_search(socket.assigns.search_query)
 
-    assign(socket, :stashes, stashes)
+    assign(socket, :contexts, contexts)
   end
 
-  defp fetch_stashes(socket) do
+  defp fetch_contexts(socket) do
     case socket.assigns.selected_project_id do
       nil ->
         socket.assigns.projects
-        |> Enum.flat_map(&Memory.list_stashes(&1.id))
+        |> Enum.flat_map(&Memory.list_contexts(&1.id))
         |> Enum.sort_by(& &1.inserted_at, {:desc, DateTime})
 
       project_id ->
-        Memory.list_stashes(project_id)
+        Memory.list_contexts(project_id)
     end
   end
 
-  defp filter_stashes_by_search(stashes, ""), do: stashes
+  defp filter_contexts_by_search(contexts, ""), do: contexts
 
-  defp filter_stashes_by_search(stashes, query) do
+  defp filter_contexts_by_search(contexts, query) do
     query = String.downcase(query)
-    Enum.filter(stashes, &stash_matches_query?(&1, query))
+    Enum.filter(contexts, &context_matches_query?(&1, query))
   end
 
-  defp stash_matches_query?(stash, query) do
-    matches_field?(stash.name, query) ||
-      matches_field?(stash.summary, query) ||
-      matches_tags?(stash.tags, query)
+  defp context_matches_query?(context, query) do
+    matches_field?(context.name, query) ||
+      matches_field?(context.summary, query) ||
+      matches_tags?(context.tags, query)
   end
 
   defp matches_field?(nil, _query), do: false
@@ -144,10 +144,10 @@ defmodule PopStashWeb.Dashboard.StashLive.Index do
   def render(assigns) do
     ~H"""
     <div>
-      <.page_header title="Stashes" subtitle="Context snapshots for AI sessions">
+      <.page_header title="Contexts" subtitle="Working state snapshots for AI sessions">
         <:actions>
-          <.link_button navigate={~p"/pop_stash/stashes/new"} variant="primary">
-            <.icon name="hero-plus" class="size-4" /> New Stash
+          <.link_button navigate={~p"/pop_stash/contexts/new"} variant="primary">
+            <.icon name="hero-plus" class="size-4" /> New Context
           </.link_button>
         </:actions>
       </.page_header>
@@ -180,7 +180,7 @@ defmodule PopStashWeb.Dashboard.StashLive.Index do
               type="text"
               name="query"
               value={@search_query}
-              placeholder="Search stashes..."
+              placeholder="Search contexts..."
               class="w-full pl-10 pr-3 py-2 text-sm bg-white border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
               phx-debounce="300"
             />
@@ -188,53 +188,53 @@ defmodule PopStashWeb.Dashboard.StashLive.Index do
         </form>
       </div>
       
-    <!-- Stash List -->
-      <%= if @stashes == [] do %>
+    <!-- Context List -->
+      <%= if @contexts == [] do %>
         <.empty_state
-          title="No stashes found"
+          title="No contexts found"
           description={
             if @search_query != "",
               do: "Try adjusting your search",
-              else: "Create your first stash to get started"
+              else: "Create your first context to get started"
           }
         >
           <:action>
             <.link_button
               :if={@search_query == ""}
-              navigate={~p"/pop_stash/stashes/new"}
+              navigate={~p"/pop_stash/contexts/new"}
               variant="primary"
             >
-              <.icon name="hero-plus" class="size-4" /> New Stash
+              <.icon name="hero-plus" class="size-4" /> New Context
             </.link_button>
           </:action>
         </.empty_state>
       <% else %>
-        <.data_table id="stashes-table" rows={@stashes} row_id={&"stash-#{&1.id}"}>
-          <:col :let={stash} label="Name" class="font-medium">
-            <.link navigate={~p"/pop_stash/stashes/#{stash.id}"} class="hover:text-violet-600">
-              {stash.name}
+        <.data_table id="contexts-table" rows={@contexts} row_id={&"context-#{&1.id}"}>
+          <:col :let={context} label="Name" class="font-medium">
+            <.link navigate={~p"/pop_stash/contexts/#{context.id}"} class="hover:text-violet-600">
+              {context.name}
             </.link>
           </:col>
-          <:col :let={stash} label="Summary">
-            <.markdown_preview content={stash.summary} max_length={100} />
+          <:col :let={context} label="Summary">
+            <.markdown_preview content={context.summary} max_length={100} />
           </:col>
-          <:col :let={stash} label="Tags">
-            <.tag_badges tags={stash.tags || []} />
+          <:col :let={context} label="Tags">
+            <.tag_badges tags={context.tags || []} />
           </:col>
-          <:col :let={stash} label="Created" mono>
-            <.timestamp datetime={stash.inserted_at} />
+          <:col :let={context} label="Created" mono>
+            <.timestamp datetime={context.inserted_at} />
           </:col>
-          <:col :let={stash} label="Actions" class="text-right">
+          <:col :let={context} label="Actions" class="text-right">
             <div class="flex items-center justify-end gap-2">
-              <.link_button navigate={~p"/pop_stash/stashes/#{stash.id}"} variant="ghost" size="sm">
+              <.link_button navigate={~p"/pop_stash/contexts/#{context.id}"} variant="ghost" size="sm">
                 View
               </.link_button>
               <.button
                 variant="ghost"
                 size="sm"
                 phx-click="delete"
-                phx-value-id={stash.id}
-                data-confirm="Are you sure you want to delete this stash?"
+                phx-value-id={context.id}
+                data-confirm="Are you sure you want to delete this context?"
               >
                 <.icon name="hero-trash" class="size-4 text-red-500" />
               </.button>
@@ -243,21 +243,21 @@ defmodule PopStashWeb.Dashboard.StashLive.Index do
         </.data_table>
       <% end %>
       
-    <!-- New Stash Modal -->
+    <!-- New Context Modal -->
       <.modal
         :if={@show_modal}
-        id="stash-modal"
+        id="context-modal"
         show={@show_modal}
         on_cancel={JS.push("close_modal")}
-        title="New Stash"
+        title="New Context"
       >
         <.live_component
-          module={PopStashWeb.Dashboard.StashLive.FormComponent}
+          module={PopStashWeb.Dashboard.ContextLive.FormComponent}
           id={:new}
-          stash={@stash}
+          context={@context}
           projects={@projects}
           action={:new}
-          return_to={~p"/pop_stash/stashes"}
+          return_to={~p"/pop_stash/contexts"}
         />
       </.modal>
     </div>

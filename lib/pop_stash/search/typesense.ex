@@ -1,6 +1,6 @@
 defmodule PopStash.Search.Typesense do
   @moduledoc """
-  Typesense client for indexing and searching stashes/insights/decisions.
+  Typesense client for indexing and searching contexts/insights/decisions.
   Uses TypesenseEx for communication with Typesense server.
   """
 
@@ -9,8 +9,8 @@ defmodule PopStash.Search.Typesense do
   alias TypesenseEx.Collections
   alias TypesenseEx.Documents
 
-  @stashes_schema %{
-    name: "stashes",
+  @contexts_schema %{
+    name: "contexts",
     fields: [
       %{name: "id", type: "string"},
       %{name: "project_id", type: "string", facet: true},
@@ -49,7 +49,7 @@ defmodule PopStash.Search.Typesense do
   ## Collection management
 
   def ensure_collections do
-    with :ok <- ensure_collection(@stashes_schema),
+    with :ok <- ensure_collection(@contexts_schema),
          :ok <- ensure_collection(@insights_schema) do
       ensure_collection(@decisions_schema)
     end
@@ -71,7 +71,7 @@ defmodule PopStash.Search.Typesense do
   end
 
   def drop_collections do
-    for collection <- ["stashes", "insights", "decisions"] do
+    for collection <- ["contexts", "insights", "decisions"] do
       Collections.delete(collection)
     end
 
@@ -80,17 +80,17 @@ defmodule PopStash.Search.Typesense do
 
   ## Indexing
 
-  def index_stash(stash, embedding \\ nil) do
+  def index_context(context, embedding \\ nil) do
     document = %{
-      id: stash.id,
-      project_id: stash.project_id,
-      name: stash.name,
-      summary: stash.summary || "",
-      embedding: embedding || stash.embedding || List.duplicate(0.0, 384),
-      created_at: DateTime.to_unix(stash.inserted_at)
+      id: context.id,
+      project_id: context.project_id,
+      name: context.name,
+      summary: context.summary || "",
+      embedding: embedding || context.embedding || List.duplicate(0.0, 384),
+      created_at: DateTime.to_unix(context.inserted_at)
     }
 
-    index_document("stashes", document)
+    index_document("contexts", document)
   end
 
   def index_insight(insight, embedding \\ nil) do
@@ -137,9 +137,9 @@ defmodule PopStash.Search.Typesense do
 
   ## Search
 
-  def search_stashes(project_id, query, opts \\ []) do
+  def search_contexts(project_id, query, opts \\ []) do
     with {:ok, embedding} <- PopStash.Embeddings.embed(query) do
-      hybrid_search("stashes", project_id, query, embedding, opts)
+      hybrid_search("contexts", project_id, query, embedding, opts)
     end
   end
 
@@ -180,7 +180,7 @@ defmodule PopStash.Search.Typesense do
     end
   end
 
-  defp query_fields("stashes"), do: "name,summary"
+  defp query_fields("contexts"), do: "name,summary"
   defp query_fields("insights"), do: "key,content"
   defp query_fields("decisions"), do: "topic,decision,reasoning"
 
@@ -192,7 +192,7 @@ defmodule PopStash.Search.Typesense do
     base = %{id: doc["id"], inserted_at: DateTime.from_unix!(doc["created_at"])}
 
     case collection do
-      "stashes" -> Map.merge(base, %{name: doc["name"], summary: doc["summary"]})
+      "contexts" -> Map.merge(base, %{name: doc["name"], summary: doc["summary"]})
       "insights" -> Map.merge(base, %{key: doc["key"], content: doc["content"]})
       "decisions" -> Map.merge(base, %{topic: doc["topic"], decision: doc["decision"]})
     end

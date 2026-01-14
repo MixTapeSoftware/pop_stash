@@ -10,10 +10,10 @@ defmodule PopStash.Search.TypesenseTest do
     end
   end
 
-  describe "search_stashes/3" do
+  describe "search_contexts/3" do
     test "returns error when embeddings are disabled" do
       # Search requires embeddings to generate query vectors
-      assert {:error, :embeddings_disabled} = Typesense.search_stashes("project-id", "query")
+      assert {:error, :embeddings_disabled} = Typesense.search_contexts("project-id", "query")
     end
   end
 

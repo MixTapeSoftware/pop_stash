@@ -109,12 +109,12 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
 
   defp load_stats(socket) do
     project_id = socket.assigns.project.id
-    stashes = Memory.list_stashes(project_id)
+    contexts = Memory.list_contexts(project_id)
     insights = Memory.list_insights(project_id)
     decisions = Memory.list_decisions(project_id)
 
     stats = [
-      %{title: "Stashes", value: length(stashes)},
+      %{title: "Contexts", value: length(contexts)},
       %{title: "Insights", value: length(insights)},
       %{title: "Decisions", value: length(decisions)}
     ]
@@ -219,7 +219,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
           <.section_header title="Browse Project Contents" />
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <.link
-              navigate={~p"/pop_stash/stashes?project_id=#{@project.id}"}
+              navigate={~p"/pop_stash/contexts?project_id=#{@project.id}"}
               class="flex items-center gap-3 p-4 rounded border border-slate-200 hover:bg-slate-50 hover:border-violet-300 transition-colors"
             >
               <.icon name="hero-archive-box" class="size-6 text-slate-400" />

@@ -23,14 +23,14 @@ defmodule PopStash.Search.IndexerTest do
   end
 
   describe "Memory context broadcasts events" do
-    test "create_stash broadcasts :stash_created", %{project: project} do
+    test "create_context broadcasts :context_created", %{project: project} do
       # Subscribe to memory events
       Phoenix.PubSub.subscribe(PopStash.PubSub, "memory:events")
 
-      {:ok, stash} = Memory.create_stash(project.id, "test-stash", "Test summary")
+      {:ok, context} = Memory.create_context(project.id, "test-context", "Test summary")
 
-      assert_receive {:stash_created, received_stash}
-      assert received_stash.id == stash.id
+      assert_receive {:context_created, received_context}
+      assert received_context.id == context.id
     end
 
     test "create_insight broadcasts :insight_created", %{project: project} do
@@ -65,15 +65,15 @@ defmodule PopStash.Search.IndexerTest do
       assert received_insight.content == "Updated content"
     end
 
-    test "delete_stash broadcasts :stash_deleted", %{project: project} do
-      {:ok, stash} = Memory.create_stash(project.id, "to-delete", "Will be deleted")
+    test "delete_context broadcasts :context_deleted", %{project: project} do
+      {:ok, context} = Memory.create_context(project.id, "to-delete", "Will be deleted")
 
       Phoenix.PubSub.subscribe(PopStash.PubSub, "memory:events")
 
-      :ok = Memory.delete_stash(stash.id)
+      :ok = Memory.delete_context(context.id)
 
-      assert_receive {:stash_deleted, deleted_id}
-      assert deleted_id == stash.id
+      assert_receive {:context_deleted, deleted_id}
+      assert deleted_id == context.id
     end
 
     test "delete_insight broadcasts :insight_deleted", %{project: project} do

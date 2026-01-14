@@ -93,12 +93,12 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
   defp matches_tags?(tags, query), do: Enum.any?(tags, &matches_field?(&1, query))
 
   defp enrich_project_with_stats(project) do
-    stashes_count = length(Memory.list_stashes(project.id))
+    contexts_count = length(Memory.list_contexts(project.id))
     insights_count = length(Memory.list_insights(project.id))
     decisions_count = length(Memory.list_decisions(project.id))
 
     Map.merge(project, %{
-      stashes_count: stashes_count,
+      contexts_count: contexts_count,
       insights_count: insights_count,
       decisions_count: decisions_count
     })

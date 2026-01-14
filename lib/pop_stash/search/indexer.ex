@@ -34,13 +34,13 @@ defmodule PopStash.Search.Indexer do
 
   # Handle PubSub events
   @impl true
-  def handle_info({:stash_created, stash}, state) do
-    index_async(stash, &index_stash/1)
+  def handle_info({:context_created, context}, state) do
+    index_async(context, &index_context/1)
     {:noreply, state}
   end
 
-  def handle_info({:stash_updated, stash}, state) do
-    index_async(stash, &index_stash/1)
+  def handle_info({:context_updated, context}, state) do
+    index_async(context, &index_context/1)
     {:noreply, state}
   end
 
@@ -59,8 +59,8 @@ defmodule PopStash.Search.Indexer do
     {:noreply, state}
   end
 
-  def handle_info({:stash_deleted, stash_id}, state) do
-    Typesense.delete_document("stashes", stash_id)
+  def handle_info({:context_deleted, context_id}, state) do
+    Typesense.delete_document("contexts", context_id)
     {:noreply, state}
   end
 
@@ -86,16 +86,16 @@ defmodule PopStash.Search.Indexer do
     end)
   end
 
-  defp index_stash(stash) do
-    text = "#{stash.name} #{stash.summary || ""}"
+  defp index_context(context) do
+    text = "#{context.name} #{context.summary || ""}"
 
     with {:ok, embedding} <- Embeddings.embed(text),
-         :ok <- update_embedding(stash, embedding),
-         :ok <- Typesense.index_stash(stash, embedding) do
+         :ok <- update_embedding(context, embedding),
+         :ok <- Typesense.index_context(context, embedding) do
       :ok
     else
       {:error, reason} ->
-        Logger.warning("Failed to index stash #{stash.id}: #{inspect(reason)}")
+        Logger.warning("Failed to index context #{context.id}: #{inspect(reason)}")
         :error
     end
   end

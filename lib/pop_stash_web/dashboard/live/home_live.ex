@@ -158,7 +158,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
         total_stashes =
           projects
           |> Enum.map(& &1.id)
-          |> Enum.map(&length(Memory.list_stashes(&1)))
+          |> Enum.map(&length(Memory.list_contexts(&1)))
           |> Enum.sum()
 
         total_insights =
@@ -187,10 +187,10 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             link: ~p"/pop_stash/projects"
           },
           %{
-            title: "Stashes",
+            title: "Contexts",
             value: total_stashes,
             desc: "Across all projects",
-            link: ~p"/pop_stash/stashes"
+            link: ~p"/pop_stash/contexts"
           },
           %{
             title: "Insights",
@@ -215,13 +215,13 @@ defmodule PopStashWeb.Dashboard.HomeLive do
         assign(socket, :stats, stats)
 
       project_id ->
-        stashes = Memory.list_stashes(project_id)
+        contexts = Memory.list_contexts(project_id)
         insights = Memory.list_insights(project_id)
         decisions = Memory.list_decisions(project_id)
         searches_count = Memory.count_searches(project_id)
 
         stats = [
-          %{title: "Stashes", value: length(stashes), link: ~p"/pop_stash/stashes"},
+          %{title: "Contexts", value: length(contexts), link: ~p"/pop_stash/contexts"},
           %{title: "Insights", value: length(insights), link: ~p"/pop_stash/insights"},
           %{title: "Decisions", value: length(decisions), link: ~p"/pop_stash/decisions"},
           %{title: "Searches", value: searches_count, link: nil}
@@ -290,7 +290,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             <.section_header title="Quick Actions" />
             <div class="space-y-2">
               <.link_button
-                navigate={~p"/pop_stash/stashes/new"}
+                navigate={~p"/pop_stash/contexts/new"}
                 variant="secondary"
                 class="w-full justify-start"
               >
@@ -355,7 +355,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             <.section_header title="Navigation" />
             <div class="space-y-2">
               <.link
-                navigate={~p"/pop_stash/stashes"}
+                navigate={~p"/pop_stash/contexts"}
                 class="flex items-center gap-3 p-3 rounded hover:bg-slate-50 transition-colors"
               >
                 <.icon name="hero-archive-box" class="size-5 text-slate-400" />

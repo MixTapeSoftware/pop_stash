@@ -9,25 +9,25 @@ defmodule PopStash.Memory do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias PopStash.Memory.Context
   alias PopStash.Memory.Decision
   alias PopStash.Memory.Insight
   alias PopStash.Memory.SearchLog
-  alias PopStash.Memory.Stash
   alias PopStash.Repo
   alias PopStash.Search.Typesense
 
-  ## Stashes
+  ## Contexts
 
   @doc """
-  Creates a stash.
+  Creates a context.
 
   ## Options
     * `:files` - List of file paths
     * `:tags` - Optional list of tags
     * `:expires_at` - Optional expiration datetime
   """
-  def create_stash(project_id, name, summary, opts \\ []) do
-    %Stash{}
+  def create_context(project_id, name, summary, opts \\ []) do
+    %Context{}
     |> cast(
       %{
         project_id: project_id,
@@ -43,26 +43,26 @@ defmodule PopStash.Memory do
     |> validate_length(:name, min: 1, max: 255)
     |> foreign_key_constraint(:project_id)
     |> Repo.insert()
-    |> tap_ok(&broadcast(:stash_created, &1))
+    |> tap_ok(&broadcast(:context_created, &1))
   end
 
   @doc """
-  Updates a stash.
+  Updates a context.
   """
-  def update_stash(stash, attrs) do
-    stash
+  def update_context(context, attrs) do
+    context
     |> cast(attrs, [:name, :summary, :files, :tags, :expires_at])
     |> validate_required([:name, :summary])
     |> validate_length(:name, min: 1, max: 255)
     |> Repo.update()
-    |> tap_ok(&broadcast(:stash_updated, &1))
+    |> tap_ok(&broadcast(:context_updated, &1))
   end
 
   @doc """
-  Retrieves a stash by exact name match within a project.
+  Retrieves a context by exact name match within a project.
   """
-  def get_stash_by_name(project_id, name) when is_binary(project_id) and is_binary(name) do
-    Stash
+  def get_context_by_name(project_id, name) when is_binary(project_id) and is_binary(name) do
+    Context
     |> where([s], s.project_id == ^project_id and s.name == ^name)
     |> where([s], is_nil(s.expires_at) or s.expires_at > ^DateTime.utc_now())
     |> order_by(desc: :inserted_at)
@@ -72,10 +72,10 @@ defmodule PopStash.Memory do
   end
 
   @doc """
-  Lists all non-expired stashes for a project.
+  Lists all non-expired contexts for a project.
   """
-  def list_stashes(project_id) when is_binary(project_id) do
-    Stash
+  def list_contexts(project_id) when is_binary(project_id) do
+    Context
     |> where([s], s.project_id == ^project_id)
     |> where([s], is_nil(s.expires_at) or s.expires_at > ^DateTime.utc_now())
     |> order_by(desc: :inserted_at)
@@ -83,17 +83,17 @@ defmodule PopStash.Memory do
   end
 
   @doc """
-  Deletes a stash by ID.
+  Deletes a context by ID.
   """
-  def delete_stash(stash_id) when is_binary(stash_id) do
-    case Repo.get(Stash, stash_id) do
+  def delete_context(context_id) when is_binary(context_id) do
+    case Repo.get(Context, context_id) do
       nil ->
         {:error, :not_found}
 
-      stash ->
-        case Repo.delete(stash) do
+      context ->
+        case Repo.delete(context) do
           {:ok, _} ->
-            broadcast(:stash_deleted, stash.id)
+            broadcast(:context_deleted, context.id)
             :ok
 
           error ->
@@ -317,11 +317,11 @@ defmodule PopStash.Memory do
   ## Search
 
   @doc """
-  Search stashes by semantic similarity.
-  Returns ranked list of matching stashes.
+  Search contexts by semantic similarity.
+  Returns ranked list of matching contexts.
   """
-  def search_stashes(project_id, query, opts \\ []) do
-    Typesense.search_stashes(project_id, query, opts)
+  def search_contexts(project_id, query, opts \\ []) do
+    Typesense.search_contexts(project_id, query, opts)
   end
 
   @doc """

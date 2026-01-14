@@ -9,83 +9,83 @@ defmodule PopStash.MemoryTest do
     %{project: project}
   end
 
-  describe "stashes" do
-    test "create_stash/4 creates a stash", %{project: project} do
-      assert {:ok, stash} =
-               Memory.create_stash(project.id, "my-work", "Working on auth")
+  describe "contexts" do
+    test "create_context/4 creates a context", %{project: project} do
+      assert {:ok, context} =
+               Memory.create_context(project.id, "my-work", "Working on auth")
 
-      assert stash.name == "my-work"
-      assert stash.summary == "Working on auth"
-      assert stash.project_id == project.id
+      assert context.name == "my-work"
+      assert context.summary == "Working on auth"
+      assert context.project_id == project.id
     end
 
-    test "create_stash/4 accepts files and tags", %{project: project} do
-      assert {:ok, stash} =
-               Memory.create_stash(project.id, "test", "summary",
+    test "create_context/4 accepts files and tags", %{project: project} do
+      assert {:ok, context} =
+               Memory.create_context(project.id, "test", "summary",
                  files: ["lib/auth.ex"],
                  tags: ["high-priority", "auth"]
                )
 
-      assert stash.files == ["lib/auth.ex"]
-      assert stash.tags == ["high-priority", "auth"]
+      assert context.files == ["lib/auth.ex"]
+      assert context.tags == ["high-priority", "auth"]
     end
 
-    test "get_stash_by_name/2 retrieves stash by exact name", %{project: project} do
-      {:ok, stash} = Memory.create_stash(project.id, "my-work", "Summary")
-      assert {:ok, found} = Memory.get_stash_by_name(project.id, "my-work")
-      assert found.id == stash.id
+    test "get_context_by_name/2 retrieves context by exact name", %{project: project} do
+      {:ok, context} = Memory.create_context(project.id, "my-work", "Summary")
+      assert {:ok, found} = Memory.get_context_by_name(project.id, "my-work")
+      assert found.id == context.id
     end
 
-    test "get_stash_by_name/2 returns error when not found", %{project: project} do
-      assert {:error, :not_found} = Memory.get_stash_by_name(project.id, "nonexistent")
+    test "get_context_by_name/2 returns error when not found", %{project: project} do
+      assert {:error, :not_found} = Memory.get_context_by_name(project.id, "nonexistent")
     end
 
-    test "get_stash_by_name/2 ignores expired stashes", %{project: project} do
+    test "get_context_by_name/2 ignores expired contexts", %{project: project} do
       past = DateTime.add(DateTime.utc_now(), -3600, :second)
 
       {:ok, _} =
-        Memory.create_stash(project.id, "expired", "Old", expires_at: past)
+        Memory.create_context(project.id, "expired", "Old", expires_at: past)
 
-      assert {:error, :not_found} = Memory.get_stash_by_name(project.id, "expired")
+      assert {:error, :not_found} = Memory.get_context_by_name(project.id, "expired")
     end
 
-    test "get_stash_by_name/2 returns non-expired stashes", %{project: project} do
+    test "get_context_by_name/2 returns non-expired contexts", %{project: project} do
       future = DateTime.add(DateTime.utc_now(), 3600, :second)
 
-      {:ok, stash} =
-        Memory.create_stash(project.id, "future", "Valid", expires_at: future)
+      {:ok, context} =
+        Memory.create_context(project.id, "future", "Valid", expires_at: future)
 
-      assert {:ok, found} = Memory.get_stash_by_name(project.id, "future")
-      assert found.id == stash.id
+      assert {:ok, found} = Memory.get_context_by_name(project.id, "future")
+      assert found.id == context.id
     end
 
-    test "list_stashes/1 returns all non-expired stashes", %{project: project} do
-      {:ok, _} = Memory.create_stash(project.id, "stash1", "First")
-      {:ok, _} = Memory.create_stash(project.id, "stash2", "Second")
+    test "list_contexts/1 returns all non-expired contexts", %{project: project} do
+      {:ok, _} = Memory.create_context(project.id, "context1", "First")
+      {:ok, _} = Memory.create_context(project.id, "context2", "Second")
 
-      stashes = Memory.list_stashes(project.id)
-      assert length(stashes) == 2
+      contexts = Memory.list_contexts(project.id)
+      assert length(contexts) == 2
     end
 
-    test "list_stashes/1 excludes expired stashes", %{project: project} do
-      {:ok, _} = Memory.create_stash(project.id, "valid", "Valid")
+    test "list_contexts/1 excludes expired contexts", %{project: project} do
+      {:ok, _} = Memory.create_context(project.id, "valid", "Valid")
 
       past = DateTime.add(DateTime.utc_now(), -3600, :second)
-      {:ok, _} = Memory.create_stash(project.id, "expired", "Old", expires_at: past)
+      {:ok, _} = Memory.create_context(project.id, "expired", "Old", expires_at: past)
 
-      stashes = Memory.list_stashes(project.id)
-      assert length(stashes) == 1
-      assert hd(stashes).name == "valid"
+      contexts = Memory.list_contexts(project.id)
+      assert length(contexts) == 1
+      assert hd(contexts).name == "valid"
     end
 
-    test "delete_stash/1 removes a stash", %{project: project} do
-      {:ok, stash} = Memory.create_stash(project.id, "temp", "Temp")
-      assert :ok = Memory.delete_stash(stash.id)
-      assert {:error, :not_found} = Memory.get_stash_by_name(project.id, "temp")
+    test "delete_context/1 removes a context", %{project: project} do
+      {:ok, context} = Memory.create_context(project.id, "temp", "Temp")
+      assert :ok = Memory.delete_context(context.id)
+      assert {:error, :not_found} = Memory.get_context_by_name(project.id, "temp")
     end
 
-    test "delete_stash/1 returns error for nonexistent stash" do
-      assert {:error, :not_found} = Memory.delete_stash(Ecto.UUID.generate())
+    test "delete_context/1 returns error for nonexistent context" do
+      assert {:error, :not_found} = Memory.delete_context(Ecto.UUID.generate())
     end
   end
 
@@ -159,18 +159,18 @@ defmodule PopStash.MemoryTest do
   end
 
   describe "project isolation" do
-    test "stashes are isolated by project" do
+    test "contexts are isolated by project" do
       {:ok, project1} = Projects.create("Project 1")
       {:ok, project2} = Projects.create("Project 2")
 
-      {:ok, _} = Memory.create_stash(project1.id, "shared-name", "Project 1 stash")
-      {:ok, _} = Memory.create_stash(project2.id, "shared-name", "Project 2 stash")
+      {:ok, _} = Memory.create_context(project1.id, "shared-name", "Project 1 context")
+      {:ok, _} = Memory.create_context(project2.id, "shared-name", "Project 2 context")
 
-      {:ok, stash1} = Memory.get_stash_by_name(project1.id, "shared-name")
-      {:ok, stash2} = Memory.get_stash_by_name(project2.id, "shared-name")
+      {:ok, context1} = Memory.get_context_by_name(project1.id, "shared-name")
+      {:ok, context2} = Memory.get_context_by_name(project2.id, "shared-name")
 
-      assert stash1.summary == "Project 1 stash"
-      assert stash2.summary == "Project 2 stash"
+      assert context1.summary == "Project 1 context"
+      assert context2.summary == "Project 2 context"
     end
 
     test "insights are isolated by project" do

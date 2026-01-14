@@ -263,7 +263,7 @@ defmodule PopStashWeb.Dashboard.Components do
   def markdown_preview(assigns) do
     ~H"""
     <div class={"text-sm text-slate-600 leading-relaxed #{@class}"}>
-      {preview(@content, @max_length)}
+      {preview(@content, max_length: @max_length)}
     </div>
     """
   end

@@ -1,6 +1,6 @@
-defmodule PopStash.MCP.Tools.Stash do
+defmodule PopStash.MCP.Tools.SaveContext do
   @moduledoc """
-  MCP tool for creating stashes.
+  MCP tool for creating contexts.
   """
 
   @behaviour PopStash.MCP.ToolBehaviour
@@ -11,7 +11,7 @@ defmodule PopStash.MCP.Tools.Stash do
   def tools do
     [
       %{
-        name: "stash",
+        name: "save_context",
         description: "Save context for later. Use when switching tasks or context is long.",
         inputSchema: %{
           type: "object",
@@ -33,15 +33,16 @@ defmodule PopStash.MCP.Tools.Stash do
   end
 
   def execute(args, %{project_id: project_id}) do
-    case Memory.create_stash(
+    case Memory.create_context(
            project_id,
            args["name"],
            args["summary"],
            files: Map.get(args, "files", []),
            tags: Map.get(args, "tags", [])
          ) do
-      {:ok, stash} ->
-        {:ok, "Stashed '#{stash.name}'. Use `pop` with name '#{stash.name}' to restore."}
+      {:ok, context} ->
+        {:ok,
+         "Saved context '#{context.name}'. Use `restore_context` with name '#{context.name}' to restore."}
 
       {:error, changeset} ->
         {:error, format_errors(changeset)}

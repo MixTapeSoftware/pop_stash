@@ -1,23 +1,23 @@
 services:
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.local
-  #   volumes:
-  #     - .:/app
-  #     - pop-stash-app-build:/app/_build
-  #     - pop-stash-app-deps:/app/deps
-  #   ports:
-  #     - "0.0.0.0:4001:4001"
-  #   environment:
-  #     - MIX_ENV=dev
-  #     - LOCAL_DOCKER=true
-  #   depends_on:
-  #     - db
-  #     - typesense
-  #   command: ["mix", "phx.server"]
-  #   networks:
-  #     - popstash
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    volumes:
+      - .:/app
+      - pop-stash-app-build:/app/_build
+      - pop-stash-app-deps:/app/deps
+    ports:
+      - "0.0.0.0:4001:4001"
+    environment:
+      - MIX_ENV=dev
+      - LOCAL_DOCKER=true
+    depends_on:
+      - db
+      - typesense
+    command: ["mix", "phx.server"]
+    networks:
+      - popstash
 
   db:
     image: pgvector/pgvector:pg16

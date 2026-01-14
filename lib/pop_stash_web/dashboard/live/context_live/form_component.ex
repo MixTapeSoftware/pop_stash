@@ -1,6 +1,6 @@
-defmodule PopStashWeb.Dashboard.StashLive.FormComponent do
+defmodule PopStashWeb.Dashboard.ContextLive.FormComponent do
   @moduledoc """
-  Form component for creating and editing stashes.
+  Form component for creating and editing contexts.
   """
 
   use PopStashWeb.Dashboard, :live_component
@@ -11,7 +11,13 @@ defmodule PopStashWeb.Dashboard.StashLive.FormComponent do
   def render(assigns) do
     ~H"""
     <div>
-      <.form for={@form} id="stash-form" phx-target={@myself} phx-submit="save" phx-change="validate">
+      <.form
+        for={@form}
+        id="context-form"
+        phx-target={@myself}
+        phx-submit="save"
+        phx-change="validate"
+      >
         <div class="space-y-4">
           <.select
             field={@form[:project_id]}
@@ -57,7 +63,7 @@ defmodule PopStashWeb.Dashboard.StashLive.FormComponent do
             Cancel
           </.button>
           <.button type="submit" variant="primary" phx-disable-with="Saving...">
-            {if @action == :new, do: "Create Stash", else: "Update Stash"}
+            {if @action == :new, do: "Create Context", else: "Update Context"}
           </.button>
         </div>
       </.form>
@@ -66,39 +72,39 @@ defmodule PopStashWeb.Dashboard.StashLive.FormComponent do
   end
 
   @impl true
-  def update(%{stash: stash} = assigns, socket) do
+  def update(%{context: context} = assigns, socket) do
     # Convert files array to newline-separated string for editing
     files_string =
-      case stash.files do
+      case context.files do
         nil -> ""
         files -> Enum.join(files, "\n")
       end
 
     # Convert tags array to comma-separated string
     tags_string =
-      case stash.tags do
+      case context.tags do
         nil -> ""
         tags -> Enum.join(tags, ", ")
       end
 
     # Format expires_at for datetime-local input
     expires_at_string =
-      case stash.expires_at do
+      case context.expires_at do
         nil -> nil
         %DateTime{} = dt -> Calendar.strftime(dt, "%Y-%m-%dT%H:%M")
         %NaiveDateTime{} = dt -> Calendar.strftime(dt, "%Y-%m-%dT%H:%M")
       end
 
     form_data = %{
-      "project_id" => stash.project_id,
-      "name" => stash.name,
-      "summary" => stash.summary,
+      "project_id" => context.project_id,
+      "name" => context.name,
+      "summary" => context.summary,
       "files" => files_string,
       "tags" => tags_string,
       "expires_at" => expires_at_string
     }
 
-    form = to_form(form_data, as: "stash")
+    form = to_form(form_data, as: "context")
 
     {:ok,
      socket
@@ -107,16 +113,16 @@ defmodule PopStashWeb.Dashboard.StashLive.FormComponent do
   end
 
   @impl true
-  def handle_event("validate", %{"stash" => params}, socket) do
-    form = to_form(params, as: "stash")
+  def handle_event("validate", %{"context" => params}, socket) do
+    form = to_form(params, as: "context")
     {:noreply, assign(socket, :form, form)}
   end
 
-  def handle_event("save", %{"stash" => params}, socket) do
-    save_stash(socket, socket.assigns.action, params)
+  def handle_event("save", %{"context" => params}, socket) do
+    save_context(socket, socket.assigns.action, params)
   end
 
-  defp save_stash(socket, :new, params) do
+  defp save_context(socket, :new, params) do
     project_id = params["project_id"]
     name = params["name"]
     summary = params["summary"]
@@ -127,17 +133,17 @@ defmodule PopStashWeb.Dashboard.StashLive.FormComponent do
       expires_at: parse_expires_at(params["expires_at"])
     ]
 
-    case Memory.create_stash(project_id, name, summary, opts) do
-      {:ok, stash} ->
+    case Memory.create_context(project_id, name, summary, opts) do
+      {:ok, context} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Stash created successfully")
-         |> push_navigate(to: ~p"/pop_stash/stashes/#{stash.id}")}
+         |> put_flash(:info, "Context created successfully")
+         |> push_navigate(to: ~p"/pop_stash/contexts/#{context.id}")}
 
       {:error, changeset} ->
         form =
           to_form(changeset_to_params(changeset, params),
-            as: "stash",
+            as: "context",
             errors: format_errors(changeset)
           )
 
@@ -145,7 +151,7 @@ defmodule PopStashWeb.Dashboard.StashLive.FormComponent do
     end
   end
 
-  defp save_stash(socket, :edit, params) do
+  defp save_context(socket, :edit, params) do
     attrs = %{
       name: params["name"],
       summary: params["summary"],
@@ -154,17 +160,17 @@ defmodule PopStashWeb.Dashboard.StashLive.FormComponent do
       expires_at: parse_expires_at(params["expires_at"])
     }
 
-    case Memory.update_stash(socket.assigns.stash, attrs) do
-      {:ok, stash} ->
+    case Memory.update_context(socket.assigns.context, attrs) do
+      {:ok, context} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Stash updated successfully")
-         |> push_navigate(to: ~p"/pop_stash/stashes/#{stash.id}")}
+         |> put_flash(:info, "Context updated successfully")
+         |> push_navigate(to: ~p"/pop_stash/contexts/#{context.id}")}
 
       {:error, changeset} ->
         form =
           to_form(changeset_to_params(changeset, params),
-            as: "stash",
+            as: "context",
             errors: format_errors(changeset)
           )
 

@@ -8,7 +8,7 @@ defmodule Mix.Tasks.PopStash.ReindexSearch do
       mix pop_stash.reindex_search
 
       # Reindex specific collection
-      mix pop_stash.reindex_search stashes
+      mix pop_stash.reindex_search contexts
 
       # Regenerate all embeddings
       mix pop_stash.reindex_search --regenerate-embeddings
@@ -23,9 +23,9 @@ defmodule Mix.Tasks.PopStash.ReindexSearch do
   use Mix.Task
 
   alias PopStash.Embeddings
+  alias PopStash.Memory.Context
   alias PopStash.Memory.Decision
   alias PopStash.Memory.Insight
-  alias PopStash.Memory.Stash
   alias PopStash.Repo
   alias PopStash.Search.Typesense
 
@@ -40,7 +40,7 @@ defmodule Mix.Tasks.PopStash.ReindexSearch do
         switches: [regenerate_embeddings: :boolean]
       )
 
-    collections = if collections === [], do: ~w(stashes insights decisions), else: collections
+    collections = if collections === [], do: ~w(contexts insights decisions), else: collections
 
     Mix.shell().info("Starting reindex...")
     Typesense.ensure_collections()
@@ -52,15 +52,15 @@ defmodule Mix.Tasks.PopStash.ReindexSearch do
     Mix.shell().info("Reindex complete.")
   end
 
-  defp reindex_collection("stashes", opts) do
-    Mix.shell().info("Reindexing stashes...")
+  defp reindex_collection("contexts", opts) do
+    Mix.shell().info("Reindexing contexts...")
 
-    Stash
+    Context
     |> Repo.all()
-    |> Task.async_stream(&index_stash(&1, opts), max_concurrency: 10, timeout: :infinity)
+    |> Task.async_stream(&index_context(&1, opts), max_concurrency: 10, timeout: :infinity)
     |> Stream.run()
 
-    Mix.shell().info("Stashes reindexed.")
+    Mix.shell().info("Contexts reindexed.")
   end
 
   defp reindex_collection("insights", opts) do
@@ -85,13 +85,13 @@ defmodule Mix.Tasks.PopStash.ReindexSearch do
     Mix.shell().info("Decisions reindexed.")
   end
 
-  defp index_stash(stash, opts) do
+  defp index_context(context, opts) do
     embedding =
-      get_or_generate_embedding(stash, opts, fn s ->
-        "#{s.name} #{s.summary || ""}"
+      get_or_generate_embedding(context, opts, fn c ->
+        "#{c.name} #{c.summary || ""}"
       end)
 
-    Typesense.index_stash(stash, embedding)
+    Typesense.index_context(context, embedding)
   end
 
   defp index_insight(insight, opts) do

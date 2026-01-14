@@ -1,13 +1,13 @@
-defmodule PopStash.Memory.Stash do
+defmodule PopStash.Memory.Context do
   @moduledoc """
-  Schema for stashes (saved context).
+  Schema for contexts (saved working state).
 
-  A stash is like `git stash` - saves current work state for later retrieval.
+  A context is like `git stash` - saves current work state for later retrieval.
   """
 
   use PopStash.Schema
 
-  schema "stashes" do
+  schema "contexts" do
     field(:name, :string)
     field(:summary, :string)
     field(:files, {:array, :string}, default: [])

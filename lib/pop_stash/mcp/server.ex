@@ -9,8 +9,8 @@ defmodule PopStash.MCP.Server do
   require Logger
 
   @tool_modules [
-    PopStash.MCP.Tools.Stash,
-    PopStash.MCP.Tools.Pop,
+    PopStash.MCP.Tools.SaveContext,
+    PopStash.MCP.Tools.RestoreContext,
     PopStash.MCP.Tools.Insight,
     PopStash.MCP.Tools.Recall,
     PopStash.MCP.Tools.Decide,

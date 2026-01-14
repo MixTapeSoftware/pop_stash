@@ -16,7 +16,7 @@ We also gain the ability to build tooling around the database and TypeSense inde
 
 PopStash is an MCP server that gives AI agents a way to persist and retrieve context, insights, and decisions.:
 
-- **Stash/Pop**: Save and retrieve working context when switching tasks
+- **Save/Restore Context**: Save and retrieve working context when switching tasks
 - **Insight/Recall**: Record and search persistent knowledge about your codebase  
 - **Decide/Get Decisions**: Document architectural decisions with full history
 - **Minimal Context Window Overhead (> 1%)**
@@ -92,7 +92,7 @@ Add to your project's `.claude/settings.json`:
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before stopping, evaluate if there is meaningful context to preserve. If so: (1) stash any work-in-progress with a descriptive name, (2) record any non-obvious insights discovered about the codebase, (3) document any architectural decisions made. Be concise and skip if this was a trivial session."
+            "prompt": "Before stopping, evaluate if there is meaningful context to preserve. If so: (1) save any work-in-progress context with a descriptive name, (2) record any non-obvious insights discovered about the codebase, (3) document any architectural decisions made. Be concise and skip if this was a trivial session."
           }
         ]
       }
@@ -148,9 +148,9 @@ context across sessions and preserve important knowledge about this codebase.
 
 ### When to Use Each Tool
 
-**`stash` / `pop` - Working Context**
-- STASH when: switching tasks, context is getting long, before exploring tangents
-- POP when: resuming work, need previous context, starting a related task
+**`save_context` / `restore_context` - Working Context**
+- SAVE when: switching tasks, context is getting long, before exploring tangents
+- RESTORE when: resuming work, need previous context, starting a related task
 - Use short descriptive names like "auth-refactor", "bug-123-investigation"
 
 **`insight` / `recall` - Persistent Knowledge**
@@ -170,7 +170,7 @@ context across sessions and preserve important knowledge about this codebase.
 
 ### Best Practices
 
-1. **Be proactive**: Don't wait to be asked. Stash context before it's lost.
+1. **Be proactive**: Don't wait to be asked. Save context before it's lost.
 2. **Search first**: Before diving into unfamiliar code, recall/get_decisions for that area.
 3. **Atomic insights**: One concept per insight. Easier to find and stays relevant.
 4. **Descriptive keys**: Use hierarchical keys like "auth/session-handling" or "api/rate-limits".
@@ -183,8 +183,8 @@ context across sessions and preserve important knowledge about this codebase.
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `stash` | Save working context for later | `name` (string), `summary` (string), `files` (array, optional) |
-| `pop` | Retrieve stashes by name or semantic search | `name` (string - exact or query), `limit` (number, default: 5) |
+| `save_context` | Save working context for later | `name` (string), `summary` (string), `files` (array, optional) |
+| `restore_context` | Retrieve contexts by name or semantic search | `name` (string - exact or query), `limit` (number, default: 5) |
 | `insight` | Save persistent knowledge about the codebase | `content` (string), `key` (string, optional) |
 | `recall` | Retrieve insights by key or semantic search | `key` (string - exact or query), `limit` (number, default: 5) |
 | `decide` | Record an architectural decision | `topic` (string), `decision` (string), `reasoning` (string, optional) |
@@ -215,10 +215,10 @@ curl -X POST http://localhost:4001/mcp/YOUR_PROJECT_ID \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
 
-# Call a tool (e.g., stash)
+# Call a tool (e.g., save_context)
 curl -X POST http://localhost:4001/mcp/YOUR_PROJECT_ID \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"stash","arguments":{"name":"test","summary":"Testing the API"}}}'
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"save_context","arguments":{"name":"test","summary":"Testing the API"}}}'
 ```
 
 ## Architecture
