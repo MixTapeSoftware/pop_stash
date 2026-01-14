@@ -14,8 +14,8 @@ defmodule PopStash.MemoryTest do
       assert {:ok, context} =
                Memory.create_context(project.id, "my-work", "Working on auth")
 
-      assert context.name == "my-work"
-      assert context.summary == "Working on auth"
+      assert context.title == "my-work"
+      assert context.body == "Working on auth"
       assert context.project_id == project.id
     end
 
@@ -30,32 +30,32 @@ defmodule PopStash.MemoryTest do
       assert context.tags == ["high-priority", "auth"]
     end
 
-    test "get_context_by_name/2 retrieves context by exact name", %{project: project} do
+    test "get_context_by_title/2 retrieves context by exact name", %{project: project} do
       {:ok, context} = Memory.create_context(project.id, "my-work", "Summary")
-      assert {:ok, found} = Memory.get_context_by_name(project.id, "my-work")
+      assert {:ok, found} = Memory.get_context_by_title(project.id, "my-work")
       assert found.id == context.id
     end
 
-    test "get_context_by_name/2 returns error when not found", %{project: project} do
-      assert {:error, :not_found} = Memory.get_context_by_name(project.id, "nonexistent")
+    test "get_context_by_title/2 returns error when not found", %{project: project} do
+      assert {:error, :not_found} = Memory.get_context_by_title(project.id, "nonexistent")
     end
 
-    test "get_context_by_name/2 ignores expired contexts", %{project: project} do
+    test "get_context_by_title/2 ignores expired contexts", %{project: project} do
       past = DateTime.add(DateTime.utc_now(), -3600, :second)
 
       {:ok, _} =
         Memory.create_context(project.id, "expired", "Old", expires_at: past)
 
-      assert {:error, :not_found} = Memory.get_context_by_name(project.id, "expired")
+      assert {:error, :not_found} = Memory.get_context_by_title(project.id, "expired")
     end
 
-    test "get_context_by_name/2 returns non-expired contexts", %{project: project} do
+    test "get_context_by_title/2 returns non-expired contexts", %{project: project} do
       future = DateTime.add(DateTime.utc_now(), 3600, :second)
 
       {:ok, context} =
         Memory.create_context(project.id, "future", "Valid", expires_at: future)
 
-      assert {:ok, found} = Memory.get_context_by_name(project.id, "future")
+      assert {:ok, found} = Memory.get_context_by_title(project.id, "future")
       assert found.id == context.id
     end
 
@@ -75,13 +75,13 @@ defmodule PopStash.MemoryTest do
 
       contexts = Memory.list_contexts(project.id)
       assert length(contexts) == 1
-      assert hd(contexts).name == "valid"
+      assert hd(contexts).title == "valid"
     end
 
     test "delete_context/1 removes a context", %{project: project} do
       {:ok, context} = Memory.create_context(project.id, "temp", "Temp")
       assert :ok = Memory.delete_context(context.id)
-      assert {:error, :not_found} = Memory.get_context_by_name(project.id, "temp")
+      assert {:error, :not_found} = Memory.get_context_by_title(project.id, "temp")
     end
 
     test "delete_context/1 returns error for nonexistent context" do
@@ -94,31 +94,31 @@ defmodule PopStash.MemoryTest do
       assert {:ok, insight} =
                Memory.create_insight(project.id, "Auth uses Guardian")
 
-      assert insight.content == "Auth uses Guardian"
+      assert insight.body == "Auth uses Guardian"
       assert insight.project_id == project.id
     end
 
     test "create_insight/3 accepts key and tags", %{project: project} do
       assert {:ok, insight} =
                Memory.create_insight(project.id, "Content",
-                 key: "auth",
+                 title: "auth",
                  tags: ["verified", "important"]
                )
 
-      assert insight.key == "auth"
+      assert insight.title == "auth"
       assert insight.tags == ["verified", "important"]
     end
 
-    test "get_insight_by_key/2 retrieves insight by key", %{project: project} do
+    test "get_insight_by_title/2 retrieves insight by key", %{project: project} do
       {:ok, insight} =
-        Memory.create_insight(project.id, "JWT patterns", key: "auth-jwt")
+        Memory.create_insight(project.id, "JWT patterns", title: "auth-jwt")
 
-      assert {:ok, found} = Memory.get_insight_by_key(project.id, "auth-jwt")
+      assert {:ok, found} = Memory.get_insight_by_title(project.id, "auth-jwt")
       assert found.id == insight.id
     end
 
-    test "get_insight_by_key/2 returns error when not found", %{project: project} do
-      assert {:error, :not_found} = Memory.get_insight_by_key(project.id, "nonexistent")
+    test "get_insight_by_title/2 returns error when not found", %{project: project} do
+      assert {:error, :not_found} = Memory.get_insight_by_title(project.id, "nonexistent")
     end
 
     test "list_insights/2 returns recent insights", %{project: project} do
@@ -137,10 +137,10 @@ defmodule PopStash.MemoryTest do
       assert length(Memory.list_insights(project.id, limit: 3)) == 3
     end
 
-    test "update_insight/2 updates content", %{project: project} do
+    test "update_insight/2 updates body", %{project: project} do
       {:ok, insight} = Memory.create_insight(project.id, "Old content")
       assert {:ok, updated} = Memory.update_insight(insight.id, "New content")
-      assert updated.content == "New content"
+      assert updated.body == "New content"
     end
 
     test "update_insight/2 returns error for nonexistent insight" do
@@ -148,9 +148,9 @@ defmodule PopStash.MemoryTest do
     end
 
     test "delete_insight/1 removes an insight", %{project: project} do
-      {:ok, insight} = Memory.create_insight(project.id, "Temp", key: "temp")
+      {:ok, insight} = Memory.create_insight(project.id, "Temp", title: "temp")
       assert :ok = Memory.delete_insight(insight.id)
-      assert {:error, :not_found} = Memory.get_insight_by_key(project.id, "temp")
+      assert {:error, :not_found} = Memory.get_insight_by_title(project.id, "temp")
     end
 
     test "delete_insight/1 returns error for nonexistent insight" do
@@ -166,8 +166,8 @@ defmodule PopStash.MemoryTest do
       {:ok, _} = Memory.create_context(project1.id, "shared-name", "Project 1 context")
       {:ok, _} = Memory.create_context(project2.id, "shared-name", "Project 2 context")
 
-      {:ok, context1} = Memory.get_context_by_name(project1.id, "shared-name")
-      {:ok, context2} = Memory.get_context_by_name(project2.id, "shared-name")
+      {:ok, context1} = Memory.get_context_by_title(project1.id, "shared-name")
+      {:ok, context2} = Memory.get_context_by_title(project2.id, "shared-name")
 
       assert context1.summary == "Project 1 context"
       assert context2.summary == "Project 2 context"
@@ -177,11 +177,11 @@ defmodule PopStash.MemoryTest do
       {:ok, project1} = Projects.create("Project 1")
       {:ok, project2} = Projects.create("Project 2")
 
-      {:ok, _} = Memory.create_insight(project1.id, "Insight 1", key: "shared")
-      {:ok, _} = Memory.create_insight(project2.id, "Insight 2", key: "shared")
+      {:ok, _} = Memory.create_insight(project1.id, "Insight 1", title: "shared")
+      {:ok, _} = Memory.create_insight(project2.id, "Insight 2", title: "shared")
 
-      {:ok, insight1} = Memory.get_insight_by_key(project1.id, "shared")
-      {:ok, insight2} = Memory.get_insight_by_key(project2.id, "shared")
+      {:ok, insight1} = Memory.get_insight_by_title(project1.id, "shared")
+      {:ok, insight2} = Memory.get_insight_by_title(project2.id, "shared")
 
       assert insight1.content == "Insight 1"
       assert insight2.content == "Insight 2"
@@ -198,8 +198,8 @@ defmodule PopStash.MemoryTest do
                )
 
       # normalized
-      assert decision.topic == "authentication"
-      assert decision.decision == "Use Guardian for JWT auth"
+      assert decision.title == "authentication"
+      assert decision.body == "Use Guardian for JWT auth"
       assert decision.project_id == project.id
     end
 
@@ -214,7 +214,7 @@ defmodule PopStash.MemoryTest do
       assert decision.tags == ["database", "infrastructure"]
     end
 
-    test "create_decision/4 normalizes topic (lowercase, trim)", %{project: project} do
+    test "create_decision/4 normalizes title (lowercase, trim)", %{project: project} do
       assert {:ok, d1} = Memory.create_decision(project.id, "  AUTH  ", "Decision 1")
       assert {:ok, d2} = Memory.create_decision(project.id, "Auth", "Decision 2")
       assert {:ok, d3} = Memory.create_decision(project.id, "auth", "Decision 3")
@@ -229,14 +229,14 @@ defmodule PopStash.MemoryTest do
 
       assert {:ok, found} = Memory.get_decision(decision.id)
       assert found.id == decision.id
-      assert found.topic == "testing"
+      assert found.title == "testing"
     end
 
     test "get_decision/1 returns error when not found" do
       assert {:error, :not_found} = Memory.get_decision(Ecto.UUID.generate())
     end
 
-    test "get_decisions_by_topic/2 returns all decisions for topic (most recent first)", %{
+    test "get_decisions_by_title/2 returns all decisions for topic (most recent first)", %{
       project: project
     } do
       {:ok, d1} = Memory.create_decision(project.id, "auth", "First decision")
@@ -247,7 +247,7 @@ defmodule PopStash.MemoryTest do
       {:ok, _other} = Memory.create_decision(project.id, "database", "Other topic")
 
       # Query with different case
-      decisions = Memory.get_decisions_by_topic(project.id, "Auth")
+      decisions = Memory.get_decisions_by_title(project.id, "Auth")
 
       assert length(decisions) == 2
       # Most recent first
@@ -271,13 +271,13 @@ defmodule PopStash.MemoryTest do
       assert length(Memory.list_decisions(project.id, limit: 3)) == 3
     end
 
-    test "list_decisions/2 filters by topic", %{project: project} do
+    test "list_decisions/2 filters by title", %{project: project} do
       {:ok, _} = Memory.create_decision(project.id, "auth", "Auth decision")
       {:ok, _} = Memory.create_decision(project.id, "database", "DB decision")
 
-      decisions = Memory.list_decisions(project.id, topic: "auth")
+      decisions = Memory.list_decisions(project.id, title: "auth")
       assert length(decisions) == 1
-      assert hd(decisions).topic == "auth"
+      assert hd(decisions).title == "auth"
     end
 
     test "list_decisions/2 filters by since datetime", %{project: project} do
@@ -302,13 +302,13 @@ defmodule PopStash.MemoryTest do
       assert {:error, :not_found} = Memory.delete_decision(Ecto.UUID.generate())
     end
 
-    test "list_decision_topics/1 returns unique topics", %{project: project} do
+    test "list_decision_titles/1 returns unique topics", %{project: project} do
       {:ok, _} = Memory.create_decision(project.id, "auth", "Decision 1")
       {:ok, _} = Memory.create_decision(project.id, "auth", "Decision 2")
       {:ok, _} = Memory.create_decision(project.id, "database", "Decision 3")
       {:ok, _} = Memory.create_decision(project.id, "api", "Decision 4")
 
-      topics = Memory.list_decision_topics(project.id)
+      topics = Memory.list_decision_titles(project.id)
       # Alphabetical order
       assert topics == ["api", "auth", "database"]
     end
@@ -322,13 +322,13 @@ defmodule PopStash.MemoryTest do
       {:ok, _} = Memory.create_decision(project1.id, "auth", "P1 decision")
       {:ok, _} = Memory.create_decision(project2.id, "auth", "P2 decision")
 
-      p1_decisions = Memory.get_decisions_by_topic(project1.id, "auth")
-      p2_decisions = Memory.get_decisions_by_topic(project2.id, "auth")
+      p1_decisions = Memory.get_decisions_by_title(project1.id, "auth")
+      p2_decisions = Memory.get_decisions_by_title(project2.id, "auth")
 
       assert length(p1_decisions) == 1
       assert length(p2_decisions) == 1
-      assert hd(p1_decisions).decision == "P1 decision"
-      assert hd(p2_decisions).decision == "P2 decision"
+      assert hd(p1_decisions).body == "P1 decision"
+      assert hd(p2_decisions).body == "P2 decision"
     end
   end
 end

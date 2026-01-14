@@ -165,7 +165,7 @@ defmodule PopStash.ActivityTest do
       assert String.ends_with?(item.preview, "...")
     end
 
-    test "handles nil summary", %{project: project} do
+    test "handles nil body", %{project: project} do
       {:ok, context} = Memory.create_context(project.id, "context", "short")
 
       # Manually set summary to nil for testing
@@ -178,7 +178,7 @@ defmodule PopStash.ActivityTest do
 
   describe "to_item/1 for insights" do
     test "converts insight to activity item", %{project: project} do
-      {:ok, insight} = Memory.create_insight(project.id, "This is an insight", key: "my-key")
+      {:ok, insight} = Memory.create_insight(project.id, "This is an insight", title: "my-key")
 
       item = Activity.to_item(insight)
 

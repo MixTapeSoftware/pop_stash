@@ -36,24 +36,24 @@ defmodule PopStash.Memory do
     * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
     * `:expires_at` - Optional expiration datetime
   """
-  def create_context(project_id, name, summary, opts \\ []) do
+  def create_context(project_id, title, body, opts \\ []) do
     thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Context.thread_prefix())
 
     %Context{}
     |> cast(
       %{
         project_id: project_id,
-        name: name,
-        summary: summary,
+        title: title,
+        body: body,
         files: Keyword.get(opts, :files, []),
         tags: Keyword.get(opts, :tags, []),
         thread_id: thread_id,
         expires_at: Keyword.get(opts, :expires_at)
       },
-      [:project_id, :name, :summary, :files, :tags, :thread_id, :expires_at]
+      [:project_id, :title, :body, :files, :tags, :thread_id, :expires_at]
     )
-    |> validate_required([:project_id, :name, :summary, :thread_id])
-    |> validate_length(:name, min: 1, max: 255)
+    |> validate_required([:project_id, :title, :body, :thread_id])
+    |> validate_length(:title, min: 1, max: 255)
     |> foreign_key_constraint(:project_id)
     |> Repo.insert()
     |> tap_ok(&broadcast(:context_created, &1))
@@ -64,19 +64,19 @@ defmodule PopStash.Memory do
   """
   def update_context(context, attrs) do
     context
-    |> cast(attrs, [:name, :summary, :files, :tags, :expires_at])
-    |> validate_required([:name, :summary])
-    |> validate_length(:name, min: 1, max: 255)
+    |> cast(attrs, [:title, :body, :files, :tags, :expires_at])
+    |> validate_required([:title, :body])
+    |> validate_length(:title, min: 1, max: 255)
     |> Repo.update()
     |> tap_ok(&broadcast(:context_updated, &1))
   end
 
   @doc """
-  Retrieves a context by exact name match within a project.
+  Retrieves a context by exact title match within a project.
   """
-  def get_context_by_name(project_id, name) when is_binary(project_id) and is_binary(name) do
+  def get_context_by_title(project_id, title) when is_binary(project_id) and is_binary(title) do
     Context
-    |> where([s], s.project_id == ^project_id and s.name == ^name)
+    |> where([s], s.project_id == ^project_id and s.title == ^title)
     |> where([s], is_nil(s.expires_at) or s.expires_at > ^DateTime.utc_now())
     |> order_by(desc: :inserted_at)
     |> limit(1)
@@ -121,37 +121,37 @@ defmodule PopStash.Memory do
   Creates an insight.
 
   ## Options
-    * `:key` - Optional semantic key for exact retrieval
+    * `:title` - Optional title for the insight
     * `:tags` - Optional list of tags
     * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
   """
-  def create_insight(project_id, content, opts \\ []) do
+  def create_insight(project_id, body, opts \\ []) do
     thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Insight.thread_prefix())
 
     %Insight{}
     |> cast(
       %{
         project_id: project_id,
-        content: content,
-        key: Keyword.get(opts, :key),
+        body: body,
+        title: Keyword.get(opts, :title),
         tags: Keyword.get(opts, :tags, []),
         thread_id: thread_id
       },
-      [:project_id, :content, :key, :tags, :thread_id]
+      [:project_id, :body, :title, :tags, :thread_id]
     )
-    |> validate_required([:project_id, :content, :thread_id])
-    |> validate_length(:key, max: 255)
+    |> validate_required([:project_id, :body, :thread_id])
+    |> validate_length(:title, max: 255)
     |> foreign_key_constraint(:project_id)
     |> Repo.insert()
     |> tap_ok(&broadcast(:insight_created, &1))
   end
 
   @doc """
-  Retrieves an insight by exact key match.
+  Retrieves an insight by exact title match.
   """
-  def get_insight_by_key(project_id, key) when is_binary(project_id) and is_binary(key) do
+  def get_insight_by_title(project_id, title) when is_binary(project_id) and is_binary(title) do
     Insight
-    |> where([i], i.project_id == ^project_id and i.key == ^key)
+    |> where([i], i.project_id == ^project_id and i.title == ^title)
     |> order_by(desc: :updated_at)
     |> limit(1)
     |> Repo.one()
@@ -172,17 +172,17 @@ defmodule PopStash.Memory do
   end
 
   @doc """
-  Updates an insight's content.
+  Updates an insight's body.
   """
-  def update_insight(insight_id, content) when is_binary(insight_id) and is_binary(content) do
+  def update_insight(insight_id, body) when is_binary(insight_id) and is_binary(body) do
     case Repo.get(Insight, insight_id) do
       nil ->
         {:error, :not_found}
 
       insight ->
         insight
-        |> cast(%{content: content}, [:content])
-        |> validate_required([:content])
+        |> cast(%{body: body}, [:body])
+        |> validate_required([:body])
         |> Repo.update()
         |> tap_ok(&broadcast(:insight_updated, &1))
     end
@@ -213,30 +213,30 @@ defmodule PopStash.Memory do
   @doc """
   Creates an immutable decision record.
 
-  Topics are automatically normalized (lowercased, trimmed) for consistent matching.
+  Titles are automatically normalized (lowercased, trimmed) for consistent matching.
 
   ## Options
     * `:reasoning` - Why this decision was made (optional)
     * `:tags` - Optional list of tags
     * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
   """
-  def create_decision(project_id, topic, decision, opts \\ []) do
+  def create_decision(project_id, title, body, opts \\ []) do
     thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Decision.thread_prefix())
 
     %Decision{}
     |> cast(
       %{
         project_id: project_id,
-        topic: Decision.normalize_topic(topic),
-        decision: decision,
+        title: Decision.normalize_title(title),
+        body: body,
         reasoning: Keyword.get(opts, :reasoning),
         tags: Keyword.get(opts, :tags, []),
         thread_id: thread_id
       },
-      [:project_id, :topic, :decision, :reasoning, :tags, :thread_id]
+      [:project_id, :title, :body, :reasoning, :tags, :thread_id]
     )
-    |> validate_required([:project_id, :topic, :decision, :thread_id])
-    |> validate_length(:topic, min: 1, max: 255)
+    |> validate_required([:project_id, :title, :body, :thread_id])
+    |> validate_length(:title, min: 1, max: 255)
     |> foreign_key_constraint(:project_id)
     |> Repo.insert()
     |> tap_ok(&broadcast(:decision_created, &1))
@@ -252,16 +252,16 @@ defmodule PopStash.Memory do
   end
 
   @doc """
-  Gets all decisions for a topic within a project.
-  Returns most recent first (full history for this topic).
+  Gets all decisions for a title within a project.
+  Returns most recent first (full history for this title).
 
-  Topic is automatically normalized for matching.
+  Title is automatically normalized for matching.
   """
-  def get_decisions_by_topic(project_id, topic) when is_binary(project_id) and is_binary(topic) do
-    normalized_topic = Decision.normalize_topic(topic)
+  def get_decisions_by_title(project_id, title) when is_binary(project_id) and is_binary(title) do
+    normalized_title = Decision.normalize_title(title)
 
     Decision
-    |> where([d], d.project_id == ^project_id and d.topic == ^normalized_topic)
+    |> where([d], d.project_id == ^project_id and d.title == ^normalized_title)
     |> order_by(desc: :inserted_at)
     |> Repo.all()
   end
@@ -272,17 +272,17 @@ defmodule PopStash.Memory do
   ## Options
     * `:limit` - Maximum number of decisions to return (default: 50)
     * `:since` - Only return decisions after this datetime
-    * `:topic` - Filter by topic (exact match after normalization)
+    * `:title` - Filter by title (exact match after normalization)
   """
   def list_decisions(project_id, opts \\ []) when is_binary(project_id) do
     limit = Keyword.get(opts, :limit, 50)
     since = Keyword.get(opts, :since)
-    topic = Keyword.get(opts, :topic)
+    title = Keyword.get(opts, :title)
 
     Decision
     |> where([d], d.project_id == ^project_id)
     |> maybe_filter_since(since)
-    |> maybe_filter_topic(topic)
+    |> maybe_filter_title(title)
     |> order_by(desc: :inserted_at)
     |> limit(^limit)
     |> Repo.all()
@@ -294,11 +294,11 @@ defmodule PopStash.Memory do
     where(query, [d], d.inserted_at > ^since)
   end
 
-  defp maybe_filter_topic(query, nil), do: query
+  defp maybe_filter_title(query, nil), do: query
 
-  defp maybe_filter_topic(query, topic) do
-    normalized = Decision.normalize_topic(topic)
-    where(query, [d], d.topic == ^normalized)
+  defp maybe_filter_title(query, title) do
+    normalized = Decision.normalize_title(title)
+    where(query, [d], d.title == ^normalized)
   end
 
   @doc """
@@ -323,15 +323,15 @@ defmodule PopStash.Memory do
   end
 
   @doc """
-  Lists all unique topics for a project.
+  Lists all unique titles for a project.
   Useful for discovering what decisions exist.
   """
-  def list_decision_topics(project_id) when is_binary(project_id) do
+  def list_decision_titles(project_id) when is_binary(project_id) do
     Decision
     |> where([d], d.project_id == ^project_id)
-    |> select([d], d.topic)
+    |> select([d], d.title)
     |> distinct(true)
-    |> order_by(asc: :topic)
+    |> order_by(asc: :title)
     |> Repo.all()
   end
 

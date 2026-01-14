@@ -12,8 +12,8 @@ defmodule PopStash.Memory.Context do
   def thread_prefix, do: @thread_prefix
 
   schema "contexts" do
-    field(:name, :string)
-    field(:summary, :string)
+    field(:title, :string)
+    field(:body, :string)
     field(:files, {:array, :string}, default: [])
     field(:tags, {:array, :string}, default: [])
     field(:thread_id, :string)

@@ -3,7 +3,7 @@ defmodule PopStash.Memory.Decision do
   Schema for decisions (immutable decision log).
 
   Decisions record architectural choices, technical decisions, and project direction.
-  They are append-only - new decisions on the same topic create new entries,
+  They are append-only - new decisions on the same title create new entries,
   preserving full history.
   """
 
@@ -14,8 +14,8 @@ defmodule PopStash.Memory.Decision do
   def thread_prefix, do: @thread_prefix
 
   schema "decisions" do
-    field(:topic, :string)
-    field(:decision, :string)
+    field(:title, :string)
+    field(:body, :string)
     field(:reasoning, :string)
     field(:tags, {:array, :string}, default: [])
     field(:thread_id, :string)
@@ -27,14 +27,14 @@ defmodule PopStash.Memory.Decision do
   end
 
   @doc """
-  Normalizes a topic string for consistent matching.
+  Normalizes a title string for consistent matching.
   Trims whitespace and converts to lowercase.
   """
-  def normalize_topic(topic) when is_binary(topic) do
-    topic
+  def normalize_title(title) when is_binary(title) do
+    title
     |> String.trim()
     |> String.downcase()
   end
 
-  def normalize_topic(nil), do: nil
+  def normalize_title(nil), do: nil
 end

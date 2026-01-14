@@ -31,11 +31,11 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
       assert message =~ "Use Guardian"
     end
 
-    test "filters by topic", %{context: context, project: project} do
+    test "filters by title", %{context: context, project: project} do
       {:ok, _} = Memory.create_decision(project.id, "auth", "Auth decision")
       {:ok, _} = Memory.create_decision(project.id, "database", "DB decision")
 
-      assert {:ok, message} = GetDecisions.execute(%{"topic" => "auth"}, context)
+      assert {:ok, message} = GetDecisions.execute(%{"title" => "auth"}, context)
       assert message =~ "Auth decision"
       refute message =~ "DB decision"
     end
@@ -43,7 +43,7 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
     test "topic matching is case-insensitive", %{context: context, project: project} do
       {:ok, _} = Memory.create_decision(project.id, "Authentication", "Decision")
 
-      assert {:ok, message} = GetDecisions.execute(%{"topic" => "AUTHENTICATION"}, context)
+      assert {:ok, message} = GetDecisions.execute(%{"title" => "AUTHENTICATION"}, context)
       assert message =~ "Decision"
     end
 
@@ -56,7 +56,7 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
       assert message =~ "2"
     end
 
-    test "lists topics when list_topics is true", %{
+    test "lists topics when list_titles is true", %{
       context: context,
       project: project
     } do
@@ -64,7 +64,7 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
       {:ok, _} = Memory.create_decision(project.id, "database", "Decision")
       {:ok, _} = Memory.create_decision(project.id, "api", "Decision")
 
-      assert {:ok, message} = GetDecisions.execute(%{"list_topics" => true}, context)
+      assert {:ok, message} = GetDecisions.execute(%{"list_titles" => true}, context)
       assert message =~ "Decision topics:"
       assert message =~ "auth"
       assert message =~ "database"
@@ -72,9 +72,9 @@ defmodule PopStash.MCP.Tools.GetDecisionsTest do
     end
 
     test "returns helpful message when topic not found", %{context: context} do
-      assert {:ok, message} = GetDecisions.execute(%{"topic" => "nonexistent"}, context)
+      assert {:ok, message} = GetDecisions.execute(%{"title" => "nonexistent"}, context)
       assert message =~ "No decisions found"
-      assert message =~ "list_topics"
+      assert message =~ "list_titles"
     end
   end
 end

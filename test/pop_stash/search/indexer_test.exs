@@ -37,7 +37,7 @@ defmodule PopStash.Search.IndexerTest do
       Phoenix.PubSub.subscribe(PopStash.PubSub, "memory:events")
 
       {:ok, insight} =
-        Memory.create_insight(project.id, "Test content", key: "test-key")
+        Memory.create_insight(project.id, "Test content", title: "test-key")
 
       assert_receive {:insight_created, received_insight}
       assert received_insight.id == insight.id
@@ -62,7 +62,7 @@ defmodule PopStash.Search.IndexerTest do
 
       assert_receive {:insight_updated, received_insight}
       assert received_insight.id == updated.id
-      assert received_insight.content == "Updated content"
+      assert received_insight.body == "Updated content"
     end
 
     test "delete_context broadcasts :context_deleted", %{project: project} do

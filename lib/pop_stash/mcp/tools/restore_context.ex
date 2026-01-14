@@ -48,7 +48,7 @@ defmodule PopStash.MCP.Tools.RestoreContext do
     limit = Map.get(params, "limit", 5)
 
     # Try exact match first
-    case Memory.get_context_by_name(project_id, query) do
+    case Memory.get_context_by_title(project_id, query) do
       {:ok, context} ->
         {:ok, %{results: [format_context(context)], match_type: "exact"}}
 

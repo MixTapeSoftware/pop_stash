@@ -51,7 +51,7 @@ defmodule PopStash.MCP.Tools.GetDecisions do
   end
 
   def execute(%{"list_topics" => true}, %{project_id: project_id}) do
-    topics = Memory.list_decision_topics(project_id)
+    topics = Memory.list_decision_titles(project_id)
 
     if topics === [] do
       {:ok, "No decisions recorded yet."}
@@ -133,8 +133,8 @@ defmodule PopStash.MCP.Tools.GetDecisions do
 
   defp format_decision(decision) do
     base = """
-    **Topic:** #{decision.topic}
-    **Decision:** #{decision.decision}
+    **Title:** #{decision.title}
+    **Body:** #{decision.body}
     """
 
     with_reasoning =

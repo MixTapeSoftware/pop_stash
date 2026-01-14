@@ -16,8 +16,8 @@ defmodule PopStash.MCP.Tools.Insight do
         inputSchema: %{
           type: "object",
           properties: %{
-            key: %{type: "string", description: "Optional key for retrieval"},
-            content: %{type: "string", description: "The insight"},
+            title: %{type: "string", description: "Optional title for the insight"},
+            body: %{type: "string", description: "The insight content"},
             tags: %{
               type: "array",
               items: %{type: "string"},
@@ -29,7 +29,7 @@ defmodule PopStash.MCP.Tools.Insight do
                 "Optional thread ID to connect revisions (omit for new, pass back for revisions)"
             }
           },
-          required: ["content"]
+          required: ["body"]
         },
         callback: &__MODULE__.execute/2
       }
@@ -39,16 +39,16 @@ defmodule PopStash.MCP.Tools.Insight do
   def execute(args, %{project_id: project_id}) do
     opts =
       []
-      |> maybe_add_opt(:key, args["key"])
+      |> maybe_add_opt(:title, args["title"])
       |> maybe_add_opt(:tags, args["tags"])
       |> maybe_add_opt(:thread_id, args["thread_id"])
 
-    case Memory.create_insight(project_id, args["content"], opts) do
+    case Memory.create_insight(project_id, args["body"], opts) do
       {:ok, insight} ->
-        key_text = if insight.key, do: " (key: #{insight.key})", else: ""
+        title_text = if insight.title, do: " (title: #{insight.title})", else: ""
 
         {:ok,
-         "Insight saved#{key_text}. Use `recall` to retrieve. (thread_id: #{insight.thread_id})"}
+         "Insight saved#{title_text}. Use `recall` to retrieve. (thread_id: #{insight.thread_id})"}
 
       {:error, changeset} ->
         {:error, format_errors(changeset)}

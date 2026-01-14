@@ -14,18 +14,18 @@ defmodule PopStash.MCP.Tools.Decide do
         name: "decide",
         description: """
         Record an architectural or important or key technical decision. Decisions are immutable - \
-        recording a new decision on the same topic creates a new entry, preserving history. \
+        recording a new decision with the same title creates a new entry, preserving history. \
         Use this to document choices like "We chose Phoenix LiveView over React because..."
         """,
         inputSchema: %{
           type: "object",
           properties: %{
-            topic: %{
+            title: %{
               type: "string",
               description:
                 "What area this decision affects (e.g., 'authentication', 'database', 'api-design')"
             },
-            decision: %{
+            body: %{
               type: "string",
               description: "What was decided"
             },
@@ -44,7 +44,7 @@ defmodule PopStash.MCP.Tools.Decide do
                 "Optional thread ID to connect revisions (omit for new, pass back for revisions)"
             }
           },
-          required: ["topic", "decision"]
+          required: ["title", "body"]
         },
         callback: &__MODULE__.execute/2
       }
@@ -58,12 +58,12 @@ defmodule PopStash.MCP.Tools.Decide do
       |> maybe_add_opt(:tags, args["tags"])
       |> maybe_add_opt(:thread_id, args["thread_id"])
 
-    case Memory.create_decision(project_id, args["topic"], args["decision"], opts) do
+    case Memory.create_decision(project_id, args["title"], args["body"], opts) do
       {:ok, decision} ->
         {:ok,
          """
-         Decision recorded for topic "#{decision.topic}".
-         Use `get_decisions` to retrieve decisions by topic.
+         Decision recorded for title "#{decision.title}".
+         Use `get_decisions` to retrieve decisions by title.
          (thread_id: #{decision.thread_id})
          """}
 

@@ -308,16 +308,14 @@ defmodule PopStashWeb.Dashboard.PlanLive.Index do
               {plan.title}
             </.link>
           </:col>
-          <:col :let={plan} label="Created">
-            <span class="text-sm text-slate-600">
-              {Calendar.strftime(plan.inserted_at, "%Y-%m-%d %H:%M")}
-            </span>
-          </:col>
-          <:col :let={plan} label="Preview">
+          <:col :let={plan} label="Body">
             <.markdown_preview content={plan.body} max_length={150} />
           </:col>
           <:col :let={plan} label="Tags">
             <.tag_badges tags={plan.tags || []} />
+          </:col>
+          <:col :let={plan} label="Thread" mono>
+            <span class="text-xs text-slate-500 font-mono">{plan.thread_id}</span>
           </:col>
           <:col :let={plan} label="Created" mono>
             <.timestamp datetime={plan.inserted_at} />

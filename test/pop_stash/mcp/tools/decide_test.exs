@@ -15,8 +15,8 @@ defmodule PopStash.MCP.Tools.DecideTest do
   describe "execute/2" do
     test "records a decision with topic and decision", %{context: context, project: project} do
       args = %{
-        "topic" => "Authentication",
-        "decision" => "Use Guardian for JWT"
+        "title" => "Authentication",
+        "body" => "Use Guardian for JWT"
       }
 
       assert {:ok, message} = Decide.execute(args, context)
@@ -25,29 +25,29 @@ defmodule PopStash.MCP.Tools.DecideTest do
       assert message =~ "authentication"
 
       # Verify it was saved
-      [decision] = Memory.get_decisions_by_topic(project.id, "authentication")
-      assert decision.decision == "Use Guardian for JWT"
+      [decision] = Memory.get_decisions_by_title(project.id, "authentication")
+      assert decision.body == "Use Guardian for JWT"
     end
 
     test "records a decision with reasoning", %{context: context, project: project} do
       args = %{
-        "topic" => "database",
-        "decision" => "Use PostgreSQL",
+        "title" => "database",
+        "body" => "Use PostgreSQL",
         "reasoning" => "Better JSON support"
       }
 
       assert {:ok, _} = Decide.execute(args, context)
 
-      [decision] = Memory.get_decisions_by_topic(project.id, "database")
+      [decision] = Memory.get_decisions_by_title(project.id, "database")
       assert decision.reasoning == "Better JSON support"
     end
 
     test "returns error for missing required fields", %{context: context} do
       # missing decision
-      args = %{"topic" => "auth"}
+      args = %{"title" => "auth"}
 
       assert {:error, message} = Decide.execute(args, context)
-      assert message =~ "decision"
+      assert message =~ "body"
     end
   end
 end

@@ -210,16 +210,19 @@ defmodule PopStashWeb.Dashboard.ContextLive.Index do
         </.empty_state>
       <% else %>
         <.data_table id="contexts-table" rows={@contexts} row_id={&"context-#{&1.id}"}>
-          <:col :let={context} label="Name" class="font-medium">
+          <:col :let={context} label="Title" class="font-medium">
             <.link navigate={~p"/pop_stash/contexts/#{context.id}"} class="hover:text-violet-600">
-              {context.name}
+              {context.title}
             </.link>
           </:col>
-          <:col :let={context} label="Summary">
-            <.markdown_preview content={context.summary} max_length={100} />
+          <:col :let={context} label="Body">
+            <.markdown_preview content={context.body} max_length={100} />
           </:col>
           <:col :let={context} label="Tags">
             <.tag_badges tags={context.tags || []} />
+          </:col>
+          <:col :let={context} label="Thread" mono>
+            <span class="text-xs text-slate-500 font-mono">{context.thread_id}</span>
           </:col>
           <:col :let={context} label="Created" mono>
             <.timestamp datetime={context.inserted_at} />

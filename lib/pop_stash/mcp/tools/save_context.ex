@@ -16,8 +16,8 @@ defmodule PopStash.MCP.Tools.SaveContext do
         inputSchema: %{
           type: "object",
           properties: %{
-            name: %{type: "string", description: "Short name (e.g., 'auth-wip')"},
-            summary: %{type: "string", description: "What you're working on"},
+            title: %{type: "string", description: "Short title (e.g., 'auth-wip')"},
+            body: %{type: "string", description: "What you're working on"},
             files: %{type: "array", items: %{type: "string"}},
             tags: %{
               type: "array",
@@ -30,7 +30,7 @@ defmodule PopStash.MCP.Tools.SaveContext do
                 "Optional thread ID to connect revisions (omit for new, pass back for revisions)"
             }
           },
-          required: ["name", "summary"]
+          required: ["title", "body"]
         },
         callback: &__MODULE__.execute/2
       }
@@ -45,10 +45,10 @@ defmodule PopStash.MCP.Tools.SaveContext do
       ]
       |> maybe_add_thread_id(args["thread_id"])
 
-    case Memory.create_context(project_id, args["name"], args["summary"], opts) do
+    case Memory.create_context(project_id, args["title"], args["body"], opts) do
       {:ok, context} ->
         {:ok,
-         "Saved context '#{context.name}'. Use `restore_context` with name '#{context.name}' to restore. (thread_id: #{context.thread_id})"}
+         "Saved context '#{context.title}'. Use `restore_context` with title '#{context.title}' to restore. (thread_id: #{context.thread_id})"}
 
       {:error, changeset} ->
         {:error, format_errors(changeset)}

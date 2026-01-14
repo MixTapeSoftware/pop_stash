@@ -210,20 +210,23 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
         </.empty_state>
       <% else %>
         <.data_table id="insights-table" rows={@insights} row_id={&"insight-#{&1.id}"}>
-          <:col :let={insight} label="Key" class="font-medium">
+          <:col :let={insight} label="Title" class="font-medium">
             <.link navigate={~p"/pop_stash/insights/#{insight.id}"} class="hover:text-violet-600">
-              <%= if insight.key do %>
-                <span class="font-mono">{insight.key}</span>
+              <%= if insight.title do %>
+                <span class="font-mono">{insight.title}</span>
               <% else %>
-                <span class="text-slate-400 italic">No key</span>
+                <span class="text-slate-400 italic">No title</span>
               <% end %>
             </.link>
           </:col>
-          <:col :let={insight} label="Content">
-            <.markdown_preview content={insight.content} max_length={100} />
+          <:col :let={insight} label="Body">
+            <.markdown_preview content={insight.body} max_length={100} />
           </:col>
           <:col :let={insight} label="Tags">
             <.tag_badges tags={insight.tags || []} />
+          </:col>
+          <:col :let={insight} label="Thread" mono>
+            <span class="text-xs text-slate-500 font-mono">{insight.thread_id}</span>
           </:col>
           <:col :let={insight} label="Updated" mono>
             <.timestamp datetime={insight.updated_at} />

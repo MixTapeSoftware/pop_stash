@@ -167,12 +167,12 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
       case socket.assigns.selected_project_id do
         nil ->
           socket.assigns.projects
-          |> Enum.flat_map(fn project -> Memory.list_decision_topics(project.id) end)
+          |> Enum.flat_map(fn project -> Memory.list_decision_titles(project.id) end)
           |> Enum.uniq()
           |> Enum.sort()
 
         project_id ->
-          Memory.list_decision_topics(project_id)
+          Memory.list_decision_titles(project_id)
       end
 
     assign(socket, :topics, topics)
@@ -264,16 +264,19 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
         </.empty_state>
       <% else %>
         <.data_table id="decisions-table" rows={@decisions} row_id={&"decision-#{&1.id}"}>
-          <:col :let={decision} label="Topic" class="font-medium">
+          <:col :let={decision} label="Title" class="font-medium">
             <.link navigate={~p"/pop_stash/decisions/#{decision.id}"} class="hover:text-violet-600">
-              <span class="font-mono">{decision.topic}</span>
+              <span class="font-mono">{decision.title}</span>
             </.link>
           </:col>
-          <:col :let={decision} label="Decision">
-            <.markdown_preview content={decision.decision} max_length={100} />
+          <:col :let={decision} label="Body">
+            <.markdown_preview content={decision.body} max_length={100} />
           </:col>
           <:col :let={decision} label="Tags">
             <.tag_badges tags={decision.tags || []} />
+          </:col>
+          <:col :let={decision} label="Thread" mono>
+            <span class="text-xs text-slate-500 font-mono">{decision.thread_id}</span>
           </:col>
           <:col :let={decision} label="Created" mono>
             <.timestamp datetime={decision.inserted_at} />

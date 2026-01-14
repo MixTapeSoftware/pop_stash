@@ -13,10 +13,10 @@ defmodule PopStash.MCP.Tools.Recall do
       %{
         name: "recall",
         description: """
-        Retrieve insights by key (exact match) or semantic search.
+        Retrieve insights by title (exact match) or semantic search.
 
         Search tips:
-        - Use exact keys like "auth-flow" for precise matches
+        - Use exact titles like "auth-flow" for precise matches
         - Use natural language like "how authentication works" for semantic search
         - Semantic search finds conceptually similar content, not just keyword matches
         - To exclude words in your query explicitly, prefix the word with the - operator, e.g. "electric car" -tesla.
@@ -27,28 +27,28 @@ defmodule PopStash.MCP.Tools.Recall do
         inputSchema: %{
           type: "object",
           properties: %{
-            key: %{
+            title: %{
               type: "string",
               description:
-                "Exact insight key (e.g., 'auth-flow') or natural language query (e.g., 'user authentication')"
+                "Exact insight title (e.g., 'auth-flow') or natural language query (e.g., 'user authentication')"
             },
             limit: %{
               type: "number",
               description: "Maximum results to return (default: 5)"
             }
           },
-          required: ["key"]
+          required: ["title"]
         },
         callback: &__MODULE__.execute/2
       }
     ]
   end
 
-  def execute(%{"key" => query} = params, %{project_id: project_id}) do
+  def execute(%{"title" => query} = params, %{project_id: project_id}) do
     limit = Map.get(params, "limit", 5)
 
     # Try exact match first
-    case Memory.get_insight_by_key(project_id, query) do
+    case Memory.get_insight_by_title(project_id, query) do
       {:ok, insight} ->
         {:ok, %{results: [format_insight(insight)], match_type: "exact"}}
 
@@ -76,10 +76,10 @@ defmodule PopStash.MCP.Tools.Recall do
             {:ok, %{results: Enum.map(results, &format_insight/1), match_type: "semantic"}}
 
           {:error, :embeddings_disabled} ->
-            {:error, "Semantic search unavailable. Use exact key match."}
+            {:error, "Semantic search unavailable. Use exact title match."}
 
           {:error, :timeout} ->
-            {:error, "Search timed out. Try using an exact insight key."}
+            {:error, "Search timed out. Try using an exact insight title."}
 
           {:error, reason} ->
             {:error, "Search failed: #{inspect(reason)}"}
@@ -90,8 +90,8 @@ defmodule PopStash.MCP.Tools.Recall do
   defp format_insight(insight) do
     %{
       id: insight.id,
-      key: insight.key,
-      content: insight.content,
+      title: insight.title,
+      body: insight.body,
       thread_id: insight.thread_id,
       created_at: insight.inserted_at
     }
@@ -100,11 +100,11 @@ defmodule PopStash.MCP.Tools.Recall do
   defp build_hint([]), do: "No insights yet."
 
   defp build_hint(recent) do
-    keys =
+    titles =
       recent
-      |> Enum.filter(& &1.key)
-      |> Enum.map_join(", ", & &1.key)
+      |> Enum.filter(& &1.title)
+      |> Enum.map_join(", ", & &1.title)
 
-    if keys == "", do: "No keyed insights.", else: "Recent keys: #{keys}"
+    if titles == "", do: "No titled insights.", else: "Recent titles: #{titles}"
   end
 end

@@ -23,18 +23,18 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
     decision = Repo.get!(Memory.Decision, id)
     project = Projects.get!(decision.project_id)
 
-    # Get all decisions for this topic (history)
-    topic_history =
-      Memory.get_decisions_by_topic(decision.project_id, decision.topic)
+    # Get all decisions for this title (history)
+    title_history =
+      Memory.get_decisions_by_title(decision.project_id, decision.title)
       |> Enum.reject(&(&1.id == decision.id))
 
     socket =
       socket
-      |> assign(:page_title, decision.topic)
+      |> assign(:page_title, decision.title)
       |> assign(:decision, decision)
       |> assign(:project, project)
       |> assign(:projects, Projects.list())
-      |> assign(:topic_history, topic_history)
+      |> assign(:title_history, title_history)
       |> apply_action(socket.assigns.live_action)
 
     {:noreply, socket}
@@ -70,14 +70,14 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
 
   @impl true
   def handle_info({:decision_created, decision}, socket) do
-    # If a new decision was created for the same topic, update the history
-    if decision.topic == socket.assigns.decision.topic &&
+    # If a new decision was created for the same title, update the history
+    if decision.title == socket.assigns.decision.title &&
          decision.project_id == socket.assigns.decision.project_id do
-      topic_history =
-        Memory.get_decisions_by_topic(decision.project_id, decision.topic)
+      title_history =
+        Memory.get_decisions_by_title(decision.project_id, decision.title)
         |> Enum.reject(&(&1.id == socket.assigns.decision.id))
 
-      {:noreply, assign(socket, :topic_history, topic_history)}
+      {:noreply, assign(socket, :title_history, title_history)}
     else
       {:noreply, socket}
     end
@@ -91,10 +91,10 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
        |> push_navigate(to: ~p"/pop_stash/decisions")}
     else
       # Update history if a related decision was deleted
-      topic_history =
-        Enum.reject(socket.assigns.topic_history, &(&1.id == id))
+      title_history =
+        Enum.reject(socket.assigns.title_history, &(&1.id == id))
 
-      {:noreply, assign(socket, :topic_history, topic_history)}
+      {:noreply, assign(socket, :title_history, title_history)}
     end
   end
 
@@ -109,7 +109,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
       <.back_link navigate={~p"/pop_stash/decisions"} label="Back to decisions" />
 
       <div class="mt-4">
-        <.page_header title={@decision.topic} subtitle={"Project: #{@project.name}"}>
+        <.page_header title={@decision.title} subtitle={"Project: #{@project.name}"}>
           <:actions>
             <.link_button navigate={~p"/pop_stash/decisions/new"} variant="secondary">
               <.icon name="hero-plus" class="size-4" /> New Decision
@@ -130,7 +130,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
         <div class="space-y-6">
           <.card>
             <.section_header title="Decision" />
-            <.markdown content={@decision.decision} />
+            <.markdown content={@decision.body} />
           </.card>
 
           <%= if @decision.reasoning do %>
@@ -140,19 +140,19 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
             </.card>
           <% end %>
           
-    <!-- Topic History -->
-          <%= if @topic_history != [] do %>
+    <!-- Title History -->
+          <%= if @title_history != [] do %>
             <.card>
-              <.section_header title="Topic History">
+              <.section_header title="Title History">
                 <:actions>
                   <span class="text-xs text-slate-500">
-                    {length(@topic_history)} previous decision(s)
+                    {length(@title_history)} previous decision(s)
                   </span>
                 </:actions>
               </.section_header>
               <div class="space-y-4">
                 <div
-                  :for={historical <- @topic_history}
+                  :for={historical <- @title_history}
                   class="border-l-2 border-slate-200 pl-4 py-2"
                 >
                   <div class="flex items-center gap-2 mb-2">
@@ -164,7 +164,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
                       View
                     </.link>
                   </div>
-                  <.markdown_preview content={historical.decision} max_length={150} />
+                  <.markdown_preview content={historical.body} max_length={150} />
                 </div>
               </div>
             </.card>
@@ -178,8 +178,8 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
               <span class="font-mono text-xs">{@decision.id}</span>
             </.detail_row>
 
-            <.detail_row label="Topic">
-              <span class="font-mono">{@decision.topic}</span>
+            <.detail_row label="Title">
+              <span class="font-mono">{@decision.title}</span>
             </.detail_row>
 
             <.detail_row label="Project">

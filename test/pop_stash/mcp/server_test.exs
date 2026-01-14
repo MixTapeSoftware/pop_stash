@@ -86,7 +86,7 @@ defmodule PopStash.MCP.ServerTest do
     test "unknown tool returns error", %{context: context} do
       assert {:error, %{error: %{code: -32_601}}} =
                Server.handle_message(
-                 msg("tools/call", params: %{"name" => "nope", "arguments" => %{}}),
+                 msg("tools/call", params: %{"title" => "nope", "arguments" => %{}}),
                  context
                )
     end
@@ -111,17 +111,17 @@ defmodule PopStash.MCP.ServerTest do
         "id" => 1,
         "method" => "tools/call",
         "params" => %{
-          "name" => "decide",
+          "title" => "decide",
           "arguments" => %{
-            "topic" => "testing",
-            "decision" => "Use ExUnit",
+            "title" => "testing",
+            "body" => "Use ExUnit",
             "reasoning" => "Built into Elixir"
           }
         }
       }
 
       assert {:ok, response} = Server.handle_message(message, context)
-      assert [%{text: text}] = response.result.content
+      assert [%{text: text}] = response.result.body
       assert text =~ "Decision recorded"
     end
 
@@ -132,8 +132,8 @@ defmodule PopStash.MCP.ServerTest do
         "id" => 1,
         "method" => "tools/call",
         "params" => %{
-          "name" => "decide",
-          "arguments" => %{"topic" => "auth", "decision" => "Use Guardian"}
+          "title" => "decide",
+          "arguments" => %{"title" => "auth", "body" => "Use Guardian"}
         }
       }
 
@@ -145,13 +145,13 @@ defmodule PopStash.MCP.ServerTest do
         "id" => 2,
         "method" => "tools/call",
         "params" => %{
-          "name" => "get_decisions",
-          "arguments" => %{"topic" => "auth"}
+          "title" => "get_decisions",
+          "arguments" => %{"title" => "auth"}
         }
       }
 
       assert {:ok, response} = Server.handle_message(query_msg, context)
-      assert [%{text: text}] = response.result.content
+      assert [%{text: text}] = response.result.body
       assert text =~ "Use Guardian"
     end
   end

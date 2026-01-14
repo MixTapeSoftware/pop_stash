@@ -59,8 +59,8 @@ defmodule PopStash.Activity do
     %Item{
       id: context.id,
       type: :context,
-      title: context.name,
-      preview: truncate(context.summary, 100),
+      title: context.title,
+      preview: truncate(context.body, 100),
       project_id: context.project_id,
       project_name: get_project_name(context.project_id),
       inserted_at: context.inserted_at,
@@ -72,8 +72,8 @@ defmodule PopStash.Activity do
     %Item{
       id: decision.id,
       type: :decision,
-      title: decision.topic,
-      preview: truncate(decision.decision, 100),
+      title: decision.title,
+      preview: truncate(decision.body, 100),
       project_id: decision.project_id,
       project_name: get_project_name(decision.project_id),
       inserted_at: decision.inserted_at,
@@ -85,8 +85,8 @@ defmodule PopStash.Activity do
     %Item{
       id: insight.id,
       type: :insight,
-      title: insight.key || "Insight",
-      preview: truncate(insight.content, 100),
+      title: insight.title || "Insight",
+      preview: truncate(insight.body, 100),
       project_id: insight.project_id,
       project_name: get_project_name(insight.project_id),
       inserted_at: insight.inserted_at,
