@@ -54,7 +54,6 @@ defmodule PopStashWeb.Dashboard.PlanLive.FormComponent do
     case Memory.create_plan(
            plan_params["project_id"],
            plan_params["title"],
-           plan_params["version"],
            plan_params["body"],
            tags: tags
          ) do

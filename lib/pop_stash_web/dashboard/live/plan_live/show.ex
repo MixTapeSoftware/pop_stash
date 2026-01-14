@@ -139,7 +139,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
 
   defp load_versions(socket) do
     versions =
-      Memory.list_plan_versions(socket.assigns.plan.project_id, socket.assigns.plan.title)
+      Memory.list_plan_revisions(socket.assigns.plan.project_id, socket.assigns.plan.title)
       |> Enum.reject(&(&1.id == socket.assigns.plan.id))
 
     assign(socket, :versions, versions)

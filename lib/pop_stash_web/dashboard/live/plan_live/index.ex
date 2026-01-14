@@ -173,7 +173,6 @@ defmodule PopStashWeb.Dashboard.PlanLive.Index do
 
   defp plan_matches_query?(plan, query) do
     matches_field?(plan.title, query) ||
-      matches_field?(plan.version, query) ||
       matches_field?(plan.body, query) ||
       matches_tags?(plan.tags, query)
   end
@@ -309,9 +308,9 @@ defmodule PopStashWeb.Dashboard.PlanLive.Index do
               {plan.title}
             </.link>
           </:col>
-          <:col :let={plan} label="Version">
-            <span class="font-mono text-sm bg-slate-100 px-1.5 py-0.5 rounded">
-              {plan.version}
+          <:col :let={plan} label="Created">
+            <span class="text-sm text-slate-600">
+              {Calendar.strftime(plan.inserted_at, "%Y-%m-%d %H:%M")}
             </span>
           </:col>
           <:col :let={plan} label="Preview">

@@ -338,13 +338,16 @@ defmodule PopStash.Memory do
   ## Plans
 
   @doc """
-  Creates a plan with a title, version, and body content.
+  Creates a plan with a title and body content.
+
+  Plans use threads for versioning - pass the same thread_id to create
+  new revisions of an existing plan.
 
   ## Options
     * `:tags` - Optional list of tags
     * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
   """
-  def create_plan(project_id, title, version, body, opts \\ []) do
+  def create_plan(project_id, title, body, opts \\ []) do
     thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Plan.thread_prefix())
 
     %Plan{}
@@ -352,39 +355,40 @@ defmodule PopStash.Memory do
       %{
         project_id: project_id,
         title: title,
-        version: version,
         body: body,
         tags: Keyword.get(opts, :tags, []),
         thread_id: thread_id
       },
-      [:project_id, :title, :version, :body, :tags, :thread_id]
+      [:project_id, :title, :body, :tags, :thread_id]
     )
-    |> validate_required([:project_id, :title, :version, :body, :thread_id])
+    |> validate_required([:project_id, :title, :body, :thread_id])
     |> validate_length(:title, min: 1, max: 255)
-    |> validate_length(:version, min: 1, max: 50)
-    |> unique_constraint([:project_id, :title, :version])
     |> foreign_key_constraint(:project_id)
     |> Repo.insert()
     |> tap_ok(&broadcast(:plan_created, &1))
   end
 
   @doc """
-  Gets a specific plan by title and version.
+  Gets the latest plan by title.
+  Returns the most recent revision based on inserted_at.
   """
-  def get_plan(project_id, title, version)
-      when is_binary(project_id) and is_binary(title) and is_binary(version) do
+  def get_plan(project_id, title) when is_binary(project_id) and is_binary(title) do
     Plan
-    |> where([p], p.project_id == ^project_id and p.title == ^title and p.version == ^version)
+    |> where([p], p.project_id == ^project_id and p.title == ^title)
+    |> order_by(desc: :inserted_at)
+    |> limit(1)
     |> Repo.one()
     |> wrap_result()
   end
 
   @doc """
-  Gets the latest version of a plan by title.
+  Gets a plan by its thread_id.
+  Returns the most recent revision in that thread.
   """
-  def get_latest_plan(project_id, title) when is_binary(project_id) and is_binary(title) do
+  def get_plan_by_thread(project_id, thread_id)
+      when is_binary(project_id) and is_binary(thread_id) do
     Plan
-    |> where([p], p.project_id == ^project_id and p.title == ^title)
+    |> where([p], p.project_id == ^project_id and p.thread_id == ^thread_id)
     |> order_by(desc: :inserted_at)
     |> limit(1)
     |> Repo.one()
@@ -417,12 +421,24 @@ defmodule PopStash.Memory do
   end
 
   @doc """
-  Lists all versions of a plan by title.
-  Returns most recent version first.
+  Lists all revisions of a plan by title.
+  Returns most recent revision first.
   """
-  def list_plan_versions(project_id, title) when is_binary(project_id) and is_binary(title) do
+  def list_plan_revisions(project_id, title) when is_binary(project_id) and is_binary(title) do
     Plan
     |> where([p], p.project_id == ^project_id and p.title == ^title)
+    |> order_by(desc: :inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists all revisions in a thread.
+  Returns most recent revision first.
+  """
+  def list_plan_thread(project_id, thread_id)
+      when is_binary(project_id) and is_binary(thread_id) do
+    Plan
+    |> where([p], p.project_id == ^project_id and p.thread_id == ^thread_id)
     |> order_by(desc: :inserted_at)
     |> Repo.all()
   end

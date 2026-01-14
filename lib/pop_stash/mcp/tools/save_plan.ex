@@ -13,19 +13,16 @@ defmodule PopStash.MCP.Tools.SavePlan do
       %{
         name: "save_plan",
         description: """
-        Save a project plan or roadmap with versioning.
+        Save a project plan or roadmap.
 
-        Plans are versioned documents that capture project roadmaps, architecture designs,
-        or implementation strategies. Each plan has a title and version, allowing you to
-        track changes over time.
+        Plans capture project roadmaps, architecture designs, or implementation strategies.
+        Plans use threads for versioning - pass the same thread_id to create new revisions.
 
         Use this to:
         - Document project roadmaps and milestones
         - Save architecture design documents
         - Track implementation plans across iterations
-        - Version project documentation
-
-        The combination of title + version must be unique within a project.
+        - Version project documentation via threads
         """,
         inputSchema: %{
           type: "object",
@@ -33,10 +30,6 @@ defmodule PopStash.MCP.Tools.SavePlan do
             title: %{
               type: "string",
               description: "Plan title (e.g., 'Q1 2024 Roadmap', 'Authentication Architecture')"
-            },
-            version: %{
-              type: "string",
-              description: "Version identifier (e.g., 'v1.0', '2024-01-15', 'draft')"
             },
             body: %{
               type: "string",
@@ -53,7 +46,7 @@ defmodule PopStash.MCP.Tools.SavePlan do
                 "Optional thread ID to connect revisions (omit for new, pass back for revisions)"
             }
           },
-          required: ["title", "version", "body"]
+          required: ["title", "body"]
         },
         callback: &__MODULE__.execute/2
       }
@@ -65,11 +58,11 @@ defmodule PopStash.MCP.Tools.SavePlan do
       [tags: Map.get(args, "tags", [])]
       |> maybe_add_thread_id(args["thread_id"])
 
-    case Memory.create_plan(project_id, args["title"], args["version"], args["body"], opts) do
+    case Memory.create_plan(project_id, args["title"], args["body"], opts) do
       {:ok, plan} ->
         {:ok,
          """
-         ✓ Saved plan "#{plan.title}" (#{plan.version})
+         ✓ Saved plan "#{plan.title}"
 
          Use `get_plan` with title "#{plan.title}" to retrieve it.
          Use `search_plans` to find plans by content.
@@ -96,7 +89,7 @@ defmodule PopStash.MCP.Tools.SavePlan do
       |> Enum.map_join(", ", fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end)
 
     if String.contains?(errors, "has already been taken") do
-      "A plan with this title and version already exists. Use a different version number or update the existing plan."
+      "A plan with this title and thread already exists. This likely means you're trying to save the same revision twice."
     else
       errors
     end

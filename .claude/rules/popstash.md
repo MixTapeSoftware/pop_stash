@@ -88,15 +88,14 @@ You don't invent thread IDs. You either omit them (new thread) or echo back one 
 - Example: `get_decisions(topic: "auth-method")` or `get_decisions(list_topics: true)`
 
 **save_plan**
-- Parameters: title (required), version (required), body (required), tags (optional array), thread_id (optional)
-- Note: title + version must be unique
-- Example: `save_plan(title: "V2 Architecture", version: "draft", body: "...")`
-- Example (revision): `save_plan(title: "V2 Architecture", version: "v1.0", body: "...", thread_id: "pthr_m3k9n7x2p4qz")`
+- Parameters: title (required), body (required), tags (optional array), thread_id (optional)
+- Example: `save_plan(title: "V2 Architecture", body: "...")`
+- Example (revision): `save_plan(title: "V2 Architecture", body: "Updated architecture...", thread_id: "pthr_m3k9n7x2p4qz")`
 
 **get_plan**
-- Parameters: title (optional), version (optional), all_versions (boolean), list_titles (boolean), limit (optional)
-- Returns plans with `thread_id`; all versions of a plan share the same thread
-- Example: `get_plan(title: "V2 Architecture")` or `get_plan(list_titles: true)`
+- Parameters: title (optional), all_revisions (boolean), list_titles (boolean), limit (optional)
+- Returns plans with `thread_id`; all revisions of a plan share the same thread
+- Example: `get_plan(title: "V2 Architecture")` or `get_plan(title: "V2 Architecture", all_revisions: true)` or `get_plan(list_titles: true)`
 
 **search_plans**
 - Parameters: query (required - natural language), limit (optional, default: 10)

@@ -233,7 +233,7 @@ defmodule PopStash.Search.Typesense do
   defp query_fields("contexts"), do: "name,summary"
   defp query_fields("insights"), do: "key,content"
   defp query_fields("decisions"), do: "topic,decision,reasoning"
-  defp query_fields("plans"), do: "title,version,body"
+  defp query_fields("plans"), do: "title,body"
 
   defp format_vector(embedding) when is_list(embedding) do
     "[" <> Enum.map_join(embedding, ",", &to_string/1) <> "]"

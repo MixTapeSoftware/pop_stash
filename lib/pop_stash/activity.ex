@@ -98,7 +98,7 @@ defmodule PopStash.Activity do
     %Item{
       id: plan.id,
       type: :plan,
-      title: "#{plan.title} (#{plan.version})",
+      title: plan.title,
       preview: truncate(plan.body, 100),
       project_id: plan.project_id,
       project_name: get_project_name(plan.project_id),

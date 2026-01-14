@@ -144,7 +144,7 @@ defmodule PopStash.Search.Indexer do
   end
 
   defp index_plan(plan) do
-    text = "#{plan.title} #{plan.version} #{plan.body}"
+    text = "#{plan.title} #{plan.body}"
 
     with {:ok, embedding} <- Embeddings.embed(text),
          :ok <- update_embedding(plan, embedding),

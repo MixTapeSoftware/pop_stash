@@ -111,12 +111,12 @@ defmodule PopStash.MCP.Tools.SearchPlans do
       end
 
     """
-    **#{plan.title}** (#{plan.version})
+    **#{plan.title}**
     #{preview}
     #{tags}
-    *Created: #{timestamp}*
+    *Created: #{timestamp}* (thread_id: #{plan.thread_id})
 
-    _Use `get_plan` with title "#{plan.title}" and version "#{plan.version}" to see the full plan._
+    _Use `get_plan` with title "#{plan.title}" to see the full plan._
     """
   end
 end
