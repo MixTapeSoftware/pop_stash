@@ -70,7 +70,11 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
       |> filter_projects_by_search(socket.assigns.search_query)
       |> Enum.map(&enrich_project_with_stats/1)
 
-    assign(socket, :projects, projects)
+    stats_summary = calculate_stats_summary(projects)
+
+    socket
+    |> assign(:projects, projects)
+    |> assign(:stats_summary, stats_summary)
   end
 
   defp filter_projects_by_search(projects, ""), do: projects
@@ -106,6 +110,21 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
     })
   end
 
+  defp calculate_stats_summary(projects) do
+    %{
+      total_projects: length(projects),
+      total_contexts: Enum.sum(Enum.map(projects, & &1.contexts_count)),
+      total_insights: Enum.sum(Enum.map(projects, & &1.insights_count)),
+      total_decisions: Enum.sum(Enum.map(projects, & &1.decisions_count)),
+      total_plans: Enum.sum(Enum.map(projects, & &1.plans_count)),
+      active_projects:
+        Enum.count(projects, fn p ->
+          p.contexts_count > 0 || p.insights_count > 0 || p.decisions_count > 0 ||
+            p.plans_count > 0
+        end)
+    }
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -137,6 +156,84 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
           </div>
         </form>
       </div>
+      
+    <!-- Stats Summary -->
+      <%= if @projects != [] do %>
+        <div class="mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <div class="flex items-center gap-2 text-slate-500 text-xs font-medium mb-1">
+              <.icon name="hero-folder" class="size-4" /> Projects
+            </div>
+            <div class="text-2xl font-bold text-slate-900">
+              {@stats_summary.total_projects}
+            </div>
+            <div class="text-xs text-slate-500 mt-1">
+              {@stats_summary.active_projects} active
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <div class="flex items-center gap-2 text-blue-600 text-xs font-medium mb-1">
+              <.icon name="hero-archive-box" class="size-4" /> Contexts
+            </div>
+            <div class="text-2xl font-bold text-slate-900">
+              {@stats_summary.total_contexts}
+            </div>
+            <div class="text-xs text-slate-500 mt-1">
+              across all projects
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <div class="flex items-center gap-2 text-amber-600 text-xs font-medium mb-1">
+              <.icon name="hero-light-bulb" class="size-4" /> Insights
+            </div>
+            <div class="text-2xl font-bold text-slate-900">
+              {@stats_summary.total_insights}
+            </div>
+            <div class="text-xs text-slate-500 mt-1">
+              across all projects
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <div class="flex items-center gap-2 text-green-600 text-xs font-medium mb-1">
+              <.icon name="hero-check-badge" class="size-4" /> Decisions
+            </div>
+            <div class="text-2xl font-bold text-slate-900">
+              {@stats_summary.total_decisions}
+            </div>
+            <div class="text-xs text-slate-500 mt-1">
+              across all projects
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <div class="flex items-center gap-2 text-purple-600 text-xs font-medium mb-1">
+              <.icon name="hero-map" class="size-4" /> Plans
+            </div>
+            <div class="text-2xl font-bold text-slate-900">
+              {@stats_summary.total_plans}
+            </div>
+            <div class="text-xs text-slate-500 mt-1">
+              across all projects
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg border border-violet-200 p-4">
+            <div class="flex items-center gap-2 text-violet-600 text-xs font-medium mb-1">
+              <.icon name="hero-chart-bar" class="size-4" /> Total Items
+            </div>
+            <div class="text-2xl font-bold text-violet-900">
+              {@stats_summary.total_contexts + @stats_summary.total_insights +
+                @stats_summary.total_decisions + @stats_summary.total_plans}
+            </div>
+            <div class="text-xs text-violet-600 mt-1">
+              knowledge items
+            </div>
+          </div>
+        </div>
+      <% end %>
       
     <!-- Project List -->
       <%= if @projects == [] do %>
@@ -170,21 +267,53 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
               {project.description || "—"}
             </div>
           </:col>
-          <:col :let={project} label="Stats">
-            <div class="flex gap-3 text-xs text-slate-600">
-              <span title="Contexts">
-                {project.contexts_count} <.icon name="hero-archive-box" class="size-3 inline" />
-              </span>
-              <span title="Insights">
-                {project.insights_count} <.icon name="hero-light-bulb" class="size-3 inline" />
-              </span>
-              <span title="Decisions">
-                {project.decisions_count} <.icon name="hero-check-badge" class="size-3 inline" />
-              </span>
-              <span title="Plans">
-                {project.plans_count} <.icon name="hero-map" class="size-3 inline" />
-              </span>
-            </div>
+          <:col :let={project} label="Contexts" class="text-center">
+            <span class={[
+              "inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium",
+              if(project.contexts_count > 0,
+                do: "bg-blue-50 text-blue-700",
+                else: "bg-slate-50 text-slate-400"
+              )
+            ]}>
+              <.icon name="hero-archive-box" class="size-3" />
+              {project.contexts_count}
+            </span>
+          </:col>
+          <:col :let={project} label="Insights" class="text-center">
+            <span class={[
+              "inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium",
+              if(project.insights_count > 0,
+                do: "bg-amber-50 text-amber-700",
+                else: "bg-slate-50 text-slate-400"
+              )
+            ]}>
+              <.icon name="hero-light-bulb" class="size-3" />
+              {project.insights_count}
+            </span>
+          </:col>
+          <:col :let={project} label="Decisions" class="text-center">
+            <span class={[
+              "inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium",
+              if(project.decisions_count > 0,
+                do: "bg-green-50 text-green-700",
+                else: "bg-slate-50 text-slate-400"
+              )
+            ]}>
+              <.icon name="hero-check-badge" class="size-3" />
+              {project.decisions_count}
+            </span>
+          </:col>
+          <:col :let={project} label="Plans" class="text-center">
+            <span class={[
+              "inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium",
+              if(project.plans_count > 0,
+                do: "bg-purple-50 text-purple-700",
+                else: "bg-slate-50 text-slate-400"
+              )
+            ]}>
+              <.icon name="hero-map" class="size-3" />
+              {project.plans_count}
+            </span>
           </:col>
           <:col :let={project} label="Tags">
             <.tag_badges tags={project.tags || []} />
