@@ -17,7 +17,12 @@ defmodule PopStash.MCP.Server do
     PopStash.MCP.Tools.GetDecisions,
     PopStash.MCP.Tools.SavePlan,
     PopStash.MCP.Tools.GetPlan,
-    PopStash.MCP.Tools.SearchPlans
+    PopStash.MCP.Tools.SearchPlans,
+    PopStash.MCP.Tools.AddStep,
+    PopStash.MCP.Tools.UpdateStep,
+    PopStash.MCP.Tools.PeekNextStep,
+    PopStash.MCP.Tools.GetPlanSteps,
+    PopStash.MCP.Tools.GetStep
   ]
 
   @type message :: map()
