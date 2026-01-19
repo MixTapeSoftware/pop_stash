@@ -13,7 +13,7 @@ defmodule PopStash.Repo.Migrations.CreatePlanSteps do
       add :project_id, references(:projects, on_delete: :delete_all), null: false
 
       timestamps()
-      end
+    end
 
     create index(:plan_steps, [:plan_id])
     create index(:plan_steps, [:project_id])

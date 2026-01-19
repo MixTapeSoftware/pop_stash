@@ -30,3 +30,25 @@
   - Named operations for error reporting
   - Complex rollback logic
   - Inspection of intermediate results across many steps
+
+- **Put changesets in the context where they're used, not in schema files**
+
+  Changesets are typically only used in one context, so colocate them there.
+
+  **Prefer this (in context module):**
+
+      # lib/my_app/memory.ex
+      defp status_changeset(plan, attrs) do
+        plan
+        |> cast(attrs, [:status])
+        |> validate_inclusion(:status, ~w(idle running paused completed failed))
+      end
+
+  **Avoid this (in schema module):**
+
+      # lib/my_app/memory/plan.ex
+      def status_changeset(plan, attrs) do
+        # ...
+      end
+
+  Schema files should generally only contain the schema definition and basic type information.
