@@ -16,13 +16,11 @@ defmodule PopStash.MCP.Tools.GetPlan do
         Retrieve project plans by title or search for plans.
 
         Plans capture roadmaps, architecture, and implementation strategies.
-        Plans use threads for versioning - multiple revisions share the same thread_id.
 
         Search modes:
-        - Provide `title` only: Returns the latest revision of that plan
+        - Provide `title` only: Returns the plan with that title
         - Provide `list_titles: true`: Lists all plan titles in the project
-        - Provide `title` and `all_revisions: true`: Lists all revisions of a plan
-        - Provide nothing: Lists recent plans (latest revisions)
+        - Provide nothing: Lists recent plans
         - Use natural language in `title` for semantic search if no exact match
 
         Titles are matched case-sensitively for exact lookups.
@@ -34,10 +32,6 @@ defmodule PopStash.MCP.Tools.GetPlan do
               type: "string",
               description:
                 "Plan title for exact match (e.g., 'Q1 2024 Roadmap') or natural language query for semantic search"
-            },
-            all_revisions: %{
-              type: "boolean",
-              description: "If true with title, returns all revisions of that plan"
             },
             list_titles: %{
               type: "boolean",
@@ -67,18 +61,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
     end
   end
 
-  # Get all revisions of a specific plan
-  def execute(%{"title" => title, "all_revisions" => true}, %{project_id: project_id}) do
-    revisions = Memory.list_plan_revisions(project_id, title)
-
-    if revisions == [] do
-      {:ok, "No plan found with title \"#{title}\"."}
-    else
-      {:ok, format_plan_revisions(title, revisions)}
-    end
-  end
-
-  # Get latest revision of a plan by title (with fallback to semantic search)
+  # Get a plan by title (with fallback to semantic search)
   def execute(%{"title" => title} = args, %{project_id: project_id}) do
     limit = Map.get(args, "limit", 10)
 
@@ -91,7 +74,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
     end
   end
 
-  # List recent plans (latest revisions)
+  # List recent plans
   def execute(args, %{project_id: project_id}) do
     limit = Map.get(args, "limit", 10)
     plans = Memory.list_plans(project_id, limit: limit)
@@ -132,7 +115,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
   end
 
   defp format_plans_list(plans) do
-    header = "Recent plans (#{length(plans)}, showing latest revisions):\n\n"
+    header = "Recent plans (#{length(plans)}):\n\n"
     formatted = Enum.map_join(plans, "\n---\n\n", &format_plan_summary/1)
     {:ok, header <> formatted}
   end
@@ -152,7 +135,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
 
     #{plan.body}
     #{tags}
-    *Created: #{timestamp}* (thread_id: #{plan.thread_id})
+    *Created: #{timestamp}*
     """
   end
 
@@ -177,28 +160,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
     """
     **#{plan.title}**
     #{preview}
-    *Created: #{timestamp}#{tags}* (thread_id: #{plan.thread_id})
+    *Created: #{timestamp}#{tags}*
     """
-  end
-
-  defp format_plan_revisions(title, revisions) do
-    header = "All revisions of \"#{title}\" (#{length(revisions)}, most recent first):\n\n"
-
-    formatted =
-      Enum.map_join(revisions, "\n", fn plan ->
-        timestamp = Calendar.strftime(plan.inserted_at, "%Y-%m-%d %H:%M UTC")
-        preview = String.slice(plan.body, 0, 100)
-
-        preview =
-          if String.length(plan.body) > 100 do
-            preview <> "..."
-          else
-            preview
-          end
-
-        "  • #{timestamp} (thread_id: #{plan.thread_id})\n    #{preview}"
-      end)
-
-    {:ok, header <> formatted}
   end
 end

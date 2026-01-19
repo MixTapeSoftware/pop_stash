@@ -22,7 +22,6 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
       socket
       |> assign(:current_path, "/pop_stash/plans")
       |> assign(:projects, projects)
-      |> assign(:versions, [])
       |> assign(:editing, false)
 
     {:ok, socket}
@@ -47,7 +46,6 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
           |> assign(:page_title, "Plan: #{plan.title}")
           |> assign(:plan, plan)
           |> assign(:project, plan.project)
-          |> load_versions()
           |> apply_action(socket.assigns.live_action, params)
 
         {:noreply, socket}
@@ -105,11 +103,6 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
     end
   end
 
-  def handle_event("create_version", _params, socket) do
-    {:noreply,
-     push_navigate(socket, to: ~p"/pop_stash/plans/new?base_plan_id=#{socket.assigns.plan.id}")}
-  end
-
   @impl true
   def handle_info({:plan_updated, %{id: id}}, socket) do
     if socket.assigns.plan.id == id do
@@ -137,31 +130,15 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
     {:noreply, socket}
   end
 
-  defp load_versions(socket) do
-    versions =
-      Memory.list_plan_revisions(socket.assigns.plan.project_id, socket.assigns.plan.title)
-      |> Enum.reject(&(&1.id == socket.assigns.plan.id))
-
-    assign(socket, :versions, versions)
-  end
-
   @impl true
   def render(assigns) do
     ~H"""
     <div>
       <.page_header
         title={@plan.title}
-        subtitle={"Version #{@plan.version} • #{@project.name}"}
+        subtitle={@project.name}
       >
         <:actions>
-          <.button
-            :if={!@editing}
-            phx-click="create_version"
-            variant="secondary"
-            size="sm"
-          >
-            <.icon name="hero-document-duplicate" class="size-4" /> New Version
-          </.button>
           <.button
             :if={!@editing}
             phx-click="edit"
@@ -175,7 +152,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
             phx-click="delete"
             variant="ghost"
             size="sm"
-            data-confirm="Are you sure you want to delete this plan version?"
+            data-confirm="Are you sure you want to delete this plan?"
           >
             <.icon name="hero-trash" class="size-4 text-red-500" />
           </.button>
@@ -214,13 +191,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
       <div :if={!@editing} class="bg-white rounded-lg shadow-sm border border-slate-200">
         <div class="p-6">
           <!-- Metadata -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-sm">
-            <div>
-              <span class="text-slate-500">Version:</span>
-              <span class="ml-2 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
-                {@plan.version}
-              </span>
-            </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 text-sm">
             <div>
               <span class="text-slate-500">Project:</span>
               <.link
@@ -253,38 +224,6 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
     <!-- Body Content -->
           <div class="prose prose-slate max-w-none">
             <.markdown content={@plan.body} />
-          </div>
-        </div>
-      </div>
-      
-    <!-- Version History -->
-      <div :if={@versions != []} class="mt-8">
-        <h3 class="text-lg font-semibold text-slate-900 mb-4">Other Versions</h3>
-        <div class="bg-white rounded-lg shadow-sm border border-slate-200 divide-y divide-slate-200">
-          <div :for={version <- @versions} class="p-4 hover:bg-slate-50 transition-colors">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <span class="font-mono text-sm bg-slate-100 px-1.5 py-0.5 rounded">
-                  {version.version}
-                </span>
-                <span class="text-sm text-slate-600">
-                  <.timestamp datetime={version.inserted_at} />
-                </span>
-                <div :if={version.tags && version.tags != []}>
-                  <.tag_badges tags={version.tags} />
-                </div>
-              </div>
-              <.link_button
-                navigate={~p"/pop_stash/plans/#{version.id}"}
-                variant="ghost"
-                size="sm"
-              >
-                View
-              </.link_button>
-            </div>
-            <div class="mt-2 text-sm text-slate-600">
-              <.markdown_preview content={version.body} max_length={200} />
-            </div>
           </div>
         </div>
       </div>

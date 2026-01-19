@@ -331,4 +331,106 @@ defmodule PopStash.MemoryTest do
       assert hd(p2_decisions).body == "P2 decision"
     end
   end
+
+  describe "plans" do
+    test "create_plan/4 creates a plan", %{project: project} do
+      assert {:ok, plan} =
+               Memory.create_plan(project.id, "Q1 Roadmap", "Goals for Q1")
+
+      assert plan.title == "Q1 Roadmap"
+      assert plan.body == "Goals for Q1"
+      assert plan.project_id == project.id
+    end
+
+    test "create_plan/4 accepts tags and files", %{project: project} do
+      assert {:ok, plan} =
+               Memory.create_plan(project.id, "Architecture", "System design",
+                 tags: ["architecture", "design"],
+                 files: ["docs/architecture.md"]
+               )
+
+      assert plan.tags == ["architecture", "design"]
+      assert plan.files == ["docs/architecture.md"]
+    end
+
+    test "get_plan/2 retrieves plan by title", %{project: project} do
+      {:ok, plan} = Memory.create_plan(project.id, "My Plan", "Plan content")
+      assert {:ok, found} = Memory.get_plan(project.id, "My Plan")
+      assert found.id == plan.id
+    end
+
+    test "get_plan/2 returns error when not found", %{project: project} do
+      assert {:error, :not_found} = Memory.get_plan(project.id, "nonexistent")
+    end
+
+    test "list_plans/2 returns plans for project", %{project: project} do
+      {:ok, _} = Memory.create_plan(project.id, "Plan 1", "First")
+      {:ok, _} = Memory.create_plan(project.id, "Plan 2", "Second")
+
+      plans = Memory.list_plans(project.id)
+      assert length(plans) == 2
+    end
+
+    test "list_plans/2 respects limit", %{project: project} do
+      for i <- 1..10 do
+        Memory.create_plan(project.id, "Plan #{i}", "Content #{i}")
+      end
+
+      assert length(Memory.list_plans(project.id, limit: 3)) == 3
+    end
+
+    test "list_plans/2 filters by title", %{project: project} do
+      {:ok, _} = Memory.create_plan(project.id, "Roadmap", "Roadmap content")
+      {:ok, _} = Memory.create_plan(project.id, "Architecture", "Arch content")
+
+      plans = Memory.list_plans(project.id, title: "Roadmap")
+      assert length(plans) == 1
+      assert hd(plans).title == "Roadmap"
+    end
+
+    test "update_plan/2 updates body", %{project: project} do
+      {:ok, plan} = Memory.create_plan(project.id, "Test Plan", "Old content")
+      assert {:ok, updated} = Memory.update_plan(plan.id, "New content")
+      assert updated.body == "New content"
+    end
+
+    test "update_plan/2 returns error for nonexistent plan" do
+      assert {:error, :not_found} = Memory.update_plan(Ecto.UUID.generate(), "content")
+    end
+
+    test "delete_plan/1 removes a plan", %{project: project} do
+      {:ok, plan} = Memory.create_plan(project.id, "Temp Plan", "Temporary")
+      assert :ok = Memory.delete_plan(plan.id)
+      assert {:error, :not_found} = Memory.get_plan(project.id, "Temp Plan")
+    end
+
+    test "delete_plan/1 returns error for nonexistent plan" do
+      assert {:error, :not_found} = Memory.delete_plan(Ecto.UUID.generate())
+    end
+
+    test "list_plan_titles/1 returns unique titles", %{project: project} do
+      {:ok, _} = Memory.create_plan(project.id, "Roadmap", "Content 1")
+      {:ok, _} = Memory.create_plan(project.id, "Architecture", "Content 2")
+      {:ok, _} = Memory.create_plan(project.id, "API Design", "Content 3")
+
+      titles = Memory.list_plan_titles(project.id)
+      assert titles == ["API Design", "Architecture", "Roadmap"]
+    end
+  end
+
+  describe "plans project isolation" do
+    test "plans are isolated by project" do
+      {:ok, project1} = Projects.create("Project 1")
+      {:ok, project2} = Projects.create("Project 2")
+
+      {:ok, _} = Memory.create_plan(project1.id, "Roadmap", "P1 roadmap")
+      {:ok, _} = Memory.create_plan(project2.id, "Roadmap", "P2 roadmap")
+
+      {:ok, p1_plan} = Memory.get_plan(project1.id, "Roadmap")
+      {:ok, p2_plan} = Memory.get_plan(project2.id, "Roadmap")
+
+      assert p1_plan.body == "P1 roadmap"
+      assert p2_plan.body == "P2 roadmap"
+    end
+  end
 end

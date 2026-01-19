@@ -935,3 +935,4 @@ $ /ps-execute --resume plan_abc123
 - step-5: Add HTTP API routes and controllers for plans and steps
 - step-6: Write tests for step CRUD operations
 - step-7: Update documentation (.claude/rules/popstash.md)
+- step-8: Update planner agent and execution script to enforce tests and code quality checks
