@@ -52,3 +52,51 @@
       end
 
   Schema files should generally only contain the schema definition and basic type information.
+
+- **Prefer query modules for organizing reusable queries**
+
+  Use a nested `Query` module in your context to organize composable query functions. This keeps queries DRY and testable.
+
+  **Prefer this:**
+
+      # lib/my_app/plans.ex
+      defmodule MyApp.Plans do
+        alias MyApp.Plans.Query
+
+        defmodule Query do
+          @moduledoc false
+
+          import Ecto.Query
+          alias MyApp.Plans.Plan
+
+          def for_project(query \\ Plan, project_id) do
+            where(query, [p], p.project_id == ^project_id)
+          end
+
+          def with_status(query \\ Plan, status) do
+            where(query, [p], p.status == ^status)
+          end
+
+          def ordered_by_inserted_at(query, direction \\ :desc) do
+            order_by(query, [p], [{^direction, p.inserted_at}])
+          end
+
+          def limit(query, count) do
+            Ecto.Query.limit(query, ^count)
+          end
+        end
+
+        def list_plans(project_id, opts \\ []) do
+          Query.for_project(project_id)
+          |> Query.with_status(opts[:status])
+          |> Query.ordered_by_inserted_at(:desc)
+          |> Query.limit(opts[:limit] || 50)
+          |> Repo.all()
+        end
+      end
+
+  Benefits:
+  - Queries are composable and chainable
+  - Easy to test query building logic in isolation
+  - Reduces duplication across context functions
+  - Clear separation of query construction from business logic
