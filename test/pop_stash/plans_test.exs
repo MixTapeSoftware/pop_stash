@@ -1,6 +1,7 @@
 defmodule PopStash.PlansTest do
   use PopStash.DataCase, async: true
 
+  alias PopStash.Memory.PlanStep
   alias PopStash.Plans
   alias PopStash.Projects
 
@@ -183,6 +184,17 @@ defmodule PopStash.PlansTest do
       assert {:error, :not_found} = Plans.add_plan_step(Ecto.UUID.generate(), "Step")
     end
 
+    test "add_plan_step/3 rejects duplicate step_numbers (unique constraint)", %{plan: plan} do
+      {:ok, _} = Plans.add_plan_step(plan.id, "Step 1", step_number: 1.0)
+
+      # Attempting to add another step with the same step_number should fail due to unique constraint
+      assert {:error, changeset} = Plans.add_plan_step(plan.id, "Duplicate", step_number: 1.0)
+
+      # The error will be on the changeset, could be on plan_id_step_number or step_number
+      assert changeset.valid? == false
+      refute Enum.empty?(changeset.errors)
+    end
+
     test "get_next_plan_step/1 returns first pending step", %{plan: plan} do
       {:ok, step1} = Plans.add_plan_step(plan.id, "Step 1")
       {:ok, _step2} = Plans.add_plan_step(plan.id, "Step 2")
@@ -248,6 +260,53 @@ defmodule PopStash.PlansTest do
     test "get_next_step_and_mark_in_progress/1 returns error for nonexistent plan" do
       assert {:error, :not_found} =
                Plans.get_next_step_and_mark_in_progress(Ecto.UUID.generate())
+    end
+
+    test "get_next_step_and_mark_in_progress/1 concurrent calls get different steps or locked",
+         %{plan: plan} do
+      # Create multiple pending steps
+      {:ok, step1} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, step2} = Plans.add_plan_step(plan.id, "Step 2")
+      {:ok, _step3} = Plans.add_plan_step(plan.id, "Step 3")
+
+      # Simulate concurrent calls from different agents/processes
+      task1 =
+        Task.async(fn ->
+          Plans.get_next_step_and_mark_in_progress(plan.id)
+        end)
+
+      task2 =
+        Task.async(fn ->
+          Plans.get_next_step_and_mark_in_progress(plan.id)
+        end)
+
+      result1 = Task.await(task1)
+      result2 = Task.await(task2)
+
+      # One should get a step, the other should get :plan_locked
+      results = [result1, result2]
+      successful_claims = Enum.count(results, &match?({:ok, %PlanStep{}}, &1))
+      locked_claims = Enum.count(results, &match?({:ok, :plan_locked}, &1))
+
+      assert successful_claims == 1
+      assert locked_claims == 1
+
+      # The successful claim should have gotten step1
+      successful_step =
+        Enum.find_value(results, fn
+          {:ok, %PlanStep{} = step} -> step
+          _ -> nil
+        end)
+
+      assert successful_step.id == step1.id
+      assert successful_step.status == "in_progress"
+
+      # Complete the step to release the plan
+      {:ok, _} = Plans.complete_plan_step(successful_step.id)
+
+      # Now another agent can claim the next step
+      {:ok, next_step} = Plans.get_next_step_and_mark_in_progress(plan.id)
+      assert next_step.id == step2.id
     end
 
     test "update_plan_step/2 updates status", %{plan: plan} do
