@@ -16,6 +16,7 @@ defmodule PopStash.Memory.Plan do
     field(:embedding, Pgvector.Ecto.Vector)
 
     belongs_to(:project, PopStash.Projects.Project)
+    has_many(:steps, PopStash.Memory.PlanStep)
 
     timestamps()
   end
