@@ -13,12 +13,44 @@ defmodule PopStash.MCP.Tools.GetPlanSteps do
       %{
         name: "get_plan_steps",
         description: """
-        List all steps for a plan.
+        List all steps for a plan with compact status overview.
 
-        Returns a compact list with step number, status, created_by, step_id, and description snippet.
-        Steps are always ordered by step_number ascending.
+        WHEN TO USE:
+        - Seeing plan execution progress at a glance
+        - Checking which steps are done vs pending
+        - Reviewing plan structure
+        - Debugging step execution flow
+        - Understanding what work remains
 
-        Use the status filter to see only pending, in_progress, completed, failed, deferred, or outdated steps.
+        RETURNS:
+        - Compact list with icons showing status
+        - Step number, status, created_by, step_id, description snippet
+        - Always ordered by step_number ascending
+        - Visual status indicators: ○ pending, ◐ in_progress, ● completed, ✗ failed
+
+        STATUS FILTER:
+        - Omit status: See all steps
+        - status: "pending": See only upcoming work
+        - status: "completed": See what's been done
+        - status: "failed": See what needs attention
+        - status: "in_progress": See what's currently running
+        - status: "deferred": See postponed steps
+        - status: "outdated": See obsolete steps
+
+        TYPICAL WORKFLOW:
+        1. save_plan and add_step to create plan with steps
+        2. get_plan_steps(plan_id: "...") to see overview
+        3. peek_next_step to see what's next
+        4. Execute steps via HTTP API
+        5. get_plan_steps(status: "completed") to see progress
+
+        USE CASES:
+        - "How many steps are left?"
+        - "What steps have failed?"
+        - "Show me the plan structure"
+        - "Which steps are pending?"
+
+        For full step details, use get_step with step_id.
         """,
         inputSchema: %{
           type: "object",

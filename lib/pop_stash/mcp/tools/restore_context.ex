@@ -13,16 +13,31 @@ defmodule PopStash.MCP.Tools.RestoreContext do
       %{
         name: "restore_context",
         description: """
-        Retrieve contexts by name (exact match) or semantic search.
+        Retrieve saved contexts by exact name or semantic search.
 
-        Search tips:
-        - Use exact names like "login-refactor" for precise matches
-        - Use natural language like "changes to the login page" for semantic search
-        - Semantic search finds conceptually similar contexts, not just keyword matches
-        - To exclude words in your query explicitly, prefix the word with the - operator, e.g. "electric car" -tesla.
-        - IMPORTANT: Keep search queries brief (under ~100 words). Long queries may fail or fall back to keyword-only search.
+        WHEN TO USE:
+        - Resuming work on a previous task
+        - Need context from a related investigation
+        - Starting work in a familiar area
+        - Picking up where you left off
 
-        Returns a ranked list of matching contexts with match_type indicator.
+        SEARCH MODES:
+        - Exact match: Use the exact title (e.g., "login-refactor")
+        - Semantic search: Use natural language (e.g., "authentication work")
+        - Semantic finds conceptually similar contexts, not just keyword matches
+
+        SEARCH TIPS:
+        - Exact names are tried first, then semantic search
+        - To exclude words, prefix with - (e.g., "electric car" -tesla)
+        - Keep queries brief (under ~100 words)
+        - Long queries may fail or fall back to keyword-only search
+
+        THREAD_ID IN RESULTS:
+        - Each result includes a thread_id
+        - Store thread_id if you plan to create a revision later
+        - Pass it to save_context to link related work
+
+        Returns ranked list with match_type indicator (exact or semantic).
         """,
         inputSchema: %{
           type: "object",

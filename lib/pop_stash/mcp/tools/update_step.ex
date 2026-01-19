@@ -13,17 +13,44 @@ defmodule PopStash.MCP.Tools.UpdateStep do
       %{
         name: "update_step",
         description: """
-        Update a plan step's status, result, or metadata.
+        Update a plan step's status, result, or metadata after execution.
 
-        Status transitions:
-        - pending -> completed | failed (marks complete without going through in_progress)
-        - in_progress -> completed | failed
+        WHEN TO USE:
+        - Marking a step completed after successful execution
+        - Marking a step failed with error details
+        - Adding execution results to a step
+        - Updating step metadata with additional context
 
-        Note: You cannot set status to "in_progress" directly. The HTTP API handles
-        that automatically when claiming a step for execution.
+        STATUS TRANSITIONS:
+        - pending -> completed | failed (direct completion)
+        - in_progress -> completed | failed (normal flow)
+        - Cannot set to "in_progress" manually (HTTP API does this atomically)
 
-        Use `complete_step` or `fail_step` for workflow transitions that also
-        update the plan's status appropriately.
+        TYPICAL WORKFLOW:
+        1. HTTP API claims next pending step (auto-marks in_progress)
+        2. Execute the step
+        3. update_step(step_id: "...", status: "completed", result: "Success message")
+           OR
+           update_step(step_id: "...", status: "failed", result: "Error: ...")
+
+        BEST PRACTICES:
+        - Always include a result message explaining what happened
+        - Use "completed" for successful execution
+        - Use "failed" for errors (include error details in result)
+        - Update metadata to preserve execution context
+        - Result field is searchable - include relevant details
+
+        RESULT EXAMPLES:
+        - Completed: "All 23 tests passed. Coverage: 94%"
+        - Completed: "Migration applied successfully. Added users table."
+        - Failed: "Tests failed: 3 failures in auth_test.exs"
+        - Failed: "Compilation error: undefined function User.create/1"
+
+        NOTE: The HTTP API provides complete_step and fail_step endpoints
+        that also update the plan's overall status. This tool only updates
+        the individual step.
+
+        Returns updated step details.
         """,
         inputSchema: %{
           type: "object",

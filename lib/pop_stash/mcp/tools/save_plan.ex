@@ -13,14 +13,41 @@ defmodule PopStash.MCP.Tools.SavePlan do
       %{
         name: "save_plan",
         description: """
-        Save a project plan or roadmap.
+        Save a project plan, roadmap, or implementation strategy.
 
-        Plans capture project roadmaps, architecture designs, or implementation strategies.
+        WHEN TO USE:
+        - Creating project roadmaps and milestones
+        - Documenting architecture designs
+        - Planning feature implementations
+        - Breaking down complex work into steps
+        - Preserving implementation strategies
 
-        Use this to:
-        - Document project roadmaps and milestones
-        - Save architecture design documents
-        - Track implementation plans
+        PLANS VS OTHER TOOLS:
+        - Contexts: Temporary working state (use save_context)
+        - Insights: Persistent knowledge (use insight)
+        - Decisions: Architectural choices (use decide)
+        - Plans: Structured roadmaps with executable steps
+
+        PLANS ARE IMMUTABLE:
+        - Unlike contexts/insights/decisions, plans do NOT use thread_id
+        - Plans cannot be revised - create a new plan instead
+        - Plans support executable steps via step management tools
+
+        WORKING WITH STEPS:
+        - Returns plan_id which you use with step tools
+        - Use add_step to add executable tasks to the plan
+        - Use get_plan_steps to see progress
+        - Use peek_next_step to see what's next
+        - Use update_step to mark steps completed
+
+        BEST PRACTICES:
+        - Use descriptive titles (e.g., "Q1 2024 Roadmap", "Auth Implementation")
+        - Include goals, approach, and architecture in body
+        - Use markdown for formatting (headers, lists, code blocks)
+        - Add tags for categorization: ["feature", "architecture", "roadmap"]
+        - Reference related files in the files array
+
+        Returns plan_id for use with step management tools.
         """,
         inputSchema: %{
           type: "object",

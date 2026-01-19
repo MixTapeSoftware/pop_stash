@@ -13,12 +13,38 @@ defmodule PopStash.MCP.Tools.PeekNextStep do
       %{
         name: "peek_next_step",
         description: """
-        Peek at the next pending step in a plan without changing its status.
+        Peek at the next pending step without changing its status (read-only).
 
-        This is a read-only operation for debugging or inspection.
-        For actual execution, use the HTTP API which atomically claims steps.
+        WHEN TO USE:
+        - Checking what step is next without claiming it
+        - Debugging plan execution flow
+        - Inspecting plan progress
+        - Previewing upcoming work
 
-        Returns the first step with status "pending" ordered by step_number.
+        HOW IT WORKS:
+        - Returns first step with status "pending"
+        - Ordered by step_number ascending
+        - Does NOT change step status (read-only)
+        - Does NOT claim the step for execution
+
+        PEEK VS HTTP API:
+        - peek_next_step: Read-only preview, doesn't claim step
+        - HTTP API /next: Atomically claims step and marks in_progress
+        - Use peek for inspection, HTTP API for actual execution
+
+        TYPICAL WORKFLOW:
+        1. get_plan_steps(plan_id: "...") to see all steps
+        2. peek_next_step(plan_id: "...") to see what's next
+        3. HTTP API /next to claim and execute
+
+        RETURNS:
+        - Step ID, step_number, description, status
+        - Null if no pending steps (all done or in-progress)
+
+        USE CASES:
+        - "What's the next task in this plan?"
+        - "Is there more work to do?"
+        - "What step are we on?"
         """,
         inputSchema: %{
           type: "object",

@@ -12,7 +12,41 @@ defmodule PopStash.MCP.Tools.Insight do
     [
       %{
         name: "insight",
-        description: "Save a persistent insight about the codebase.",
+        description: """
+        Save persistent knowledge about the codebase that's worth remembering.
+
+        WHEN TO USE:
+        - Discovered something non-obvious about how code works
+        - Learned how components interact
+        - Found undocumented behavior or patterns
+        - Identified conventions or best practices
+        - Uncovered gotchas or common pitfalls
+
+        WHAT MAKES A GOOD INSIGHT:
+        - "The auth middleware silently converts guest users to anonymous sessions"
+        - "API rate limits reset at UTC midnight, not rolling 24h windows"
+        - "All database queries timeout after 15s (configured in repo.ex)"
+        - "WebSocket connections are auto-reconnected with exponential backoff"
+
+        THREAD_ID MECHANICS:
+        - Omit thread_id for NEW insights (system generates one)
+        - Pass back thread_id to create a REVISION (refines/corrects previous insight)
+        - All revisions share the same thread_id
+        - Use timestamps to determine latest version
+
+        BEST PRACTICES:
+        - Keep insights atomic - one concept per insight
+        - Use descriptive titles for easy searching (e.g., "auth/session-handling")
+        - Link to specific files or code locations when relevant
+        - Update insights when you learn more (pass thread_id)
+
+        TYPICAL WORKFLOW:
+        1. insight(body: "Rate limits reset at midnight", title: "api/rate-limits")
+        2. ... later discover more details ...
+        3. insight(body: "Rate limits reset at UTC midnight per-key", title: "api/rate-limits", thread_id: "ithr_xyz")
+
+        Returns thread_id for creating revisions.
+        """,
         inputSchema: %{
           type: "object",
           properties: %{

@@ -13,24 +13,39 @@ defmodule PopStash.MCP.Tools.SearchPlans do
       %{
         name: "search_plans",
         description: """
-        Search plans using semantic similarity.
+        Search plans using semantic similarity across all content.
 
-        This performs vector-based semantic search across all plan content (title, body, tags)
-        to find relevant plans even when exact keywords don't match.
+        WHEN TO USE:
+        - Finding plans related to a concept or topic
+        - Not sure of exact plan title
+        - Discovering plans with specific information
+        - Exploring what's been planned in an area
+        - Need to find related planning documents
 
-        Use this when:
-        - You want to find plans related to a concept or topic
-        - You're not sure of the exact plan title
-        - You want to discover plans containing specific information
+        HOW IT WORKS:
+        - Vector-based semantic search across title, body, and tags
+        - Finds relevant plans even when exact keywords don't match
+        - Returns ranked results by relevance
 
-        For exact title lookups, use `get_plan` instead.
-
-        Search tips:
-        - Use natural language queries (e.g., "authentication implementation")
+        SEARCH TIPS:
+        - Use natural language (e.g., "authentication implementation")
         - Ask questions (e.g., "how should we handle errors?")
         - Use descriptive phrases (e.g., "database migration strategy")
         - To exclude words, prefix with - (e.g., "deployment -docker")
-        - IMPORTANT: Keep search queries brief (under ~100 words). Long queries may fail or fall back to keyword-only search.
+        - Keep queries brief (under ~100 words)
+        - Long queries may fail or fall back to keyword-only search
+
+        WHEN TO USE get_plan INSTEAD:
+        - You know the exact plan title
+        - You want to list all plans
+        - You need a specific plan by title
+
+        WORKING WITH RESULTS:
+        - Each result includes plan_id
+        - Store plan_id for use with step management tools
+        - Use get_plan with exact title to see full plan
+
+        Returns ranked list with previews and plan_id for each result.
         """,
         inputSchema: %{
           type: "object",

@@ -14,17 +14,37 @@ defmodule PopStash.MCP.Tools.GetPlan do
       %{
         name: "get_plan",
         description: """
-        Retrieve project plans by title or search for plans.
+        Retrieve project plans by title or list available plans.
 
-        Plans capture roadmaps, architecture, and implementation strategies.
+        WHEN TO USE:
+        - Need to reference an existing plan
+        - Want to see what plans exist
+        - Looking for a specific roadmap or design
+        - Need plan_id for working with steps
 
-        Search modes:
-        - Provide `title` only: Returns the plan with that title
-        - Provide `list_titles: true`: Lists all plan titles in the project
-        - Provide nothing: Lists recent plans
-        - Use natural language in `title` for semantic search if no exact match
+        SEARCH MODES:
+        - Exact title: Provide title for exact match (case-sensitive)
+        - Semantic fallback: If no exact match, tries semantic search
+        - List titles: Use list_titles: true to see all plan titles
+        - List recent: Omit title to see recent plans
 
-        Titles are matched case-sensitively for exact lookups.
+        WORKING WITH PLANS:
+        - Returns plan_id which you can use with step tools
+        - Use get_plan_steps to see the plan's executable steps
+        - Use add_step to add tasks to the plan
+        - Plans are immutable - no thread_id for revisions
+
+        SEARCH TIPS:
+        - Exact titles are tried first, then semantic search
+        - Use search_plans for better semantic search capabilities
+        - To find by content/keywords, use search_plans instead
+
+        BEST PRACTICE:
+        - Use get_plan to retrieve known plans by exact title
+        - Use search_plans to discover plans by topic or content
+        - Store plan_id if you need to add or manage steps
+
+        Returns full plan content with plan_id.
         """,
         inputSchema: %{
           type: "object",

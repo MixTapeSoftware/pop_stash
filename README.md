@@ -20,7 +20,7 @@ PopStash is an MCP server that gives AI agents a way to persist and retrieve con
 - **Insight/Recall**: Record and search persistent knowledge about your codebase  
 - **Decide/Get Decisions**: Document architectural decisions with full history
 - **Plan/Version Plans**: Create and manage versioned project plans and documentation
-- **Minimal Context Window Overhead (> 1%)**
+- **RLM Planning Mode**: Save plans with executable steps that agents can work through incrementally. Based on the [Reason-Loop-Memory pattern](https://arxiv.org/html/2512.24601v1), plans break down complex work into discrete steps that are claimed, executed, and marked complete—keeping context windows lean while preserving full execution history. Add steps with `add_step`, check progress with `get_plan_steps`, and mark completion with `update_step`.
 
 All retrieval supports both exact matching and semantic search powered by local embeddings.
 

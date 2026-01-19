@@ -12,7 +12,36 @@ defmodule PopStash.MCP.Tools.SaveContext do
     [
       %{
         name: "save_context",
-        description: "Save context for later. Use when switching tasks or context is long.",
+        description: """
+        Save working context to preserve progress across sessions.
+
+        WHEN TO USE:
+        - Switching between tasks or projects
+        - Context is getting long (>20 messages)
+        - Before exploring tangents or alternative approaches
+        - Pausing work to come back later
+        - Want to preserve your thought process
+
+        THREAD_ID MECHANICS:
+        - Omit thread_id for NEW context (system generates one)
+        - Pass back thread_id from previous save to create a REVISION
+        - All revisions share the same thread_id
+        - Use timestamps to determine latest version
+
+        BEST PRACTICES:
+        - Use short descriptive titles (e.g., "auth-refactor", "bug-123")
+        - Include current state and next steps in body
+        - Add files you're working on for quick reference
+        - Use tags to categorize: ["bug", "feature", "investigation"]
+
+        TYPICAL WORKFLOW:
+        1. save_context(title: "auth-fix", body: "Fixed token validation, next: test refresh")
+        2. ... work on other things ...
+        3. restore_context(name: "auth-fix") to resume
+        4. save_context(title: "auth-fix", body: "Completed refresh tests", thread_id: "cthr_xyz")
+
+        Returns thread_id for creating revisions.
+        """,
         inputSchema: %{
           type: "object",
           properties: %{

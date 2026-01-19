@@ -15,15 +15,35 @@ defmodule PopStash.MCP.Tools.GetDecisions do
         description: """
         Query recorded decisions by topic or semantic search.
 
-        Search tips:
-        - Use exact topic names like "authentication" for precise matches
-        - Use natural language like "security considerations" for semantic search
-        - To exclude words in your query explicitly, prefix the word with the - operator, e.g. "electric car" -tesla.
-        - Use list_topics to discover available topic names
-        - Omit topic to list recent decisions
-        - IMPORTANT: Keep search queries brief (under ~100 words). Long queries may fail or fall back to keyword-only search.
+        WHEN TO USE:
+        - About to make changes in an area
+        - Wondering "why is it done this way?"
+        - Onboarding to a new part of the codebase
+        - Before proposing architectural changes
+        - Need to understand past reasoning
 
-        Topics are matched case-insensitively for exact matches.
+        SEARCH MODES:
+        - Exact topic: Use exact title (e.g., "authentication")
+        - Semantic search: Use natural language (e.g., "security considerations")
+        - List topics: Use list_topics: true to discover what's been decided
+        - List recent: Omit topic to see recent decisions
+
+        SEARCH TIPS:
+        - Topics are matched case-insensitively for exact matches
+        - To exclude words, prefix with - (e.g., "electric car" -tesla)
+        - Keep queries brief (under ~100 words)
+        - Long queries may fail or fall back to keyword-only search
+
+        THREAD_ID IN RESULTS:
+        - Each result includes a thread_id
+        - Store thread_id if decision needs revision later
+        - Pass it to decide to record evolution of decision
+
+        BEST PRACTICE:
+        - Check decisions before making architectural changes
+        - Decisions document the "why" - respect past reasoning or update it
+
+        Returns decisions with reasoning and timestamps.
         """,
         inputSchema: %{
           type: "object",

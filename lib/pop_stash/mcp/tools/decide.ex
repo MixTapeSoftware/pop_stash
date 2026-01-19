@@ -13,9 +13,39 @@ defmodule PopStash.MCP.Tools.Decide do
       %{
         name: "decide",
         description: """
-        Record an architectural or important or key technical decision. Decisions are immutable - \
-        recording a new decision with the same title creates a new entry, preserving history. \
-        Use this to document choices like "We chose Phoenix LiveView over React because..."
+        Record architectural and important technical decisions with rationale.
+
+        WHEN TO USE:
+        - Making significant technical choices (framework, database, architecture)
+        - Choosing between valid approaches (REST vs GraphQL, sync vs async)
+        - Establishing patterns for the codebase (error handling, testing strategy)
+        - Rejecting alternatives (document why X was NOT chosen)
+
+        WHAT MAKES A GOOD DECISION:
+        - "We chose Phoenix LiveView over React for the admin UI"
+        - "Using PostgreSQL JSONB for flexible schema instead of EAV tables"
+        - "Rate limiting at nginx level, not application level"
+        - "Event sourcing for audit trail, traditional CRUD for reporting"
+
+        THREAD_ID MECHANICS:
+        - Omit thread_id for NEW decisions (system generates one)
+        - Pass back thread_id to create a REVISION (decision evolved/changed)
+        - All revisions share the same thread_id
+        - Use timestamps to determine latest version
+
+        BEST PRACTICES:
+        - Use clear titles that describe the decision area (e.g., "authentication", "api-design")
+        - Explain WHAT was decided in the body
+        - Explain WHY in reasoning (this is the most valuable part!)
+        - Link to relevant code, docs, or tickets
+        - Document rejected alternatives and why they were rejected
+
+        TYPICAL WORKFLOW:
+        1. decide(title: "auth-method", body: "Use JWT with refresh tokens", reasoning: "Stateless, scales horizontally...")
+        2. ... later, requirements change ...
+        3. decide(title: "auth-method", body: "Switch to session tokens", reasoning: "Need to revoke immediately...", thread_id: "dthr_xyz")
+
+        Returns thread_id for creating revisions.
         """,
         inputSchema: %{
           type: "object",

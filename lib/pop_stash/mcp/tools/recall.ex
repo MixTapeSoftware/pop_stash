@@ -13,16 +13,36 @@ defmodule PopStash.MCP.Tools.Recall do
       %{
         name: "recall",
         description: """
-        Retrieve insights by title (exact match) or semantic search.
+        Retrieve saved insights by exact title or semantic search.
 
-        Search tips:
-        - Use exact titles like "auth-flow" for precise matches
-        - Use natural language like "how authentication works" for semantic search
-        - Semantic search finds conceptually similar content, not just keyword matches
-        - To exclude words in your query explicitly, prefix the word with the - operator, e.g. "electric car" -tesla.
-        - IMPORTANT: Keep search queries brief (under ~100 words). Long queries may fail or fall back to keyword-only search.
+        WHEN TO USE:
+        - Starting work in unfamiliar code area
+        - Before making architectural changes
+        - When something "should work" but doesn't
+        - Onboarding to a new part of the codebase
+        - Need to remember how something was designed
 
-        Returns a ranked list of matching insights with match_type indicator.
+        SEARCH MODES:
+        - Exact match: Use the exact title (e.g., "auth/session-handling")
+        - Semantic search: Use natural language (e.g., "how authentication works")
+        - Semantic finds conceptually similar content, not just keyword matches
+
+        SEARCH TIPS:
+        - Exact titles are tried first, then semantic search
+        - To exclude words, prefix with - (e.g., "electric car" -tesla)
+        - Keep queries brief (under ~100 words)
+        - Long queries may fail or fall back to keyword-only search
+
+        THREAD_ID IN RESULTS:
+        - Each result includes a thread_id
+        - Store thread_id if you discover more details later
+        - Pass it to insight to create a revision (refinement)
+
+        BEST PRACTICE:
+        - Search before diving into unfamiliar code
+        - Insights capture hard-won knowledge - use them!
+
+        Returns ranked list with match_type indicator (exact or semantic).
         """,
         inputSchema: %{
           type: "object",

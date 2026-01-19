@@ -13,9 +13,36 @@ defmodule PopStash.MCP.Tools.GetStep do
       %{
         name: "get_step",
         description: """
-        Get full details of a specific plan step by its ID.
+        Get full details of a specific step including result and metadata.
 
-        Returns all step information including description, status, result, metadata, and timestamps.
+        WHEN TO USE:
+        - Need complete step information
+        - Want to see execution result
+        - Inspecting step metadata
+        - Debugging a specific step
+        - Reviewing step history
+
+        RETURNS:
+        - Step ID, plan ID, step number
+        - Status (pending, in_progress, completed, failed, etc.)
+        - Full description (not truncated)
+        - Execution result (if step has been executed)
+        - Metadata (additional context)
+        - Created by (agent or user)
+        - Timestamps
+
+        TYPICAL WORKFLOW:
+        1. get_plan_steps(plan_id: "...") to see compact list
+        2. Find step_id of interest
+        3. get_step(step_id: "...") to see full details
+
+        USE CASES:
+        - "What was the result of this step?"
+        - "Why did this step fail?"
+        - "What metadata is attached to this step?"
+        - "When was this step created/completed?"
+
+        For compact overview of all steps, use get_plan_steps instead.
         """,
         inputSchema: %{
           type: "object",

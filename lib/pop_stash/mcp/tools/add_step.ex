@@ -13,14 +13,45 @@ defmodule PopStash.MCP.Tools.AddStep do
       %{
         name: "add_step",
         description: """
-        Add a step to a plan.
+        Add an executable step to a plan for the RLM (Reason-Loop-Memory) workflow.
 
-        Steps are executed sequentially by step_number. You can:
-        - Add at the end (default): Just provide plan_id and description
-        - Insert at position: Use step_number for explicit placement
-        - Insert after a step: Use after_step to calculate midpoint
+        WHEN TO USE:
+        - Breaking down a plan into actionable tasks
+        - Adding steps to a newly created plan
+        - Inserting additional steps into existing plan
+        - Creating an execution checklist
 
-        Use this when you need to add tasks to an execution plan.
+        HOW STEPS WORK:
+        - Steps execute sequentially by step_number (float)
+        - Each step has a status: pending -> in_progress -> completed/failed
+        - HTTP API claims next pending step and marks it in_progress
+        - After execution, step is marked completed or failed
+        - Agents may mark tasks outdated and/or add new tasks within the execution loop.
+        - Agents may also look up previous decisions or insights to guide their work.
+        - Only one agent at a time may work on a project
+
+        PLACEMENT OPTIONS:
+        1. Append (default): Just provide plan_id and description
+           - Auto-assigns next step_number (e.g., if last is 3.0, adds 4.0)
+        2. Insert after: Use after_step to insert between steps
+           - Calculates midpoint (e.g., after_step: 2.0 inserts at 2.5)
+        3. Explicit position: Use step_number for precise placement
+           - Overrides after_step if both provided
+
+        BEST PRACTICES:
+        - Use clear, actionable descriptions ("Run tests", "Deploy to staging")
+        - Add steps in logical execution order
+        - Use created_by to distinguish agent vs user steps
+        - Use metadata for additional context (file paths, commands, notes)
+
+        TYPICAL WORKFLOW:
+        1. save_plan(title: "Feature X", body: "Implementation plan...")
+        2. add_step(plan_id: "...", description: "Create database migration")
+        3. add_step(plan_id: "...", description: "Implement service layer")
+        4. add_step(plan_id: "...", description: "Add tests")
+        5. add_step(plan_id: "...", description: "Update documentation")
+
+        Returns step_id and step_number for the new step.
         """,
         inputSchema: %{
           type: "object",
