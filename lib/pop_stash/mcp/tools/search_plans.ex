@@ -114,7 +114,7 @@ defmodule PopStash.MCP.Tools.SearchPlans do
     **#{plan.title}**
     #{preview}
     #{tags}
-    *Created: #{timestamp}* (thread_id: #{plan.thread_id})
+    *Created: #{timestamp}*
 
     _Use `get_plan` with title "#{plan.title}" to see the full plan._
     """

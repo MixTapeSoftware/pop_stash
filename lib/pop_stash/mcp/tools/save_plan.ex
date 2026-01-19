@@ -61,10 +61,11 @@ defmodule PopStash.MCP.Tools.SavePlan do
       {:ok, plan} ->
         {:ok,
          """
-         Saved plan "#{plan.title}"
+         Saved plan "#{plan.title}" (plan_id: #{plan.id})
 
          Use `get_plan` with title "#{plan.title}" to retrieve it.
          Use `search_plans` to find plans by content.
+         Use the plan_id with step tools to add and manage plan steps.
          """}
 
       {:error, %Ecto.Changeset{errors: [project_id: _]}} ->
