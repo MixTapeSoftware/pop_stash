@@ -493,6 +493,130 @@ defmodule PopStash.PlansTest do
       assert marked.id == step2.id
     end
 
+    # mark_plan_step_outdated tests
+
+    test "mark_plan_step_outdated/2 marks pending step as outdated", %{plan: plan} do
+      {:ok, step} = Plans.add_plan_step(plan.id, "Step 1")
+
+      {:ok, outdated} =
+        Plans.mark_plan_step_outdated(step.id, result: "Replaced by updated approach")
+
+      assert outdated.status == "outdated"
+      assert outdated.result == "Replaced by updated approach"
+    end
+
+    test "mark_plan_step_outdated/2 marks in_progress step as outdated and releases plan", %{
+      plan: plan
+    } do
+      {:ok, _} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, _} = Plans.add_plan_step(plan.id, "Step 2")
+      {:ok, step1} = Plans.get_next_step_and_mark_in_progress(plan.id)
+
+      # Plan should be running
+      {:ok, plan_before} = Plans.get_plan_by_id(plan.id)
+      assert plan_before.status == "running"
+
+      # Mark the in_progress step as outdated
+      {:ok, outdated} = Plans.mark_plan_step_outdated(step1.id, result: "No longer needed")
+
+      assert outdated.status == "outdated"
+
+      # Plan should be idle again
+      {:ok, plan_after} = Plans.get_plan_by_id(plan.id)
+      assert plan_after.status == "idle"
+
+      # Should be able to claim next step
+      {:ok, step2} = Plans.get_next_step_and_mark_in_progress(plan.id)
+      assert step2.description == "Step 2"
+    end
+
+    test "mark_plan_step_outdated/2 merges metadata", %{plan: plan} do
+      {:ok, step} = Plans.add_plan_step(plan.id, "Step 1", metadata: %{"original" => true})
+
+      {:ok, outdated} =
+        Plans.mark_plan_step_outdated(step.id, metadata: %{"replacement_steps" => [2.1, 2.2]})
+
+      assert outdated.metadata == %{"original" => true, "replacement_steps" => [2.1, 2.2]}
+    end
+
+    test "mark_plan_step_outdated/2 returns error for completed step", %{plan: plan} do
+      {:ok, _} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, step} = Plans.get_next_step_and_mark_in_progress(plan.id)
+      {:ok, _} = Plans.complete_plan_step(step.id)
+
+      assert {:error, :cannot_mark_outdated} = Plans.mark_plan_step_outdated(step.id)
+    end
+
+    test "mark_plan_step_outdated/2 returns error for failed step", %{plan: plan} do
+      {:ok, _} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, step} = Plans.get_next_step_and_mark_in_progress(plan.id)
+      {:ok, _} = Plans.fail_plan_step(step.id)
+
+      assert {:error, :cannot_mark_outdated} = Plans.mark_plan_step_outdated(step.id)
+    end
+
+    test "mark_plan_step_outdated/2 returns error for deferred step", %{plan: plan} do
+      {:ok, step} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, _} = Plans.defer_plan_step(step.id)
+
+      assert {:error, :cannot_mark_outdated} = Plans.mark_plan_step_outdated(step.id)
+    end
+
+    test "mark_plan_step_outdated/2 returns error for already outdated step", %{plan: plan} do
+      {:ok, step} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, _} = Plans.mark_plan_step_outdated(step.id)
+
+      assert {:error, :cannot_mark_outdated} = Plans.mark_plan_step_outdated(step.id)
+    end
+
+    test "mark_plan_step_outdated/2 returns error for nonexistent step" do
+      assert {:error, :not_found} = Plans.mark_plan_step_outdated(Ecto.UUID.generate())
+    end
+
+    test "outdated steps are skipped by get_next_step_and_mark_in_progress", %{plan: plan} do
+      {:ok, step1} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, step2} = Plans.add_plan_step(plan.id, "Step 2")
+
+      # Mark step 1 as outdated
+      {:ok, _} = Plans.mark_plan_step_outdated(step1.id, result: "Not needed")
+
+      # Should get step 2, not step 1
+      {:ok, marked} = Plans.get_next_step_and_mark_in_progress(plan.id)
+      assert marked.id == step2.id
+    end
+
+    test "can mark pending step as outdated via update_plan_step", %{plan: plan} do
+      {:ok, step} = Plans.add_plan_step(plan.id, "Step 1")
+
+      {:ok, updated} = Plans.update_plan_step(step.id, %{status: "outdated"})
+      assert updated.status == "outdated"
+    end
+
+    test "can mark in_progress step as outdated via update_plan_step", %{plan: plan} do
+      {:ok, _} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, step} = Plans.get_next_step_and_mark_in_progress(plan.id)
+
+      {:ok, updated} = Plans.update_plan_step(step.id, %{status: "outdated"})
+      assert updated.status == "outdated"
+    end
+
+    test "outdated is a terminal state", %{plan: plan} do
+      {:ok, step} = Plans.add_plan_step(plan.id, "Step 1")
+      {:ok, _} = Plans.mark_plan_step_outdated(step.id)
+
+      # Cannot transition back to pending
+      assert {:error, :invalid_status_transition} =
+               Plans.update_plan_step(step.id, %{status: "pending"})
+
+      # Cannot transition to in_progress
+      assert {:error, :invalid_status_transition} =
+               Plans.update_plan_step(step.id, %{status: "in_progress"})
+
+      # Cannot transition to completed
+      assert {:error, :invalid_status_transition} =
+               Plans.update_plan_step(step.id, %{status: "completed"})
+    end
+
     # Plan status field tests
 
     test "new plans have idle status", %{plan: plan} do

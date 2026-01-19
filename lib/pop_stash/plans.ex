@@ -20,6 +20,7 @@ defmodule PopStash.Plans do
   - `completed` - Successfully finished
   - `failed` - Failed during execution
   - `deferred` - Skipped, will not be executed
+  - `outdated` - No longer relevant, won't be executed
   """
 
   import Ecto.Changeset
@@ -113,7 +114,7 @@ defmodule PopStash.Plans do
   end
 
   @plan_statuses ~w(idle running paused completed failed)
-  @step_statuses ~w(pending in_progress completed failed deferred)
+  @step_statuses ~w(pending in_progress completed failed deferred outdated)
 
   ## Plans
 
@@ -575,16 +576,78 @@ defmodule PopStash.Plans do
   end
 
   @doc """
+  Marks a plan step as outdated.
+
+  Use this when a step is no longer relevant or has been superseded by new steps.
+  Outdated steps are not picked up by `get_next_step_and_mark_in_progress/1`.
+
+  Can mark pending or in_progress steps as outdated. If a step is in_progress,
+  the plan is also released back to idle so execution can continue with the next step.
+
+  ## Options
+
+  - `:result` - Optional reason why the step became outdated
+  - `:metadata` - Optional metadata to store with the step
+  """
+  def mark_plan_step_outdated(step_id, opts \\ []) when is_binary(step_id) do
+    import Ecto.Query
+
+    Repo.transact(fn ->
+      step =
+        PlanStep
+        |> where([s], s.id == ^step_id)
+        |> lock("FOR UPDATE SKIP LOCKED")
+        |> Repo.one()
+
+      case step do
+        nil ->
+          {:error, :not_found}
+
+        %{status: status} = step when status in ~w(pending in_progress) ->
+          do_mark_step_outdated(step, status, opts)
+
+        _step ->
+          {:error, :cannot_mark_outdated}
+      end
+    end)
+    |> tap_ok(&broadcast(:plan_step_updated, &1))
+  end
+
+  defp do_mark_step_outdated(step, status, opts) do
+    result = Keyword.get(opts, :result)
+    metadata = Keyword.get(opts, :metadata, %{})
+
+    attrs = %{
+      status: "outdated",
+      result: result,
+      metadata: Map.merge(step.metadata, metadata)
+    }
+
+    with {:ok, updated_step} <- step |> step_update_changeset(attrs) |> Repo.update() do
+      maybe_release_plan(updated_step, status)
+    end
+  end
+
+  defp maybe_release_plan(step, "in_progress") do
+    case mark_plan_idle(step.plan_id) do
+      {:ok, _plan} -> {:ok, step}
+      error -> error
+    end
+  end
+
+  defp maybe_release_plan(step, _status), do: {:ok, step}
+
+  @doc """
   Updates a plan step's status, result, or metadata.
 
   Note: For normal workflow, prefer `complete_plan_step/2` or `fail_plan_step/2`
   which also handle plan status transitions.
 
   Status transitions are validated:
-  - pending -> in_progress | deferred
-  - in_progress -> completed | failed
+  - pending -> in_progress | deferred | outdated
+  - in_progress -> completed | failed | outdated
   - deferred -> pending
-  - completed and failed are terminal states
+  - completed, failed, and outdated are terminal states
   """
   def update_plan_step(step_id, attrs) when is_binary(step_id) do
     case Repo.get(PlanStep, step_id) do
@@ -609,8 +672,10 @@ defmodule PopStash.Plans do
   defp valid_step_status_transition?(current, new) when current == new, do: true
   defp valid_step_status_transition?("pending", "in_progress"), do: true
   defp valid_step_status_transition?("pending", "deferred"), do: true
+  defp valid_step_status_transition?("pending", "outdated"), do: true
   defp valid_step_status_transition?("in_progress", "completed"), do: true
   defp valid_step_status_transition?("in_progress", "failed"), do: true
+  defp valid_step_status_transition?("in_progress", "outdated"), do: true
   defp valid_step_status_transition?("deferred", "pending"), do: true
   defp valid_step_status_transition?(_, _), do: false
 

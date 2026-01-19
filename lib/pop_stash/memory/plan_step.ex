@@ -13,6 +13,7 @@ defmodule PopStash.Memory.PlanStep do
   - `completed` - Successfully finished
   - `failed` - Failed during execution
   - `deferred` - Skipped, will not be executed
+  - `outdated` - No longer relevant, won't be executed
   """
 
   use PopStash.Schema
