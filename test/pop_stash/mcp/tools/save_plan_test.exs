@@ -2,7 +2,7 @@ defmodule PopStash.MCP.Tools.SavePlanTest do
   use PopStash.DataCase, async: true
 
   alias PopStash.MCP.Tools.SavePlan
-  alias PopStash.Memory
+  alias PopStash.Plans
 
   import PopStash.Fixtures
 
@@ -23,7 +23,7 @@ defmodule PopStash.MCP.Tools.SavePlanTest do
       assert message =~ "Saved plan"
       assert message =~ "Q1 Roadmap"
 
-      assert {:ok, plan} = Memory.get_plan(project.id, "Q1 Roadmap")
+      assert {:ok, plan} = Plans.get_plan(project.id, "Q1 Roadmap")
       assert plan.body == "Goals for Q1"
     end
 
@@ -36,7 +36,7 @@ defmodule PopStash.MCP.Tools.SavePlanTest do
 
       assert {:ok, _} = SavePlan.execute(args, context)
 
-      assert {:ok, plan} = Memory.get_plan(project.id, "Architecture")
+      assert {:ok, plan} = Plans.get_plan(project.id, "Architecture")
       assert plan.tags == ["architecture", "design"]
     end
 
@@ -49,7 +49,7 @@ defmodule PopStash.MCP.Tools.SavePlanTest do
 
       assert {:ok, _} = SavePlan.execute(args, context)
 
-      assert {:ok, plan} = Memory.get_plan(project.id, "API Design")
+      assert {:ok, plan} = Plans.get_plan(project.id, "API Design")
       assert plan.files == ["docs/api.md", "lib/api/router.ex"]
     end
 

@@ -7,6 +7,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
 
   alias PopStash.Activity
   alias PopStash.Memory
+  alias PopStash.Plans
   alias PopStash.Projects
 
   @impl true
@@ -172,7 +173,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
         total_plans =
           projects
           |> Enum.map(& &1.id)
-          |> Enum.map(&length(Memory.list_plans(&1)))
+          |> Enum.map(&length(Plans.list_plans(&1)))
           |> Enum.sum()
 
         total_searches =
@@ -232,7 +233,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
         contexts = Memory.list_contexts(project_id)
         insights = Memory.list_insights(project_id)
         decisions = Memory.list_decisions(project_id)
-        plans = Memory.list_plans(project_id)
+        plans = Plans.list_plans(project_id)
         searches_count = Memory.count_searches(project_id)
 
         stats = [

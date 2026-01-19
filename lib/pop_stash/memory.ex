@@ -1,6 +1,6 @@
 defmodule PopStash.Memory do
   @moduledoc """
-  Context for memory operations: contexts, insights, decisions, and plans.
+  Context for memory operations: contexts, insights, and decisions.
 
   Handles saving and retrieving memory data across sessions.
   Supports both exact matching and semantic search via Typesense.
@@ -10,7 +10,8 @@ defmodule PopStash.Memory do
   - **Contexts** - Temporary working context for tasks (formerly stashes)
   - **Insights** - Persistent knowledge about the codebase
   - **Decisions** - Immutable architectural decisions with history
-  - **Plans** - Versioned project documentation and roadmaps
+
+  For plans and plan steps, see `PopStash.Plans`.
   """
 
   import Ecto.Changeset
@@ -19,7 +20,6 @@ defmodule PopStash.Memory do
   alias PopStash.Memory.Context
   alias PopStash.Memory.Decision
   alias PopStash.Memory.Insight
-  alias PopStash.Memory.Plan
   alias PopStash.Memory.SearchLog
   alias PopStash.Memory.Thread
   alias PopStash.Repo
@@ -332,118 +332,6 @@ defmodule PopStash.Memory do
     Decision
     |> where([d], d.project_id == ^project_id)
     |> select([d], d.title)
-    |> distinct(true)
-    |> order_by(asc: :title)
-    |> Repo.all()
-  end
-
-  ## Plans
-
-  @doc """
-  Creates a plan with a title and body content.
-
-  ## Options
-    * `:tags` - Optional list of tags
-    * `:files` - Optional list of file paths
-  """
-  def create_plan(project_id, title, body, opts \\ []) do
-    %Plan{}
-    |> cast(
-      %{
-        project_id: project_id,
-        title: title,
-        body: body,
-        tags: Keyword.get(opts, :tags, []),
-        files: Keyword.get(opts, :files, [])
-      },
-      [:project_id, :title, :body, :tags, :files]
-    )
-    |> validate_required([:project_id, :title, :body])
-    |> validate_length(:title, min: 1, max: 255)
-    |> foreign_key_constraint(:project_id)
-    |> Repo.insert()
-    |> tap_ok(&broadcast(:plan_created, &1))
-  end
-
-  @doc """
-  Gets a plan by title.
-  """
-  def get_plan(project_id, title) when is_binary(project_id) and is_binary(title) do
-    Plan
-    |> where([p], p.project_id == ^project_id and p.title == ^title)
-    |> Repo.one()
-    |> wrap_result()
-  end
-
-  @doc """
-  Lists all plans for a project.
-
-  ## Options
-    * `:limit` - Maximum number of plans to return (default: 50)
-    * `:title` - Filter by title (exact match)
-  """
-  def list_plans(project_id, opts \\ []) when is_binary(project_id) do
-    limit = Keyword.get(opts, :limit, 50)
-    title = Keyword.get(opts, :title)
-
-    Plan
-    |> where([p], p.project_id == ^project_id)
-    |> maybe_filter_plan_title(title)
-    |> order_by(desc: :inserted_at)
-    |> limit(^limit)
-    |> Repo.all()
-  end
-
-  defp maybe_filter_plan_title(query, nil), do: query
-
-  defp maybe_filter_plan_title(query, title) do
-    where(query, [p], p.title == ^title)
-  end
-
-  @doc """
-  Updates a plan.
-  """
-  def update_plan(plan_id, body) when is_binary(plan_id) and is_binary(body) do
-    case Repo.get(Plan, plan_id) do
-      nil ->
-        {:error, :not_found}
-
-      plan ->
-        plan
-        |> cast(%{body: body}, [:body])
-        |> validate_required([:body])
-        |> Repo.update()
-        |> tap_ok(&broadcast(:plan_updated, &1))
-    end
-  end
-
-  @doc """
-  Deletes a plan by ID.
-  """
-  def delete_plan(plan_id) when is_binary(plan_id) do
-    case Repo.get(Plan, plan_id) do
-      nil ->
-        {:error, :not_found}
-
-      plan ->
-        case Repo.delete(plan) do
-          {:ok, _} ->
-            broadcast(:plan_deleted, plan.id)
-            :ok
-
-          error ->
-            error
-        end
-    end
-  end
-
-  @doc """
-  Lists all unique plan titles for a project.
-  """
-  def list_plan_titles(project_id) when is_binary(project_id) do
-    Plan
-    |> where([p], p.project_id == ^project_id)
-    |> select([p], p.title)
     |> distinct(true)
     |> order_by(asc: :title)
     |> Repo.all()

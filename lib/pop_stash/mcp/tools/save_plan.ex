@@ -5,7 +5,7 @@ defmodule PopStash.MCP.Tools.SavePlan do
 
   @behaviour PopStash.MCP.ToolBehaviour
 
-  alias PopStash.Memory
+  alias PopStash.Plans
 
   @impl true
   def tools do
@@ -57,7 +57,7 @@ defmodule PopStash.MCP.Tools.SavePlan do
       files: Map.get(args, "files", [])
     ]
 
-    case Memory.create_plan(project_id, args["title"], args["body"], opts) do
+    case Plans.create_plan(project_id, args["title"], args["body"], opts) do
       {:ok, plan} ->
         {:ok,
          """

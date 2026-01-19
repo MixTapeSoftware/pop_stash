@@ -5,8 +5,8 @@ defmodule PopStashWeb.Dashboard.PlanLive.FormComponent do
 
   use PopStashWeb.Dashboard, :live_component
 
-  alias PopStash.Memory
   alias PopStash.Memory.Plan
+  alias PopStash.Plans
 
   @impl true
   def mount(socket) do
@@ -51,7 +51,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.FormComponent do
     # Parse tags from comma-separated string
     tags = parse_tags(plan_params["tags"])
 
-    case Memory.create_plan(
+    case Plans.create_plan(
            plan_params["project_id"],
            plan_params["title"],
            plan_params["body"],
@@ -69,7 +69,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.FormComponent do
   end
 
   defp save_plan(socket, :edit, plan_params) do
-    case Memory.update_plan(socket.assigns.plan.id, plan_params["body"]) do
+    case Plans.update_plan(socket.assigns.plan.id, plan_params["body"]) do
       {:ok, _plan} ->
         {:noreply,
          socket

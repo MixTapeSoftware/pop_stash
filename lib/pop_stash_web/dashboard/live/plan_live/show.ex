@@ -5,8 +5,8 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
 
   use PopStashWeb.Dashboard, :live_view
 
-  alias PopStash.Memory
   alias PopStash.Memory.Plan
+  alias PopStash.Plans
   alias PopStash.Projects
   alias PopStash.Repo
 
@@ -70,7 +70,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
   end
 
   def handle_event("save", %{"plan" => plan_params}, socket) do
-    case Memory.update_plan(socket.assigns.plan.id, plan_params["body"]) do
+    case Plans.update_plan(socket.assigns.plan.id, plan_params["body"]) do
       {:ok, updated_plan} ->
         updated_plan = Repo.preload(updated_plan, :project)
 
@@ -89,7 +89,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.Show do
   end
 
   def handle_event("delete", _params, socket) do
-    case Memory.delete_plan(socket.assigns.plan.id) do
+    case Plans.delete_plan(socket.assigns.plan.id) do
       :ok ->
         socket =
           socket

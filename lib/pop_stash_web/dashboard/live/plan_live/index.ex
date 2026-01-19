@@ -6,6 +6,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.Index do
   use PopStashWeb.Dashboard, :live_view
 
   alias PopStash.Memory
+  alias PopStash.Plans
   alias PopStash.Projects
 
   @impl true
@@ -92,7 +93,7 @@ defmodule PopStashWeb.Dashboard.PlanLive.Index do
   end
 
   def handle_event("delete", %{"id" => id}, socket) do
-    case Memory.delete_plan(id) do
+    case Plans.delete_plan(id) do
       :ok ->
         {:noreply,
          socket
@@ -142,11 +143,11 @@ defmodule PopStashWeb.Dashboard.PlanLive.Index do
     case socket.assigns.selected_project_id do
       nil ->
         socket.assigns.projects
-        |> Enum.flat_map(&Memory.list_plans(&1.id, opts))
+        |> Enum.flat_map(&Plans.list_plans(&1.id, opts))
         |> Enum.sort_by(& &1.inserted_at, {:desc, DateTime})
 
       project_id ->
-        Memory.list_plans(project_id, opts)
+        Plans.list_plans(project_id, opts)
     end
   end
 
@@ -188,12 +189,12 @@ defmodule PopStashWeb.Dashboard.PlanLive.Index do
       case socket.assigns.selected_project_id do
         nil ->
           socket.assigns.projects
-          |> Enum.flat_map(fn project -> Memory.list_plan_titles(project.id) end)
+          |> Enum.flat_map(fn project -> Plans.list_plan_titles(project.id) end)
           |> Enum.uniq()
           |> Enum.sort()
 
         project_id ->
-          Memory.list_plan_titles(project_id)
+          Plans.list_plan_titles(project_id)
       end
 
     assign(socket, :titles, titles)

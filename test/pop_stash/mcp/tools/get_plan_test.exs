@@ -2,7 +2,7 @@ defmodule PopStash.MCP.Tools.GetPlanTest do
   use PopStash.DataCase, async: true
 
   alias PopStash.MCP.Tools.GetPlan
-  alias PopStash.Memory
+  alias PopStash.Plans
 
   import PopStash.Fixtures
 
@@ -14,7 +14,7 @@ defmodule PopStash.MCP.Tools.GetPlanTest do
 
   describe "execute/2" do
     test "retrieves a plan by title", %{context: context, project: project} do
-      {:ok, _} = Memory.create_plan(project.id, "Q1 Roadmap", "Goals for Q1")
+      {:ok, _} = Plans.create_plan(project.id, "Q1 Roadmap", "Goals for Q1")
 
       args = %{"title" => "Q1 Roadmap"}
       assert {:ok, message} = GetPlan.execute(args, context)
@@ -29,8 +29,8 @@ defmodule PopStash.MCP.Tools.GetPlanTest do
     end
 
     test "lists all plan titles with list_titles option", %{context: context, project: project} do
-      {:ok, _} = Memory.create_plan(project.id, "Roadmap", "Content 1")
-      {:ok, _} = Memory.create_plan(project.id, "Architecture", "Content 2")
+      {:ok, _} = Plans.create_plan(project.id, "Roadmap", "Content 1")
+      {:ok, _} = Plans.create_plan(project.id, "Architecture", "Content 2")
 
       args = %{"list_titles" => true}
       assert {:ok, message} = GetPlan.execute(args, context)
@@ -46,8 +46,8 @@ defmodule PopStash.MCP.Tools.GetPlanTest do
     end
 
     test "lists recent plans when no arguments provided", %{context: context, project: project} do
-      {:ok, _} = Memory.create_plan(project.id, "Plan 1", "First plan")
-      {:ok, _} = Memory.create_plan(project.id, "Plan 2", "Second plan")
+      {:ok, _} = Plans.create_plan(project.id, "Plan 1", "First plan")
+      {:ok, _} = Plans.create_plan(project.id, "Plan 2", "Second plan")
 
       args = %{}
       assert {:ok, message} = GetPlan.execute(args, context)
@@ -58,7 +58,7 @@ defmodule PopStash.MCP.Tools.GetPlanTest do
 
     test "respects limit option", %{context: context, project: project} do
       for i <- 1..5 do
-        Memory.create_plan(project.id, "Plan #{i}", "Content #{i}")
+        Plans.create_plan(project.id, "Plan #{i}", "Content #{i}")
       end
 
       args = %{"limit" => 2}

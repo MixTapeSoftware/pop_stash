@@ -6,6 +6,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
   use PopStashWeb.Dashboard, :live_view
 
   alias PopStash.Memory
+  alias PopStash.Plans
   alias PopStash.Projects
 
   @impl true
@@ -100,7 +101,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
     contexts_count = length(Memory.list_contexts(project.id))
     insights_count = length(Memory.list_insights(project.id))
     decisions_count = length(Memory.list_decisions(project.id))
-    plans_count = length(Memory.list_plans(project.id))
+    plans_count = length(Plans.list_plans(project.id))
 
     Map.merge(project, %{
       contexts_count: contexts_count,

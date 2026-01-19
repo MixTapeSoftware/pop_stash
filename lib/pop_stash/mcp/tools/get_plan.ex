@@ -6,6 +6,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
   @behaviour PopStash.MCP.ToolBehaviour
 
   alias PopStash.Memory
+  alias PopStash.Plans
 
   @impl true
   def tools do
@@ -51,7 +52,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
 
   # List all plan titles
   def execute(%{"list_titles" => true}, %{project_id: project_id}) do
-    titles = Memory.list_plan_titles(project_id)
+    titles = Plans.list_plan_titles(project_id)
 
     if titles == [] do
       {:ok, "No plans saved yet. Use `save_plan` to create your first plan."}
@@ -65,7 +66,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
   def execute(%{"title" => title} = args, %{project_id: project_id}) do
     limit = Map.get(args, "limit", 10)
 
-    case Memory.get_plan(project_id, title) do
+    case Plans.get_plan(project_id, title) do
       {:ok, plan} ->
         {:ok, format_plan(plan)}
 
@@ -77,7 +78,7 @@ defmodule PopStash.MCP.Tools.GetPlan do
   # List recent plans
   def execute(args, %{project_id: project_id}) do
     limit = Map.get(args, "limit", 10)
-    plans = Memory.list_plans(project_id, limit: limit)
+    plans = Plans.list_plans(project_id, limit: limit)
     format_plans_list(plans)
   end
 
