@@ -24,6 +24,23 @@ PopStash is an MCP server that gives AI agents a way to persist and retrieve con
 
 All retrieval supports both exact matching and semantic search powered by local embeddings.
 
+## Prerequisites
+
+- **Docker** and **Docker Compose** - for running PopStash server
+- **jq** - JSON processor, required for plugin scripts (`ps-execute`, `ps-plans`)
+- **curl** - HTTP client, required for plugin scripts
+
+```bash
+# macOS
+brew install jq curl
+
+# Ubuntu/Debian
+apt-get install jq curl
+
+# Fedora/RHEL
+dnf install jq curl
+```
+
 ## Quick Start
 
 ```bash
