@@ -81,6 +81,9 @@ config :pop_stash, PopStashWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :pop_stash, dev_routes: true
 
+# Don't Skip basic auth in development
+config :pop_stash, :skip_basic_auth, false
+
 # Configure allowed IPs for MCP endpoints
 # By default, this includes common Docker and private network ranges.
 #
