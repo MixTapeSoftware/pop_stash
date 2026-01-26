@@ -1,63 +1,39 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile.local
-    volumes:
-      - .:/app
-      - pop-stash-app-build:/app/_build
-      - pop-stash-app-deps:/app/deps
-    ports:
-      - "0.0.0.0:4001:4001"
-    environment:
-      - MIX_ENV=dev
-      - LOCAL_DOCKER=true
-    depends_on:
-      - db
-      - typesense
-    command: ["mix", "phx.server"]
-    networks:
-      - popstash
+    db:
+        image: pgvector/pgvector:pg16
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: pop_stash_dev
+        ports:
+            - "127.0.0.1:5433:5432"
+        volumes:
+            - pop-stash-pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        networks:
+            - popstash
 
-  db:
-    image: pgvector/pgvector:pg16
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: pop_stash_dev
-    ports:
-      - "127.0.0.1:5433:5432"
-    volumes:
-      - pop-stash-pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - popstash
-
-  typesense:
-    image: typesense/typesense:27.1
-    environment:
-      TYPESENSE_API_KEY: pop_stash_dev_key
-      TYPESENSE_DATA_DIR: /data
-    ports:
-      - "127.0.0.1:8108:8108"
-    volumes:
-      - pop-stash-typesense:/data
-    networks:
-      - popstash
+    typesense:
+        image: typesense/typesense:27.1
+        environment:
+            TYPESENSE_API_KEY: pop_stash_dev_key
+            TYPESENSE_DATA_DIR: /data
+        ports:
+            - "127.0.0.1:8108:8108"
+        volumes:
+            - pop-stash-typesense:/data
+        networks:
+            - popstash
 
 networks:
-  popstash:
-    name: popstash_network
+    popstash:
+        name: popstash_network
 volumes:
-  pop-stash-app-build:
-    driver: local
-  pop-stash-app-deps:
-    driver: local
-  pop-stash-pgdata:
-    driver: local
-  pop-stash-typesense:
-    driver: local
+    pop-stash-pgdata:
+        driver: local
+    pop-stash-typesense:
+        driver: local

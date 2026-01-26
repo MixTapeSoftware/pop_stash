@@ -23,24 +23,39 @@ All retrieval supports both exact matching and semantic search powered by local 
 
 ## Prerequisites
 
-- **Docker** and **Docker Compose** - for running PopStash server
+- **asdf** - version manager for Elixir/Erlang (install plugins: `asdf plugin add erlang && asdf plugin add elixir`)
+- **Docker** and **Docker Compose** - for running PostgreSQL and Typesense
 
-## Quick Start
+## Local Development Setup
 
 ```bash
-# 1. Clone and initialize PopStash
+# 1. Clone and set up PopStash
 git clone https://github.com/your-org/pop_stash.git
 cd pop_stash
 
-# Create a project for your codebase
-bin/init "My Project"
+# 2. Install Erlang/Elixir via asdf
+asdf install
+
+# 3. Install dependencies
+mix deps.get
+
+# 4. Start backing services (Postgres, Typesense)
+docker compose up -d
+
+# 5. Set up database
+mix ecto.reset
+
+# 6. Create a project for your codebase
+mix pop_stash.project.create "My Project"
 # => Created project: abc123
 
-# 2. Start PopStash
-bin/up
+# 7. Start the server
+mix phx.server
 ```
 
 > **Note**: On first boot, the server downloads the embedding model (~90MB). This may take a minute depending on your connection.
+
+These instructions are for running PopStash in dev mode for local testing and development.
 
 ### Optional: Install mcp-proxy (for Zed/Claude Desktop)
 
@@ -279,14 +294,17 @@ See `config/config.exs` and `config/dev.exs` for:
 ## Development
 
 ```bash
-# Start development server
-bin/up
+# Start backing services (Postgres, Typesense)
+docker compose up -d
 
-# Stop services
-bin/stop
+# Start development server
+mix phx.server
+
+# Stop backing services
+docker compose down
 
 # Clean up (stop and remove volumes)
-bin/cleanup
+docker compose down -v
 
 # Run tests
 mix test
@@ -300,9 +318,9 @@ mix ecto.reset
 # Reindex search (after schema changes)
 mix pop_stash.reindex_search
 
-# Create/list projects (Docker)
-bin/init "Project Name"
-docker compose exec app mix pop_stash.project.list
+# Create/list projects
+mix pop_stash.project.create "Project Name"
+mix pop_stash.project.list
 ```
 
 ## License

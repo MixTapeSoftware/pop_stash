@@ -4,17 +4,12 @@ config :phoenix_live_view,
   debug_heex_annotations: true,
   debug_attributes: true
 
-local_docker = System.get_env("LOCAL_DOCKER") == "true"
-db_hostname = if local_docker, do: "db", else: "127.0.0.1"
-port = if local_docker, do: 5432, else: 5433
-typesense_hostname = if local_docker, do: "typesense", else: "127.0.0.1"
-
 # Configure your database
 config :pop_stash, PopStash.Repo,
   username: "postgres",
   password: "postgres",
-  hostname: db_hostname,
-  port: port,
+  hostname: "127.0.0.1",
+  port: 5433,
   database: "pop_stash_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
@@ -29,12 +24,12 @@ config :pop_stash, PopStash.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-endpoint_ip = if local_docker, do: {0, 0, 0, 0}, else: {127, 0, 0, 1}
+
 
 config :pop_stash, PopStashWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: endpoint_ip, port: String.to_integer(System.get_env("PORT") || "4001")],
+  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4001")],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
@@ -82,8 +77,11 @@ config :pop_stash, PopStashWeb.Endpoint,
 config :pop_stash, dev_routes: true
 
 # Don't Skip basic auth in development
-config :pop_stash, :skip_basic_auth, false
+config :pop_stash, :basic_auth,
+  username: System.get_env("POP_STASH_BASIC_AUTH_USERNAME") || "admin",
+  password: System.get_env("POP_STASH_BASIC_AUTH_PASSWORD") || "s3cretpass"
 
+# ## S
 # Configure allowed IPs for MCP endpoints
 # By default, this includes common Docker and private network ranges.
 #
@@ -158,7 +156,7 @@ config :pop_stash, :typesense,
   api_key: "pop_stash_dev_key",
   nodes: [
     %{
-      host: typesense_hostname,
+      host: "127.0.0.1",
       port: 8108,
       protocol: "http"
     }

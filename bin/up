@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "Starting IEx session with Phoenix server..."
-docker-compose run --service-ports app iex -S mix phx.server
