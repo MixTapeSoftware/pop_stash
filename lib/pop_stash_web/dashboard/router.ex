@@ -55,27 +55,6 @@ defmodule PopStashWeb.Dashboard.Router do
             :show
           )
 
-          # Contexts
-          LiveRouter.live("/contexts", PopStashWeb.Dashboard.ContextLive.Index, :index)
-
-          LiveRouter.live(
-            "/contexts/new",
-            PopStashWeb.Dashboard.ContextLive.Index,
-            :new
-          )
-
-          LiveRouter.live(
-            "/contexts/:id",
-            PopStashWeb.Dashboard.ContextLive.Show,
-            :show
-          )
-
-          LiveRouter.live(
-            "/contexts/:id/edit",
-            PopStashWeb.Dashboard.ContextLive.Show,
-            :edit
-          )
-
           # Insights
           LiveRouter.live(
             "/insights",
@@ -124,38 +103,6 @@ defmodule PopStashWeb.Dashboard.Router do
             "/decisions/:id/edit",
             PopStashWeb.Dashboard.DecisionLive.Show,
             :edit
-          )
-
-          # Plans
-          LiveRouter.live(
-            "/plans",
-            PopStashWeb.Dashboard.PlanLive.Index,
-            :index
-          )
-
-          LiveRouter.live(
-            "/plans/new",
-            PopStashWeb.Dashboard.PlanLive.Index,
-            :new
-          )
-
-          LiveRouter.live(
-            "/plans/:id",
-            PopStashWeb.Dashboard.PlanLive.Show,
-            :show
-          )
-
-          LiveRouter.live(
-            "/plans/:id/edit",
-            PopStashWeb.Dashboard.PlanLive.Show,
-            :edit
-          )
-
-          # Searches
-          LiveRouter.live(
-            "/searches",
-            PopStashWeb.Dashboard.SearchLive.Index,
-            :index
           )
         end
       end

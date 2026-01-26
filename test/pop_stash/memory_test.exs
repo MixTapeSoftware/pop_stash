@@ -9,86 +9,6 @@ defmodule PopStash.MemoryTest do
     %{project: project}
   end
 
-  describe "contexts" do
-    test "create_context/4 creates a context", %{project: project} do
-      assert {:ok, context} =
-               Memory.create_context(project.id, "my-work", "Working on auth")
-
-      assert context.title == "my-work"
-      assert context.body == "Working on auth"
-      assert context.project_id == project.id
-    end
-
-    test "create_context/4 accepts files and tags", %{project: project} do
-      assert {:ok, context} =
-               Memory.create_context(project.id, "test", "summary",
-                 files: ["lib/auth.ex"],
-                 tags: ["high-priority", "auth"]
-               )
-
-      assert context.files == ["lib/auth.ex"]
-      assert context.tags == ["high-priority", "auth"]
-    end
-
-    test "get_context_by_title/2 retrieves context by exact name", %{project: project} do
-      {:ok, context} = Memory.create_context(project.id, "my-work", "Summary")
-      assert {:ok, found} = Memory.get_context_by_title(project.id, "my-work")
-      assert found.id == context.id
-    end
-
-    test "get_context_by_title/2 returns error when not found", %{project: project} do
-      assert {:error, :not_found} = Memory.get_context_by_title(project.id, "nonexistent")
-    end
-
-    test "get_context_by_title/2 ignores expired contexts", %{project: project} do
-      past = DateTime.add(DateTime.utc_now(), -3600, :second)
-
-      {:ok, _} =
-        Memory.create_context(project.id, "expired", "Old", expires_at: past)
-
-      assert {:error, :not_found} = Memory.get_context_by_title(project.id, "expired")
-    end
-
-    test "get_context_by_title/2 returns non-expired contexts", %{project: project} do
-      future = DateTime.add(DateTime.utc_now(), 3600, :second)
-
-      {:ok, context} =
-        Memory.create_context(project.id, "future", "Valid", expires_at: future)
-
-      assert {:ok, found} = Memory.get_context_by_title(project.id, "future")
-      assert found.id == context.id
-    end
-
-    test "list_contexts/1 returns all non-expired contexts", %{project: project} do
-      {:ok, _} = Memory.create_context(project.id, "context1", "First")
-      {:ok, _} = Memory.create_context(project.id, "context2", "Second")
-
-      contexts = Memory.list_contexts(project.id)
-      assert length(contexts) == 2
-    end
-
-    test "list_contexts/1 excludes expired contexts", %{project: project} do
-      {:ok, _} = Memory.create_context(project.id, "valid", "Valid")
-
-      past = DateTime.add(DateTime.utc_now(), -3600, :second)
-      {:ok, _} = Memory.create_context(project.id, "expired", "Old", expires_at: past)
-
-      contexts = Memory.list_contexts(project.id)
-      assert length(contexts) == 1
-      assert hd(contexts).title == "valid"
-    end
-
-    test "delete_context/1 removes a context", %{project: project} do
-      {:ok, context} = Memory.create_context(project.id, "temp", "Temp")
-      assert :ok = Memory.delete_context(context.id)
-      assert {:error, :not_found} = Memory.get_context_by_title(project.id, "temp")
-    end
-
-    test "delete_context/1 returns error for nonexistent context" do
-      assert {:error, :not_found} = Memory.delete_context(Ecto.UUID.generate())
-    end
-  end
-
   describe "insights" do
     test "create_insight/3 creates an insight", %{project: project} do
       assert {:ok, insight} =
@@ -159,20 +79,6 @@ defmodule PopStash.MemoryTest do
   end
 
   describe "project isolation" do
-    test "contexts are isolated by project" do
-      {:ok, project1} = Projects.create("Project 1")
-      {:ok, project2} = Projects.create("Project 2")
-
-      {:ok, _} = Memory.create_context(project1.id, "shared-name", "Project 1 context")
-      {:ok, _} = Memory.create_context(project2.id, "shared-name", "Project 2 context")
-
-      {:ok, context1} = Memory.get_context_by_title(project1.id, "shared-name")
-      {:ok, context2} = Memory.get_context_by_title(project2.id, "shared-name")
-
-      assert context1.body == "Project 1 context"
-      assert context2.body == "Project 2 context"
-    end
-
     test "insights are isolated by project" do
       {:ok, project1} = Projects.create("Project 1")
       {:ok, project2} = Projects.create("Project 2")

@@ -109,7 +109,6 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
 
   defp load_stats(socket) do
     project_id = socket.assigns.project.id
-    contexts = Memory.list_contexts(project_id)
     insights = Memory.list_insights(project_id)
     decisions = Memory.list_decisions(project_id)
 
@@ -117,24 +116,16 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
     now = DateTime.utc_now()
     week_ago = DateTime.add(now, -7, :day)
 
-    recent_contexts = Enum.filter(contexts, &(DateTime.compare(&1.inserted_at, week_ago) == :gt))
     recent_insights = Enum.filter(insights, &(DateTime.compare(&1.inserted_at, week_ago) == :gt))
 
     recent_decisions =
       Enum.filter(decisions, &(DateTime.compare(&1.inserted_at, week_ago) == :gt))
 
     # Get the most recent item for each category
-    latest_context = List.first(Enum.sort_by(contexts, & &1.inserted_at, {:desc, DateTime}))
     latest_insight = List.first(Enum.sort_by(insights, & &1.inserted_at, {:desc, DateTime}))
     latest_decision = List.first(Enum.sort_by(decisions, & &1.inserted_at, {:desc, DateTime}))
 
     stats = [
-      %{
-        title: "Contexts",
-        value: length(contexts),
-        desc: build_stat_description(length(recent_contexts), latest_context, "context", "week"),
-        link: ~p"/pop_stash/contexts?project_id=#{project_id}"
-      },
       %{
         title: "Insights",
         value: length(insights),
@@ -288,20 +279,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
       <div class="mt-6">
         <.card>
           <.section_header title="Browse Project Contents" />
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <.link
-              navigate={~p"/pop_stash/contexts?project_id=#{@project.id}"}
-              class="flex items-center gap-3 p-4 rounded border border-slate-200 hover:bg-slate-50 hover:border-violet-300 transition-colors"
-            >
-              <.icon name="hero-archive-box" class="size-6 text-slate-400" />
-              <div>
-                <div class="text-sm font-medium text-slate-900">View Contexts</div>
-                <div class="text-xs text-slate-500">
-                  {get_stat_value(@stats, "Contexts")} saved contexts
-                </div>
-              </div>
-            </.link>
-
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <.link
               navigate={~p"/pop_stash/insights?project_id=#{@project.id}"}
               class="flex items-center gap-3 p-4 rounded border border-slate-200 hover:bg-slate-50 hover:border-violet-300 transition-colors"

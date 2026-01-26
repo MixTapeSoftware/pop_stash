@@ -7,7 +7,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
 
   alias PopStash.Activity
   alias PopStash.Memory
-  alias PopStash.Plans
   alias PopStash.Projects
 
   @impl true
@@ -67,16 +66,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
     {:noreply, prepend_activity_item(socket, item)}
   end
 
-  def handle_info({:plan_created, plan}, socket) do
-    item = Activity.to_item(plan)
-    {:noreply, prepend_activity_item(socket, item)}
-  end
-
-  def handle_info({:plan_updated, _plan}, socket) do
-    # Optionally refresh the activity feed on updates
-    {:noreply, socket}
-  end
-
   def handle_info({:insight_created, insight}, socket) do
     item = Activity.to_item(insight)
     {:noreply, prepend_activity_item(socket, item)}
@@ -102,10 +91,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
   end
 
   def handle_info({:insight_deleted, id}, socket) do
-    {:noreply, remove_activity_item(socket, id)}
-  end
-
-  def handle_info({:plan_deleted, id}, socket) do
     {:noreply, remove_activity_item(socket, id)}
   end
 
@@ -152,12 +137,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
         # Show aggregate stats across all projects
         projects = socket.assigns.projects
 
-        total_stashes =
-          projects
-          |> Enum.map(& &1.id)
-          |> Enum.map(&length(Memory.list_contexts(&1)))
-          |> Enum.sum()
-
         total_insights =
           projects
           |> Enum.map(& &1.id)
@@ -170,18 +149,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
           |> Enum.map(&length(Memory.list_decisions(&1)))
           |> Enum.sum()
 
-        total_plans =
-          projects
-          |> Enum.map(& &1.id)
-          |> Enum.map(&length(Plans.list_plans(&1)))
-          |> Enum.sum()
-
-        total_searches =
-          projects
-          |> Enum.map(& &1.id)
-          |> Enum.map(&Memory.count_searches(&1))
-          |> Enum.sum()
-
         stats = [
           %{
             title: "Projects",
@@ -189,13 +156,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             desc: "Total projects",
             icon: "hero-folder",
             link: ~p"/pop_stash/projects"
-          },
-          %{
-            title: "Contexts",
-            value: total_stashes,
-            desc: "Across all projects",
-            icon: "hero-archive-box",
-            link: ~p"/pop_stash/contexts"
           },
           %{
             title: "Insights",
@@ -210,39 +170,16 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             desc: "Across all projects",
             icon: "hero-check-badge",
             link: ~p"/pop_stash/decisions"
-          },
-          %{
-            title: "Plans",
-            value: total_plans,
-            desc: "Across all projects",
-            icon: "hero-map",
-            link: ~p"/pop_stash/plans"
-          },
-          %{
-            title: "Searches",
-            value: total_searches,
-            desc: "Total queries",
-            icon: "hero-magnifying-glass",
-            link: ~p"/pop_stash/searches"
           }
         ]
 
         assign(socket, :stats, stats)
 
       project_id ->
-        contexts = Memory.list_contexts(project_id)
         insights = Memory.list_insights(project_id)
         decisions = Memory.list_decisions(project_id)
-        plans = Plans.list_plans(project_id)
-        searches_count = Memory.count_searches(project_id)
 
         stats = [
-          %{
-            title: "Contexts",
-            value: length(contexts),
-            icon: "hero-archive-box",
-            link: ~p"/pop_stash/contexts"
-          },
           %{
             title: "Insights",
             value: length(insights),
@@ -254,13 +191,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             value: length(decisions),
             icon: "hero-check-badge",
             link: ~p"/pop_stash/decisions"
-          },
-          %{title: "Plans", value: length(plans), icon: "hero-map", link: ~p"/pop_stash/plans"},
-          %{
-            title: "Searches",
-            value: searches_count,
-            icon: "hero-magnifying-glass",
-            link: ~p"/pop_stash/searches"
           }
         ]
 
@@ -327,13 +257,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             <.section_header title="Quick Actions" />
             <div class="space-y-2">
               <.link_button
-                navigate={~p"/pop_stash/contexts/new"}
-                variant="secondary"
-                class="w-full justify-start"
-              >
-                <.icon name="hero-plus" class="size-4" /> New Context
-              </.link_button>
-              <.link_button
                 navigate={~p"/pop_stash/insights/new"}
                 variant="secondary"
                 class="w-full justify-start"
@@ -346,13 +269,6 @@ defmodule PopStashWeb.Dashboard.HomeLive do
                 class="w-full justify-start"
               >
                 <.icon name="hero-plus" class="size-4" /> New Decision
-              </.link_button>
-              <.link_button
-                navigate={~p"/pop_stash/plans/new"}
-                variant="secondary"
-                class="w-full justify-start"
-              >
-                <.icon name="hero-plus" class="size-4" /> New Plan
               </.link_button>
             </div>
           </.card>

@@ -1,119 +1,25 @@
 defmodule PopStash.Memory do
   @moduledoc """
-  Context for memory operations: contexts, insights, and decisions.
+  Context for memory operations: insights and decisions.
 
   Handles saving and retrieving memory data across sessions.
   Supports both exact matching and semantic search via Typesense.
 
   ## Memory Types
 
-  - **Contexts** - Temporary working context for tasks (formerly stashes)
   - **Insights** - Persistent knowledge about the codebase
   - **Decisions** - Immutable architectural decisions with history
-
-  For plans and plan steps, see `PopStash.Plans`.
   """
 
   import Ecto.Changeset
   import Ecto.Query
 
-  alias PopStash.Memory.Context
   alias PopStash.Memory.Decision
   alias PopStash.Memory.Insight
   alias PopStash.Memory.SearchLog
   alias PopStash.Memory.Thread
   alias PopStash.Repo
   alias PopStash.Search.Typesense
-
-  ## Contexts
-
-  @doc """
-  Creates a context.
-
-  ## Options
-    * `:files` - List of file paths
-    * `:tags` - Optional list of tags
-    * `:thread_id` - Optional thread ID to connect revisions (auto-generated if omitted)
-    * `:expires_at` - Optional expiration datetime
-  """
-  def create_context(project_id, title, body, opts \\ []) do
-    thread_id = Keyword.get(opts, :thread_id) || Thread.generate(Context.thread_prefix())
-
-    %Context{}
-    |> cast(
-      %{
-        project_id: project_id,
-        title: title,
-        body: body,
-        files: Keyword.get(opts, :files, []),
-        tags: Keyword.get(opts, :tags, []),
-        thread_id: thread_id,
-        expires_at: Keyword.get(opts, :expires_at)
-      },
-      [:project_id, :title, :body, :files, :tags, :thread_id, :expires_at]
-    )
-    |> validate_required([:project_id, :title, :body, :thread_id])
-    |> validate_length(:title, min: 1, max: 255)
-    |> foreign_key_constraint(:project_id)
-    |> Repo.insert()
-    |> tap_ok(&broadcast(:context_created, &1))
-  end
-
-  @doc """
-  Updates a context.
-  """
-  def update_context(context, attrs) do
-    context
-    |> cast(attrs, [:title, :body, :files, :tags, :expires_at])
-    |> validate_required([:title, :body])
-    |> validate_length(:title, min: 1, max: 255)
-    |> Repo.update()
-    |> tap_ok(&broadcast(:context_updated, &1))
-  end
-
-  @doc """
-  Retrieves a context by exact title match within a project.
-  """
-  def get_context_by_title(project_id, title) when is_binary(project_id) and is_binary(title) do
-    Context
-    |> where([s], s.project_id == ^project_id and s.title == ^title)
-    |> where([s], is_nil(s.expires_at) or s.expires_at > ^DateTime.utc_now())
-    |> order_by(desc: :inserted_at)
-    |> limit(1)
-    |> Repo.one()
-    |> wrap_result()
-  end
-
-  @doc """
-  Lists all non-expired contexts for a project.
-  """
-  def list_contexts(project_id) when is_binary(project_id) do
-    Context
-    |> where([s], s.project_id == ^project_id)
-    |> where([s], is_nil(s.expires_at) or s.expires_at > ^DateTime.utc_now())
-    |> order_by(desc: :inserted_at)
-    |> Repo.all()
-  end
-
-  @doc """
-  Deletes a context by ID.
-  """
-  def delete_context(context_id) when is_binary(context_id) do
-    case Repo.get(Context, context_id) do
-      nil ->
-        {:error, :not_found}
-
-      context ->
-        case Repo.delete(context) do
-          {:ok, _} ->
-            broadcast(:context_deleted, context.id)
-            :ok
-
-          error ->
-            error
-        end
-    end
-  end
 
   ## Insights
 
@@ -340,14 +246,6 @@ defmodule PopStash.Memory do
   ## Search
 
   @doc """
-  Search contexts by semantic similarity.
-  Returns ranked list of matching contexts.
-  """
-  def search_contexts(project_id, query, opts \\ []) do
-    Typesense.search_contexts(project_id, query, opts)
-  end
-
-  @doc """
   Search insights by semantic similarity.
   Returns ranked list of matching insights.
   """
@@ -361,14 +259,6 @@ defmodule PopStash.Memory do
   """
   def search_decisions(project_id, query, opts \\ []) do
     Typesense.search_decisions(project_id, query, opts)
-  end
-
-  @doc """
-  Search plans by semantic similarity.
-  Returns ranked list of matching plans.
-  """
-  def search_plans(project_id, query, opts \\ []) do
-    Typesense.search_plans(project_id, query, opts)
   end
 
   ## Search Logging

@@ -52,23 +52,6 @@ defmodule PopStashWeb.Router do
     get "/mcp-info", MCPController, :info
   end
 
-  # API routes (localhost only, same security as MCP)
-  scope "/api", PopStashWeb.API do
-    pipe_through [:api, :mcp]
-
-    # Plans
-    get "/plans", PlanController, :index
-    post "/plans", PlanController, :create
-    get "/plans/:id", PlanController, :show
-    get "/plans/:id/next-step", PlanController, :next_step
-    get "/plans/:id/steps", PlanController, :steps
-    post "/plans/:id/steps", PlanController, :add_step
-
-    # Steps
-    get "/steps/:id", StepController, :show
-    patch "/steps/:id", StepController, :update
-  end
-
   # PopStash Dashboard - mount with your own authentication!
   # ⚠️  WARNING: No authentication by default. Secure this route!
   scope "/pop_stash" do

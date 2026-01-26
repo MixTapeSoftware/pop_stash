@@ -34,16 +34,6 @@ defmodule PopStash.Search.Indexer do
 
   # Handle PubSub events
   @impl true
-  def handle_info({:context_created, context}, state) do
-    index_async(context, &index_context/1)
-    {:noreply, state}
-  end
-
-  def handle_info({:context_updated, context}, state) do
-    index_async(context, &index_context/1)
-    {:noreply, state}
-  end
-
   def handle_info({:insight_created, insight}, state) do
     index_async(insight, &index_insight/1)
     {:noreply, state}
@@ -59,21 +49,6 @@ defmodule PopStash.Search.Indexer do
     {:noreply, state}
   end
 
-  def handle_info({:plan_created, plan}, state) do
-    index_async(plan, &index_plan/1)
-    {:noreply, state}
-  end
-
-  def handle_info({:plan_updated, plan}, state) do
-    index_async(plan, &index_plan/1)
-    {:noreply, state}
-  end
-
-  def handle_info({:context_deleted, context_id}, state) do
-    Typesense.delete_document("contexts", context_id)
-    {:noreply, state}
-  end
-
   def handle_info({:insight_deleted, insight_id}, state) do
     Typesense.delete_document("insights", insight_id)
     {:noreply, state}
@@ -81,11 +56,6 @@ defmodule PopStash.Search.Indexer do
 
   def handle_info({:decision_deleted, decision_id}, state) do
     Typesense.delete_document("decisions", decision_id)
-    {:noreply, state}
-  end
-
-  def handle_info({:plan_deleted, plan_id}, state) do
-    Typesense.delete_document("plans", plan_id)
     {:noreply, state}
   end
 
@@ -99,20 +69,6 @@ defmodule PopStash.Search.Indexer do
       Typesense.ensure_collections()
       index_fn.(entity)
     end)
-  end
-
-  defp index_context(context) do
-    text = "#{context.title} #{context.body || ""}"
-
-    with {:ok, embedding} <- Embeddings.embed(text),
-         :ok <- update_embedding(context, embedding),
-         :ok <- Typesense.index_context(context, embedding) do
-      :ok
-    else
-      {:error, reason} ->
-        Logger.warning("Failed to index context #{context.id}: #{inspect(reason)}")
-        :error
-    end
   end
 
   defp index_insight(insight) do
@@ -139,20 +95,6 @@ defmodule PopStash.Search.Indexer do
     else
       {:error, reason} ->
         Logger.warning("Failed to index decision #{decision.id}: #{inspect(reason)}")
-        :error
-    end
-  end
-
-  defp index_plan(plan) do
-    text = "#{plan.title} #{plan.body}"
-
-    with {:ok, embedding} <- Embeddings.embed(text),
-         :ok <- update_embedding(plan, embedding),
-         :ok <- Typesense.index_plan(plan, embedding) do
-      :ok
-    else
-      {:error, reason} ->
-        Logger.warning("Failed to index plan #{plan.id}: #{inspect(reason)}")
         :error
     end
   end

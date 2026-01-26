@@ -9,20 +9,10 @@ defmodule PopStash.MCP.Server do
   require Logger
 
   @tool_modules [
-    PopStash.MCP.Tools.SaveContext,
-    PopStash.MCP.Tools.RestoreContext,
     PopStash.MCP.Tools.Insight,
     PopStash.MCP.Tools.Recall,
     PopStash.MCP.Tools.Decide,
-    PopStash.MCP.Tools.GetDecisions,
-    PopStash.MCP.Tools.SavePlan,
-    PopStash.MCP.Tools.GetPlan,
-    PopStash.MCP.Tools.SearchPlans,
-    PopStash.MCP.Tools.AddStep,
-    PopStash.MCP.Tools.UpdateStep,
-    PopStash.MCP.Tools.PeekNextStep,
-    PopStash.MCP.Tools.GetPlanSteps,
-    PopStash.MCP.Tools.GetStep
+    PopStash.MCP.Tools.GetDecisions
   ]
 
   @type message :: map()

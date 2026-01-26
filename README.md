@@ -1,45 +1,29 @@
 # PopStash
 
-Memory and context management for AI agents. Save context, record insights, document decisions—then retrieve them semantically or by exact match.
+Decision and insight management for AI agents. Record insights and document decisions—then retrieve them semantically or by exact match.
 
 **Status: Experimental**
 
 **Thesis**: recording and providing access to previous decisions and insights improves agent outcomes. 
 
-It's now common practice to record decisions, insights, plans, outcomes to Markdown files when working with LLM agents. PopStash turns
-those files into database records with embeddings that are then used to provide semantic search via TypeSense. This allows for flexible recovery
-of context without forcing the entire history into the context window.
+It's now common practice to record decisions and insights to Markdown files when working with LLM agents. PopStash turns
+those files into database records with embeddings that are then used to provide semantic search via Typesense. This allows for flexible recovery
+of knowledge without forcing the entire history into the context window.
 
 We also gain the ability to build tooling around the database and TypeSense index so that humans can evaluate, prune, and augment this data. Teams can connect to the same database, allowing for cross-organizational sharing of insights. [UI is forthcoming]
 
 ## What It Does
 
-PopStash is an MCP server that gives AI agents a way to persist and retrieve context, insights, decisions, and plans:
+PopStash is an MCP server that gives AI agents a way to persist and retrieve insights and decisions:
 
-- **Save/Restore Context**: Save and retrieve working context when switching tasks
 - **Insight/Recall**: Record and search persistent knowledge about your codebase  
 - **Decide/Get Decisions**: Document architectural decisions with full history
-- **Plan/Version Plans**: Create and manage versioned project plans and documentation
-- **RLM Planning Mode**: Save plans with executable steps that agents can work through incrementally. Based on the [Reason-Loop-Memory pattern](https://arxiv.org/html/2512.24601v1), plans break down complex work into discrete steps that are claimed, executed, and marked complete—keeping context windows lean while preserving full execution history. Add steps with `add_step`, check progress with `get_plan_steps`, and mark completion with `update_step`.
 
 All retrieval supports both exact matching and semantic search powered by local embeddings.
 
 ## Prerequisites
 
 - **Docker** and **Docker Compose** - for running PopStash server
-- **jq** - JSON processor, required for plugin scripts (`ps-execute`, `ps-plans`)
-- **curl** - HTTP client, required for plugin scripts
-
-```bash
-# macOS
-brew install jq curl
-
-# Ubuntu/Debian
-apt-get install jq curl
-
-# Fedora/RHEL
-dnf install jq curl
-```
 
 ## Quick Start
 
@@ -132,7 +116,7 @@ Add to your project's `.claude/settings.json`:
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before starting work, search for previous decisions, insights or current plans that might apply to this task."
+            "prompt": "Before starting work, search for previous decisions or insights that might apply to this task."
           }
         ]
       }
@@ -142,7 +126,7 @@ Add to your project's `.claude/settings.json`:
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "If meaningful work occurred: save plans, record insights, document decisions, and/or save a compacted current context."
+            "prompt": "If meaningful work occurred: record insights and document decisions."
           }
         ]
       }
@@ -198,11 +182,6 @@ context across sessions and preserve important knowledge about this codebase.
 
 ### When to Use Each Tool
 
-**`save_context` / `restore_context` - Working Context**
-- SAVE when: switching tasks, context is getting long, before exploring tangents
-- RESTORE when: resuming work, need previous context, starting a related task
-- Use short descriptive names like "auth-refactor", "bug-123-investigation"
-
 **`insight` / `recall` - Persistent Knowledge**
 - INSIGHT when: you discover something non-obvious about the codebase, learn how
   components interact, find undocumented behavior, identify patterns or conventions
@@ -218,23 +197,13 @@ context across sessions and preserve important knowledge about this codebase.
   this way?", onboarding to a new part of the codebase
 - Decisions are immutable - new decisions on the same topic preserve history
 
-**`save_plan` / `get_plan` / `search_plans` - Project Plans & Roadmaps**
-- SAVE_PLAN when: documenting project roadmaps, creating architecture design docs,
-  planning feature implementations, tracking milestones across iterations
-- GET_PLAN when: need to review the current roadmap, want to see plan history,
-  looking for specific architecture documentation
-- SEARCH_PLANS when: exploring plans by concept, unsure of exact plan title,
-  discovering related planning documents
-- Plans are versioned - same title can have multiple versions to track evolution
-
 ### Best Practices
 
-1. **Be proactive**: Don't wait to be asked. Save context before it's lost.
+1. **Be proactive**: Don't wait to be asked. Record insights and decisions as you work.
 2. **Search first**: Before diving into unfamiliar code, recall/get_decisions for that area.
 3. **Atomic insights**: One concept per insight. Easier to find and stays relevant.
-4. **Descriptive keys**: Use hierarchical keys like "auth/session-handling" or "api/rate-limits".
+4. **Descriptive titles**: Use hierarchical titles like "auth/session-handling" or "api/rate-limits".
 5. **Link decisions to code**: Reference specific files/functions when documenting decisions.
-6. **Version plans meaningfully**: Use semantic versions (v1.0, v2.0) or dates (2024-01-15) for plan versions.
 ```
 
 </details>
@@ -243,19 +212,14 @@ context across sessions and preserve important knowledge about this codebase.
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `save_context` | Save working context for later | `name` (string), `summary` (string), `files` (array, optional) |
-| `restore_context` | Retrieve contexts by name or semantic search | `name` (string - exact or query), `limit` (number, default: 5) |
-| `insight` | Save persistent knowledge about the codebase | `content` (string), `key` (string, optional) |
-| `recall` | Retrieve insights by key or semantic search | `key` (string - exact or query), `limit` (number, default: 5) |
+| `insight` | Save persistent knowledge about the codebase | `content` (string), `title` (string, optional) |
+| `recall` | Retrieve insights by title or semantic search | `title` (string - exact or query), `limit` (number, default: 5) |
 | `decide` | Record an architectural decision | `topic` (string), `decision` (string), `reasoning` (string, optional) |
 | `get_decisions` | Query decisions by topic or semantic search | `topic` (string, optional), `limit` (number, default: 10), `list_topics` (boolean) |
-| `save_plan` | Save a versioned project plan or roadmap | `title` (string), `version` (string), `body` (string), `tags` (array, optional) |
-| `get_plan` | Retrieve plans by title or search for plans | `title` (string, optional), `version` (string, optional), `list_titles` (boolean), `all_versions` (boolean) |
-| `search_plans` | Search plans using semantic similarity | `query` (string), `limit` (number, default: 10) |
 
 ### Search Behavior
 
-All retrieval tools (`restore_context`, `recall`, `get_decisions`, `get_plan`, `search_plans`) support:
+All retrieval tools (`recall`, `get_decisions`) support:
 - **Exact match**: Use precise names/keys/topics for direct lookup
 - **Semantic search**: Use natural language queries to find conceptually similar content
 - **Exclusion**: Prefix words with `-` to exclude them (e.g., "auth -oauth")
@@ -278,10 +242,10 @@ curl -X POST http://localhost:4001/mcp/YOUR_PROJECT_ID \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
 
-# Call a tool (e.g., save_context)
+# Call a tool (e.g., insight)
 curl -X POST http://localhost:4001/mcp/YOUR_PROJECT_ID \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"save_context","arguments":{"name":"test","summary":"Testing the API"}}}'
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"insight","arguments":{"content":"Testing the API"}}}'
 ```
 
 ## Architecture

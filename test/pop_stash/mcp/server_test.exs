@@ -40,7 +40,7 @@ defmodule PopStash.MCP.ServerTest do
       message = %{"jsonrpc" => "2.0", "id" => 1, "method" => "tools/list"}
       assert {:ok, response} = Server.handle_message(message, context)
       assert is_list(response.result.tools)
-      assert Enum.any?(response.result.tools, &(&1.name == "save_context"))
+      assert Enum.any?(response.result.tools, &(&1.name == "insight"))
       assert Enum.any?(response.result.tools, &(&1.name == "decide"))
     end
 
@@ -77,7 +77,7 @@ defmodule PopStash.MCP.ServerTest do
       assert {:ok, %{result: %{tools: tools}}} =
                Server.handle_message(msg("tools/list"), context)
 
-      assert Enum.any?(tools, &(&1.name == "save_context"))
+      assert Enum.any?(tools, &(&1.name == "insight"))
       refute Enum.any?(tools, &Map.has_key?(&1, :callback))
     end
   end

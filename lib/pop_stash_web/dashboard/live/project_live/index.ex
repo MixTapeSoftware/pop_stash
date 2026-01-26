@@ -6,7 +6,6 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
   use PopStashWeb.Dashboard, :live_view
 
   alias PopStash.Memory
-  alias PopStash.Plans
   alias PopStash.Projects
 
   @impl true
@@ -98,30 +97,23 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
   defp matches_tags?(tags, query), do: Enum.any?(tags, &matches_field?(&1, query))
 
   defp enrich_project_with_stats(project) do
-    contexts_count = length(Memory.list_contexts(project.id))
     insights_count = length(Memory.list_insights(project.id))
     decisions_count = length(Memory.list_decisions(project.id))
-    plans_count = length(Plans.list_plans(project.id))
 
     Map.merge(project, %{
-      contexts_count: contexts_count,
       insights_count: insights_count,
-      decisions_count: decisions_count,
-      plans_count: plans_count
+      decisions_count: decisions_count
     })
   end
 
   defp calculate_stats_summary(projects) do
     %{
       total_projects: length(projects),
-      total_contexts: Enum.sum(Enum.map(projects, & &1.contexts_count)),
       total_insights: Enum.sum(Enum.map(projects, & &1.insights_count)),
       total_decisions: Enum.sum(Enum.map(projects, & &1.decisions_count)),
-      total_plans: Enum.sum(Enum.map(projects, & &1.plans_count)),
       active_projects:
         Enum.count(projects, fn p ->
-          p.contexts_count > 0 || p.insights_count > 0 || p.decisions_count > 0 ||
-            p.plans_count > 0
+          p.insights_count > 0 || p.decisions_count > 0
         end)
     }
   end
@@ -160,7 +152,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
       
     <!-- Stats Summary -->
       <%= if @projects != [] do %>
-        <div class="mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="bg-white rounded-lg border border-slate-200 p-4">
             <div class="flex items-center gap-2 text-slate-500 text-xs font-medium mb-1">
               <.icon name="hero-folder" class="size-4" /> Projects
@@ -170,18 +162,6 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
             </div>
             <div class="text-xs text-slate-500 mt-1">
               {@stats_summary.active_projects} active
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg border border-slate-200 p-4">
-            <div class="flex items-center gap-2 text-blue-600 text-xs font-medium mb-1">
-              <.icon name="hero-archive-box" class="size-4" /> Contexts
-            </div>
-            <div class="text-2xl font-bold text-slate-900">
-              {@stats_summary.total_contexts}
-            </div>
-            <div class="text-xs text-slate-500 mt-1">
-              across all projects
             </div>
           </div>
 
@@ -209,25 +189,12 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-slate-200 p-4">
-            <div class="flex items-center gap-2 text-purple-600 text-xs font-medium mb-1">
-              <.icon name="hero-map" class="size-4" /> Plans
-            </div>
-            <div class="text-2xl font-bold text-slate-900">
-              {@stats_summary.total_plans}
-            </div>
-            <div class="text-xs text-slate-500 mt-1">
-              across all projects
-            </div>
-          </div>
-
           <div class="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg border border-violet-200 p-4">
             <div class="flex items-center gap-2 text-violet-600 text-xs font-medium mb-1">
               <.icon name="hero-chart-bar" class="size-4" /> Total Items
             </div>
             <div class="text-2xl font-bold text-violet-900">
-              {@stats_summary.total_contexts + @stats_summary.total_insights +
-                @stats_summary.total_decisions + @stats_summary.total_plans}
+              {@stats_summary.total_insights + @stats_summary.total_decisions}
             </div>
             <div class="text-xs text-violet-600 mt-1">
               knowledge items
@@ -268,18 +235,6 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
               {project.description || "—"}
             </div>
           </:col>
-          <:col :let={project} label="Contexts" class="text-center">
-            <span class={[
-              "inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium",
-              if(project.contexts_count > 0,
-                do: "bg-blue-50 text-blue-700",
-                else: "bg-slate-50 text-slate-400"
-              )
-            ]}>
-              <.icon name="hero-archive-box" class="size-3" />
-              {project.contexts_count}
-            </span>
-          </:col>
           <:col :let={project} label="Insights" class="text-center">
             <span class={[
               "inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium",
@@ -304,18 +259,6 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
               {project.decisions_count}
             </span>
           </:col>
-          <:col :let={project} label="Plans" class="text-center">
-            <span class={[
-              "inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium",
-              if(project.plans_count > 0,
-                do: "bg-purple-50 text-purple-700",
-                else: "bg-slate-50 text-slate-400"
-              )
-            ]}>
-              <.icon name="hero-map" class="size-3" />
-              {project.plans_count}
-            </span>
-          </:col>
           <:col :let={project} label="Tags">
             <.tag_badges tags={project.tags || []} />
           </:col>
@@ -332,7 +275,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
                 size="sm"
                 phx-click="delete"
                 phx-value-id={project.id}
-                data-confirm="Are you sure you want to delete this project? This will delete all associated stashes, insights, and decisions."
+                data-confirm="Are you sure you want to delete this project? This will delete all associated insights and decisions."
               >
                 <.icon name="hero-trash" class="size-4 text-red-500" />
               </.button>
