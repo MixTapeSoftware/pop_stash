@@ -60,4 +60,7 @@ config :pop_stash, PopStash.Embeddings,
 
 config :pop_stash, :typesense, enabled: false
 
+# Skip basic auth in tests
+config :pop_stash, :skip_basic_auth, true
+
 config :logger, level: :warning
