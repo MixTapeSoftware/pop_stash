@@ -19,7 +19,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
     socket =
       socket
       |> assign(:page_title, "Decisions")
-      |> assign(:current_path, "/pop_stash/decisions")
+      |> assign(:current_path, "/decisions")
       |> assign(:projects, projects)
       |> assign(:selected_project_id, nil)
       |> assign(:search_query, "")
@@ -96,7 +96,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
   end
 
   def handle_event("close_modal", _, socket) do
-    {:noreply, push_patch(socket, to: ~p"/pop_stash/decisions")}
+    {:noreply, push_patch(socket, to: ~p"/decisions")}
   end
 
   @impl true
@@ -184,7 +184,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
     <div>
       <.page_header title="Decisions" subtitle="Immutable decision records">
         <:actions>
-          <.link_button navigate={~p"/pop_stash/decisions/new"} variant="primary">
+          <.link_button navigate={~p"/decisions/new"} variant="primary">
             <.icon name="hero-plus" class="size-4" /> New Decision
           </.link_button>
         </:actions>
@@ -255,7 +255,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
           <:action>
             <.link_button
               :if={@search_query == "" && !@filter_topic}
-              navigate={~p"/pop_stash/decisions/new"}
+              navigate={~p"/decisions/new"}
               variant="primary"
             >
               <.icon name="hero-plus" class="size-4" /> New Decision
@@ -265,7 +265,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
       <% else %>
         <.data_table id="decisions-table" rows={@decisions} row_id={&"decision-#{&1.id}"}>
           <:col :let={decision} label="Title" class="font-medium">
-            <.link navigate={~p"/pop_stash/decisions/#{decision.id}"} class="hover:text-violet-600">
+            <.link navigate={~p"/decisions/#{decision.id}"} class="hover:text-violet-600">
               <span class="font-mono">{decision.title}</span>
             </.link>
           </:col>
@@ -284,7 +284,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
           <:col :let={decision} label="Actions" class="text-right">
             <div class="flex items-center justify-end gap-2">
               <.link_button
-                navigate={~p"/pop_stash/decisions/#{decision.id}"}
+                navigate={~p"/decisions/#{decision.id}"}
                 variant="ghost"
                 size="sm"
               >
@@ -319,7 +319,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Index do
           projects={@projects}
           titles={@titles}
           action={:new}
-          return_to={~p"/pop_stash/decisions"}
+          return_to={~p"/decisions"}
         />
       </.modal>
     </div>

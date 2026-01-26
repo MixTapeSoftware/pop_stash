@@ -8,7 +8,7 @@ defmodule PopStashWeb.Dashboard.Router do
 
       import PopStashWeb.Dashboard.Router
 
-      scope "/pop_stash" do
+      scope "/" do
         pipe_through [:browser, :admin_auth]  # You provide auth!
         pop_stash_dashboard "/"
       end

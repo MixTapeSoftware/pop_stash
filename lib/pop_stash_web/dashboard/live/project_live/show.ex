@@ -20,7 +20,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
         socket =
           socket
           |> assign(:page_title, project.name)
-          |> assign(:current_path, "/pop_stash/projects/#{id}")
+          |> assign(:current_path, "/projects/#{id}")
           |> assign(:project, project)
           |> load_stats()
           |> load_activity()
@@ -31,7 +31,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
         {:ok,
          socket
          |> put_flash(:error, "Project not found")
-         |> push_navigate(to: ~p"/pop_stash/projects")}
+         |> push_navigate(to: ~p"/projects")}
     end
   end
 
@@ -47,7 +47,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
         {:noreply,
          socket
          |> put_flash(:info, "Project deleted successfully")
-         |> push_navigate(to: ~p"/pop_stash/projects")}
+         |> push_navigate(to: ~p"/projects")}
 
       {:error, _reason} ->
         {:noreply, put_flash(socket, :error, "Failed to delete project")}
@@ -130,14 +130,14 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
         title: "Insights",
         value: length(insights),
         desc: build_stat_description(length(recent_insights), latest_insight, "insight", "week"),
-        link: ~p"/pop_stash/insights?project_id=#{project_id}"
+        link: ~p"/insights?project_id=#{project_id}"
       },
       %{
         title: "Decisions",
         value: length(decisions),
         desc:
           build_stat_description(length(recent_decisions), latest_decision, "decision", "week"),
-        link: ~p"/pop_stash/decisions?project_id=#{project_id}"
+        link: ~p"/decisions?project_id=#{project_id}"
       }
     ]
 
@@ -204,7 +204,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
   def render(assigns) do
     ~H"""
     <div>
-      <.back_link navigate={~p"/pop_stash/projects"} label="Back to projects" />
+      <.back_link navigate={~p"/projects"} label="Back to projects" />
 
       <.page_header title={@project.name} subtitle="Project Details">
         <:actions>
@@ -281,7 +281,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
           <.section_header title="Browse Project Contents" />
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <.link
-              navigate={~p"/pop_stash/insights?project_id=#{@project.id}"}
+              navigate={~p"/insights?project_id=#{@project.id}"}
               class="flex items-center gap-3 p-4 rounded border border-slate-200 hover:bg-slate-50 hover:border-violet-300 transition-colors"
             >
               <.icon name="hero-light-bulb" class="size-6 text-slate-400" />
@@ -294,7 +294,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Show do
             </.link>
 
             <.link
-              navigate={~p"/pop_stash/decisions?project_id=#{@project.id}"}
+              navigate={~p"/decisions?project_id=#{@project.id}"}
               class="flex items-center gap-3 p-4 rounded border border-slate-200 hover:bg-slate-50 hover:border-violet-300 transition-colors"
             >
               <.icon name="hero-check-badge" class="size-6 text-slate-400" />

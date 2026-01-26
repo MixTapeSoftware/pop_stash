@@ -2,8 +2,8 @@ defmodule PopStash.Repo.Migrations.RenameMetadataToTags do
   use Ecto.Migration
 
   def change do
-    # Stashes: rename metadata to tags
-    alter table(:stashes) do
+    # Contexts: rename metadata to tags
+    alter table(:contexts) do
       remove :metadata, :map, default: %{}
       add :tags, {:array, :string}, default: []
     end

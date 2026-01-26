@@ -59,7 +59,7 @@ defmodule PopStashWeb.Dashboard.Layouts do
   def nav_link(assigns) do
     active =
       String.starts_with?(assigns.current_path, assigns.navigate) and
-        (assigns.navigate != "/pop_stash" or assigns.current_path == "/pop_stash")
+        (assigns.navigate != "/" or assigns.current_path == "/")
 
     assigns = assign(assigns, :active, active)
 

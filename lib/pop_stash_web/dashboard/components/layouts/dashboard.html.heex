@@ -10,7 +10,7 @@
   >
     <!-- Logo / Toggle -->
     <div class="p-4 border-b border-slate-200 flex items-center justify-between">
-      <.link navigate={~p"/pop_stash"} class="block sidebar-expanded" style="display: block;">
+      <.link navigate={~p"/"} class="block sidebar-expanded" style="display: block;">
         <h1 class="text-base font-semibold text-slate-900 tracking-tight">PopStash</h1>
       </.link>
       <button
@@ -28,7 +28,7 @@
       <ul class="space-y-1">
         <li>
           <.nav_link
-            navigate={~p"/pop_stash"}
+            navigate={~p"/"}
             current_path={@current_path}
           >
             <.icon name="hero-home" class="size-4 flex-shrink-0" />
@@ -43,19 +43,19 @@
         </li>
 
         <li>
-          <.nav_link navigate={~p"/pop_stash/projects"} current_path={@current_path}>
+          <.nav_link navigate={~p"/projects"} current_path={@current_path}>
             <.icon name="hero-folder" class="size-4 flex-shrink-0" />
             <span class="sidebar-text truncate">Projects</span>
           </.nav_link>
         </li>
         <li>
-          <.nav_link navigate={~p"/pop_stash/insights"} current_path={@current_path}>
+          <.nav_link navigate={~p"/insights"} current_path={@current_path}>
             <.icon name="hero-light-bulb" class="size-4 flex-shrink-0" />
             <span class="sidebar-text truncate">Insights</span>
           </.nav_link>
         </li>
         <li>
-          <.nav_link navigate={~p"/pop_stash/decisions"} current_path={@current_path}>
+          <.nav_link navigate={~p"/decisions"} current_path={@current_path}>
             <.icon name="hero-check-badge" class="size-4 flex-shrink-0" />
             <span class="sidebar-text truncate">
               Decisions
@@ -90,22 +90,22 @@
       <nav>
         <ul class="space-y-1">
           <li>
-            <.nav_link navigate={~p"/pop_stash"} current_path={@current_path}>
+            <.nav_link navigate={~p"/"} current_path={@current_path}>
               <.icon name="hero-home" class="size-4" /> Overview
             </.nav_link>
           </li>
           <li>
-            <.nav_link navigate={~p"/pop_stash/projects"} current_path={@current_path}>
+            <.nav_link navigate={~p"/projects"} current_path={@current_path}>
               <.icon name="hero-folder" class="size-4" /> Projects
             </.nav_link>
           </li>
           <li>
-            <.nav_link navigate={~p"/pop_stash/insights"} current_path={@current_path}>
+            <.nav_link navigate={~p"/insights"} current_path={@current_path}>
               <.icon name="hero-light-bulb" class="size-4" /> Insights
             </.nav_link>
           </li>
           <li>
-            <.nav_link navigate={~p"/pop_stash/decisions"} current_path={@current_path}>
+            <.nav_link navigate={~p"/decisions"} current_path={@current_path}>
               <.icon name="hero-check-badge" class="size-4" /> Decisions
             </.nav_link>
           </li>

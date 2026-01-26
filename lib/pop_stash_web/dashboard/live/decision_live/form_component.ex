@@ -142,7 +142,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.FormComponent do
         {:noreply,
          socket
          |> put_flash(:info, "Decision recorded successfully")
-         |> push_navigate(to: ~p"/pop_stash/decisions/#{created_decision.id}")}
+         |> push_navigate(to: ~p"/decisions/#{created_decision.id}")}
 
       {:error, changeset} ->
         form =

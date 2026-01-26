@@ -5,8 +5,8 @@ defmodule PopStash.Repo.Migrations.AddEmbeddingColumns do
     # Enable pgvector extension
     execute "CREATE EXTENSION IF NOT EXISTS vector"
 
-    # Stashes - embed name + summary
-    alter table(:stashes) do
+    # Contexts - embed name + summary
+    alter table(:contexts) do
       add :embedding, :vector, size: 384
     end
 
@@ -21,7 +21,7 @@ defmodule PopStash.Repo.Migrations.AddEmbeddingColumns do
     end
 
     # HNSW indexes for fast similarity search
-    execute "CREATE INDEX stashes_embedding_idx ON stashes USING hnsw (embedding vector_cosine_ops)"
+    execute "CREATE INDEX contexts_embedding_idx ON contexts USING hnsw (embedding vector_cosine_ops)"
 
     execute "CREATE INDEX insights_embedding_idx ON insights USING hnsw (embedding vector_cosine_ops)"
 
@@ -29,11 +29,11 @@ defmodule PopStash.Repo.Migrations.AddEmbeddingColumns do
   end
 
   def down do
-    execute "DROP INDEX IF EXISTS stashes_embedding_idx"
+    execute "DROP INDEX IF EXISTS contexts_embedding_idx"
     execute "DROP INDEX IF EXISTS insights_embedding_idx"
     execute "DROP INDEX IF EXISTS decisions_embedding_idx"
 
-    alter table(:stashes) do
+    alter table(:contexts) do
       remove :embedding
     end
 

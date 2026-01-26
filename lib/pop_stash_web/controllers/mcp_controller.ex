@@ -85,18 +85,4 @@ defmodule PopStashWeb.MCPController do
     """)
   end
 
-  @doc """
-  Info page showing available tools, projects, and setup instructions.
-  """
-  def info(conn, _params) do
-    tools = Server.tools()
-    projects = Projects.list()
-    port = Application.get_env(:pop_stash, :mcp_port, 4001)
-
-    render(conn, :info,
-      tools: tools,
-      projects: projects,
-      port: port
-    )
-  end
 end

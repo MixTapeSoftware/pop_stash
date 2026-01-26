@@ -19,7 +19,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
     socket =
       socket
       |> assign(:page_title, "Insights")
-      |> assign(:current_path, "/pop_stash/insights")
+      |> assign(:current_path, "/insights")
       |> assign(:projects, projects)
       |> assign(:selected_project_id, nil)
       |> assign(:search_query, "")
@@ -80,7 +80,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
   end
 
   def handle_event("close_modal", _, socket) do
-    {:noreply, push_patch(socket, to: ~p"/pop_stash/insights")}
+    {:noreply, push_patch(socket, to: ~p"/insights")}
   end
 
   @impl true
@@ -146,7 +146,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
     <div>
       <.page_header title="Insights" subtitle="Learned knowledge and patterns">
         <:actions>
-          <.link_button navigate={~p"/pop_stash/insights/new"} variant="primary">
+          <.link_button navigate={~p"/insights/new"} variant="primary">
             <.icon name="hero-plus" class="size-4" /> New Insight
           </.link_button>
         </:actions>
@@ -201,7 +201,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
           <:action>
             <.link_button
               :if={@search_query == ""}
-              navigate={~p"/pop_stash/insights/new"}
+              navigate={~p"/insights/new"}
               variant="primary"
             >
               <.icon name="hero-plus" class="size-4" /> New Insight
@@ -211,7 +211,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
       <% else %>
         <.data_table id="insights-table" rows={@insights} row_id={&"insight-#{&1.id}"}>
           <:col :let={insight} label="Title" class="font-medium">
-            <.link navigate={~p"/pop_stash/insights/#{insight.id}"} class="hover:text-violet-600">
+            <.link navigate={~p"/insights/#{insight.id}"} class="hover:text-violet-600">
               <%= if insight.title do %>
                 <span class="font-mono">{insight.title}</span>
               <% else %>
@@ -233,7 +233,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
           </:col>
           <:col :let={insight} label="Actions" class="text-right">
             <div class="flex items-center justify-end gap-2">
-              <.link_button navigate={~p"/pop_stash/insights/#{insight.id}"} variant="ghost" size="sm">
+              <.link_button navigate={~p"/insights/#{insight.id}"} variant="ghost" size="sm">
                 View
               </.link_button>
               <.button
@@ -264,7 +264,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
           insight={@insight}
           projects={@projects}
           action={:new}
-          return_to={~p"/pop_stash/insights"}
+          return_to={~p"/insights"}
         />
       </.modal>
     </div>

@@ -15,7 +15,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
       Phoenix.PubSub.subscribe(PopStash.PubSub, "memory:events")
     end
 
-    {:ok, assign(socket, :current_path, "/pop_stash/decisions")}
+    {:ok, assign(socket, :current_path, "/decisions")}
   end
 
   @impl true
@@ -57,7 +57,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
         {:noreply,
          socket
          |> put_flash(:info, "Decision deleted successfully")
-         |> push_navigate(to: ~p"/pop_stash/decisions")}
+         |> push_navigate(to: ~p"/decisions")}
 
       {:error, _reason} ->
         {:noreply, put_flash(socket, :error, "Failed to delete decision")}
@@ -65,7 +65,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
   end
 
   def handle_event("close_modal", _, socket) do
-    {:noreply, push_patch(socket, to: ~p"/pop_stash/decisions/#{socket.assigns.decision.id}")}
+    {:noreply, push_patch(socket, to: ~p"/decisions/#{socket.assigns.decision.id}")}
   end
 
   @impl true
@@ -88,7 +88,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
       {:noreply,
        socket
        |> put_flash(:info, "This decision was deleted")
-       |> push_navigate(to: ~p"/pop_stash/decisions")}
+       |> push_navigate(to: ~p"/decisions")}
     else
       # Update history if a related decision was deleted
       title_history =
@@ -106,12 +106,12 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
   def render(assigns) do
     ~H"""
     <div>
-      <.back_link navigate={~p"/pop_stash/decisions"} label="Back to decisions" />
+      <.back_link navigate={~p"/decisions"} label="Back to decisions" />
 
       <div class="mt-4">
         <.page_header title={@decision.title} subtitle={"Project: #{@project.name}"}>
           <:actions>
-            <.link_button navigate={~p"/pop_stash/decisions/new"} variant="secondary">
+            <.link_button navigate={~p"/decisions/new"} variant="secondary">
               <.icon name="hero-plus" class="size-4" /> New Decision
             </.link_button>
             <.button
@@ -158,7 +158,7 @@ defmodule PopStashWeb.Dashboard.DecisionLive.Show do
                   <div class="flex items-center gap-2 mb-2">
                     <.timestamp datetime={historical.inserted_at} />
                     <.link
-                      navigate={~p"/pop_stash/decisions/#{historical.id}"}
+                      navigate={~p"/decisions/#{historical.id}"}
                       class="text-xs text-violet-600 hover:text-violet-700"
                     >
                       View

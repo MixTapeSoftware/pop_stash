@@ -19,6 +19,8 @@ defmodule PopStashWeb.Router do
           "font-src 'self' data:; " <>
           "connect-src 'self' ws://localhost:* wss://localhost:*"
     }
+
+    plug PopStashWeb.Plugs.BasicAuth
   end
 
   pipeline :api do
@@ -30,33 +32,19 @@ defmodule PopStashWeb.Router do
     plug PopStashWeb.Plugs.CheckLocalhost
   end
 
-  scope "/", PopStashWeb do
+  # PopStash Dashboard at root - protected by basic auth
+  scope "/" do
     pipe_through :browser
-
-    get "/", PageController, :home
+    pop_stash_dashboard("/")
   end
 
-  # MCP JSON-RPC endpoint (localhost only)
+  # MCP JSON-RPC endpoint (IP check only, no basic auth)
   scope "/mcp", PopStashWeb do
     pipe_through :mcp
 
     get "/", MCPController, :index
     get "/:project_id", MCPController, :show
     post "/:project_id", MCPController, :handle
-  end
-
-  # Info page for MCP setup
-  scope "/", PopStashWeb do
-    pipe_through :browser
-
-    get "/mcp-info", MCPController, :info
-  end
-
-  # PopStash Dashboard - mount with your own authentication!
-  # ⚠️  WARNING: No authentication by default. Secure this route!
-  scope "/pop_stash" do
-    pipe_through :browser
-    pop_stash_dashboard("/")
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

@@ -13,7 +13,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
     socket =
       socket
       |> assign(:page_title, "Projects")
-      |> assign(:current_path, "/pop_stash/projects")
+      |> assign(:current_path, "/projects")
       |> assign(:search_query, "")
       |> load_projects()
 
@@ -61,7 +61,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
   end
 
   def handle_event("close_modal", _, socket) do
-    {:noreply, push_patch(socket, to: ~p"/pop_stash/projects")}
+    {:noreply, push_patch(socket, to: ~p"/projects")}
   end
 
   defp load_projects(socket) do
@@ -124,7 +124,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
     <div>
       <.page_header title="Projects" subtitle="Manage your PopStash projects">
         <:actions>
-          <.link_button navigate={~p"/pop_stash/projects/new"} variant="primary">
+          <.link_button navigate={~p"/projects/new"} variant="primary">
             <.icon name="hero-plus" class="size-4" /> New Project
           </.link_button>
         </:actions>
@@ -216,7 +216,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
           <:action>
             <.link_button
               :if={@search_query == ""}
-              navigate={~p"/pop_stash/projects/new"}
+              navigate={~p"/projects/new"}
               variant="primary"
             >
               <.icon name="hero-plus" class="size-4" /> New Project
@@ -226,7 +226,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
       <% else %>
         <.data_table id="projects-table" rows={@projects} row_id={&"project-#{&1.id}"}>
           <:col :let={project} label="Name" class="font-medium">
-            <.link navigate={~p"/pop_stash/projects/#{project.id}"} class="hover:text-violet-600">
+            <.link navigate={~p"/projects/#{project.id}"} class="hover:text-violet-600">
               {project.name}
             </.link>
           </:col>
@@ -267,7 +267,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
           </:col>
           <:col :let={project} label="Actions" class="text-right">
             <div class="flex items-center justify-end gap-2">
-              <.link_button navigate={~p"/pop_stash/projects/#{project.id}"} variant="ghost" size="sm">
+              <.link_button navigate={~p"/projects/#{project.id}"} variant="ghost" size="sm">
                 View
               </.link_button>
               <.button
@@ -297,7 +297,7 @@ defmodule PopStashWeb.Dashboard.ProjectLive.Index do
           id={:new}
           project={@project}
           action={:new}
-          return_to={~p"/pop_stash/projects"}
+          return_to={~p"/projects"}
         />
       </.modal>
     </div>

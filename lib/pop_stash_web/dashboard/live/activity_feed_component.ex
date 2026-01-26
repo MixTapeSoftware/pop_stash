@@ -133,8 +133,8 @@ defmodule PopStashWeb.Dashboard.ActivityFeedComponent do
   defp type_label(:insight), do: "Insight"
   defp type_label(:search), do: "Search"
 
-  defp item_path(%{type: :decision, id: id}), do: ~p"/pop_stash/decisions/#{id}"
-  defp item_path(%{type: :insight, id: id}), do: ~p"/pop_stash/insights/#{id}"
+  defp item_path(%{type: :decision, id: id}), do: ~p"/decisions/#{id}"
+  defp item_path(%{type: :insight, id: id}), do: ~p"/insights/#{id}"
   defp item_path(%{type: :search}), do: nil
 
   defp relative_time_string(datetime) do

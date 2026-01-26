@@ -108,7 +108,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.FormComponent do
         {:noreply,
          socket
          |> put_flash(:info, "Insight created successfully")
-         |> push_navigate(to: ~p"/pop_stash/insights/#{insight.id}")}
+         |> push_navigate(to: ~p"/insights/#{insight.id}")}
 
       {:error, changeset} ->
         form =
@@ -129,7 +129,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.FormComponent do
         {:noreply,
          socket
          |> put_flash(:info, "Insight updated successfully")
-         |> push_navigate(to: ~p"/pop_stash/insights/#{insight.id}")}
+         |> push_navigate(to: ~p"/insights/#{insight.id}")}
 
       {:error, changeset} ->
         form =

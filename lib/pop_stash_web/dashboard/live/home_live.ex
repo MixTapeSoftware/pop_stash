@@ -21,7 +21,7 @@ defmodule PopStashWeb.Dashboard.HomeLive do
     socket =
       socket
       |> assign(:page_title, "Overview")
-      |> assign(:current_path, "/pop_stash")
+      |> assign(:current_path, "/")
       |> assign(:projects, projects)
       |> assign(:selected_project_id, nil)
       |> assign(:activity_items, [])
@@ -155,21 +155,21 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             value: length(projects),
             desc: "Total projects",
             icon: "hero-folder",
-            link: ~p"/pop_stash/projects"
+            link: ~p"/projects"
           },
           %{
             title: "Insights",
             value: total_insights,
             desc: "Across all projects",
             icon: "hero-light-bulb",
-            link: ~p"/pop_stash/insights"
+            link: ~p"/insights"
           },
           %{
             title: "Decisions",
             value: total_decisions,
             desc: "Across all projects",
             icon: "hero-check-badge",
-            link: ~p"/pop_stash/decisions"
+            link: ~p"/decisions"
           }
         ]
 
@@ -184,13 +184,13 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             title: "Insights",
             value: length(insights),
             icon: "hero-light-bulb",
-            link: ~p"/pop_stash/insights"
+            link: ~p"/insights"
           },
           %{
             title: "Decisions",
             value: length(decisions),
             icon: "hero-check-badge",
-            link: ~p"/pop_stash/decisions"
+            link: ~p"/decisions"
           }
         ]
 
@@ -257,14 +257,14 @@ defmodule PopStashWeb.Dashboard.HomeLive do
             <.section_header title="Quick Actions" />
             <div class="space-y-2">
               <.link_button
-                navigate={~p"/pop_stash/insights/new"}
+                navigate={~p"/insights/new"}
                 variant="secondary"
                 class="w-full justify-start"
               >
                 <.icon name="hero-plus" class="size-4" /> New Insight
               </.link_button>
               <.link_button
-                navigate={~p"/pop_stash/decisions/new"}
+                navigate={~p"/decisions/new"}
                 variant="secondary"
                 class="w-full justify-start"
               >

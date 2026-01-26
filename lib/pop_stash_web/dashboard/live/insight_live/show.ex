@@ -15,7 +15,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
       Phoenix.PubSub.subscribe(PopStash.PubSub, "memory:events")
     end
 
-    {:ok, assign(socket, :current_path, "/pop_stash/insights")}
+    {:ok, assign(socket, :current_path, "/insights")}
   end
 
   @impl true
@@ -49,7 +49,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
         {:noreply,
          socket
          |> put_flash(:info, "Insight deleted successfully")
-         |> push_navigate(to: ~p"/pop_stash/insights")}
+         |> push_navigate(to: ~p"/insights")}
 
       {:error, _reason} ->
         {:noreply, put_flash(socket, :error, "Failed to delete insight")}
@@ -57,7 +57,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
   end
 
   def handle_event("close_modal", _, socket) do
-    {:noreply, push_patch(socket, to: ~p"/pop_stash/insights/#{socket.assigns.insight.id}")}
+    {:noreply, push_patch(socket, to: ~p"/insights/#{socket.assigns.insight.id}")}
   end
 
   @impl true
@@ -74,7 +74,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
       {:noreply,
        socket
        |> put_flash(:info, "This insight was deleted")
-       |> push_navigate(to: ~p"/pop_stash/insights")}
+       |> push_navigate(to: ~p"/insights")}
     else
       {:noreply, socket}
     end
@@ -88,12 +88,12 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
   def render(assigns) do
     ~H"""
     <div>
-      <.back_link navigate={~p"/pop_stash/insights"} label="Back to insights" />
+      <.back_link navigate={~p"/insights"} label="Back to insights" />
 
       <div class="mt-4">
         <.page_header title={@insight.key || "Insight"} subtitle={"Project: #{@project.name}"}>
           <:actions>
-            <.link_button navigate={~p"/pop_stash/insights/#{@insight.id}/edit"} variant="secondary">
+            <.link_button navigate={~p"/insights/#{@insight.id}/edit"} variant="secondary">
               <.icon name="hero-pencil" class="size-4" /> Edit
             </.link_button>
             <.button
@@ -166,7 +166,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
           insight={@insight}
           projects={@projects}
           action={:edit}
-          return_to={~p"/pop_stash/insights/#{@insight.id}"}
+          return_to={~p"/insights/#{@insight.id}"}
         />
       </.modal>
     </div>
