@@ -1,0 +1,462 @@
+# Step 3: Core Access Control
+
+## Overview
+Create the Scope module, Organizations context, and Memberships context. Add Repo.transact helper for cleaner transaction handling.
+
+## Context
+These are the access control primitives that will be used throughout the application to enforce org-level isolation.
+
+## Implementation
+
+### 1. Create Scope Module
+
+**File**: `lib/pop_stash/scope.ex`
+
+```elixir
+defmodule PopStash.Scope do
+  @moduledoc """
+  Provides organization-scoped access control utilities.
+
+  Used throughout the application to ensure users can only access
+  data within their selected organization.
+  """
+
+  alias PopStash.Accounts.User
+  alias PopStash.Repo
+
+  defstruct [:org_id, :user_id, :role]
+
+  @type t :: %__MODULE__{
+    org_id: binary() | nil,
+    user_id: binary() | nil,
+    role: :owner | :member | nil
+  }
+
+  @doc """
+  Builds a scope from a user with their selected organization.
+  Returns {:ok, scope} or {:error, reason}.
+  """
+  def from_user(%User{selected_org_id: nil}), do: {:error, :no_org_selected}
+
+  def from_user(%User{selected_org_id: org_id, id: user_id} = user) do
+    user = user |> Repo.preload(org_members: :organization)
+
+    org_member =
+      Enum.find(user.org_members, fn om -> om.org_id == org_id end)
+
+    case org_member do
+      nil -> {:error, :not_org_member}
+      om ->
+        {:ok, %__MODULE__{
+          org_id: org_id,
+          user_id: user_id,
+          role: String.to_existing_atom(om.role)
+        }}
+    end
+  end
+
+  @doc """
+  Checks if the scope has owner privileges.
+  """
+  def owner?(%__MODULE__{role: :owner}), do: true
+  def owner?(_), do: false
+
+  @doc """
+  Validates that a record belongs to the scoped organization.
+  """
+  def validate_org_access(%__MODULE__{org_id: org_id}, %{org_id: record_org_id}) do
+    if org_id == record_org_id do
+      :ok
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  def validate_org_access(_, _), do: {:error, :invalid_scope}
+end
+```
+
+### 2. Create Organization Schema
+
+**File**: `lib/pop_stash/organizations/organization.ex`
+
+```elixir
+defmodule PopStash.Organizations.Organization do
+  @moduledoc """
+  Schema for organizations, the top-level tenant boundary.
+
+  Organizations contain projects, users, and all associated data.
+  """
+
+  use PopStash.Schema
+  import Ecto.Changeset
+
+  alias PopStash.Memory.Decision
+  alias PopStash.Memory.Insight
+  alias PopStash.Memory.SearchLog
+  alias PopStash.Organizations.OrgMember
+  alias PopStash.Projects.Project
+
+  schema "organizations" do
+    field :name, :string
+    field :slug, :string
+    field :settings, :map, default: %{}
+
+    has_many :projects, Project
+    has_many :insights, Insight
+    has_many :decisions, Decision
+    has_many :search_logs, SearchLog
+    has_many :org_members, OrgMember
+    has_many :users, through: [:org_members, :user]
+
+    timestamps()
+  end
+
+  def changeset(organization, attrs) do
+    organization
+    |> cast(attrs, [:name, :slug, :settings])
+    |> validate_required([:name, :slug])
+    |> validate_length(:name, min: 1, max: 255)
+    |> validate_length(:slug, min: 1, max: 100)
+    |> validate_format(:slug, ~r/^[a-z0-9-]+$/,
+         message: "must contain only lowercase letters, numbers, and hyphens")
+    |> unique_constraint(:slug)
+  end
+
+  def generate_slug(name) do
+    name
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9\s-]/, "")
+    |> String.replace(~r/\s+/, "-")
+    |> String.slice(0, 100)
+  end
+end
+```
+
+### 3. Create OrgMember Schema
+
+**File**: `lib/pop_stash/organizations/org_member.ex`
+
+```elixir
+defmodule PopStash.Organizations.OrgMember do
+  @moduledoc """
+  Join table between users and organizations with role information.
+
+  Roles:
+  - :owner - Full control, can manage members and delete org
+  - :member - Can access and modify org data
+  """
+
+  use PopStash.Schema
+  import Ecto.Changeset
+
+  alias PopStash.Accounts.User
+  alias PopStash.Organizations.Organization
+
+  @roles ~w(owner member)
+
+  schema "org_members" do
+    field :role, :string, default: "member"
+
+    belongs_to :organization, Organization
+    belongs_to :user, User
+
+    timestamps()
+  end
+
+  def changeset(org_member, attrs) do
+    org_member
+    |> cast(attrs, [:role, :org_id, :user_id])
+    |> validate_required([:role, :org_id, :user_id])
+    |> validate_inclusion(:role, @roles)
+    |> foreign_key_constraint(:org_id)
+    |> foreign_key_constraint(:user_id)
+    |> unique_constraint([:org_id, :user_id])
+  end
+
+  def roles, do: @roles
+end
+```
+
+### 4. Create Organizations Context
+
+**File**: `lib/pop_stash/organizations.ex`
+
+```elixir
+defmodule PopStash.Organizations do
+  @moduledoc """
+  Context for managing organizations.
+  """
+
+  import Ecto.Query
+
+  alias PopStash.Memberships
+  alias PopStash.Organizations.Organization
+  alias PopStash.Repo
+
+  @doc """
+  Creates an organization and adds the creator as owner.
+  """
+  def create(name, creator_user_id, opts \\ []) do
+    slug = Keyword.get(opts, :slug) || Organization.generate_slug(name)
+
+    Repo.transact(fn ->
+      with {:ok, org} <-
+             %Organization{}
+             |> Organization.changeset(%{name: name, slug: slug})
+             |> Repo.insert(),
+           {:ok, _member} <- Memberships.add_member(org.id, creator_user_id, "owner") do
+        {:ok, org}
+      end
+    end)
+  end
+
+  @doc """
+  Gets an organization by ID.
+  """
+  def get(id) do
+    case Repo.get(Organization, id) do
+      nil -> {:error, :not_found}
+      org -> {:ok, org}
+    end
+  end
+
+  @doc """
+  Gets an organization by slug.
+  """
+  def get_by_slug(slug) do
+    case Repo.get_by(Organization, slug: slug) do
+      nil -> {:error, :not_found}
+      org -> {:ok, org}
+    end
+  end
+
+  @doc """
+  Lists all organizations a user belongs to.
+  """
+  def list_for_user(user_id) do
+    Organization
+    |> join(:inner, [o], om in assoc(o, :org_members))
+    |> where([o, om], om.user_id == ^user_id)
+    |> preload([o, om], org_members: om)
+    |> order_by([o], o.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Updates organization details.
+  """
+  def update(org_id, attrs) do
+    case get(org_id) do
+      {:ok, org} ->
+        org
+        |> Organization.changeset(attrs)
+        |> Repo.update()
+
+      error -> error
+    end
+  end
+
+  @doc """
+  Deletes an organization (owner only).
+  """
+  def delete(org_id) do
+    case get(org_id) do
+      {:ok, org} -> Repo.delete(org)
+      error -> error
+    end
+  end
+end
+```
+
+### 5. Create Memberships Context
+
+**File**: `lib/pop_stash/memberships.ex`
+
+```elixir
+defmodule PopStash.Memberships do
+  @moduledoc """
+  Context for managing organization memberships and roles.
+  """
+
+  import Ecto.Query
+
+  alias PopStash.Accounts.User
+  alias PopStash.Organizations.OrgMember
+  alias PopStash.Organizations.Organization
+  alias PopStash.Repo
+  alias PopStash.Scope
+
+  @doc """
+  Adds a user to an organization with the specified role.
+  """
+  def add_member(org_id, user_id, role \\ "member") do
+    %OrgMember{}
+    |> OrgMember.changeset(%{
+      org_id: org_id,
+      user_id: user_id,
+      role: role
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Removes a user from an organization.
+  Only owners can remove members.
+  """
+  def remove_member(%Scope{} = scope, user_id) do
+    if Scope.owner?(scope) do
+      OrgMember
+      |> where([om], om.org_id == ^scope.org_id and om.user_id == ^user_id)
+      |> Repo.delete_all()
+
+      :ok
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  @doc """
+  Updates a member's role.
+  Only owners can change roles.
+  """
+  def update_member_role(%Scope{} = scope, user_id, new_role) do
+    if Scope.owner?(scope) do
+      org_member =
+        OrgMember
+        |> where([om], om.org_id == ^scope.org_id and om.user_id == ^user_id)
+        |> Repo.one()
+
+      case org_member do
+        nil ->
+          {:error, :not_found}
+
+        om ->
+          om
+          |> Ecto.Changeset.change(role: new_role)
+          |> Repo.update()
+      end
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  @doc """
+  Lists all members of an organization.
+  """
+  def list_members(org_id) do
+    OrgMember
+    |> where([om], om.org_id == ^org_id)
+    |> preload(:user)
+    |> Repo.all()
+  end
+
+  @doc """
+  Checks if a user has a specific role in an organization.
+  """
+  def has_role?(org_id, user_id, required_role) do
+    OrgMember
+    |> where([om], om.org_id == ^org_id and om.user_id == ^user_id)
+    |> select([om], om.role)
+    |> Repo.one()
+    |> case do
+      nil -> false
+      role -> role == to_string(required_role)
+    end
+  end
+
+  @doc """
+  Gets a user's role in an organization.
+  """
+  def get_role(org_id, user_id) do
+    OrgMember
+    |> where([om], om.org_id == ^org_id and om.user_id == ^user_id)
+    |> select([om], om.role)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, :not_member}
+      role -> {:ok, String.to_existing_atom(role)}
+    end
+  end
+end
+```
+
+### 6. Add Repo.transact Helper
+
+**File**: `lib/pop_stash/repo.ex`
+
+```elixir
+defmodule PopStash.Repo do
+  use Ecto.Repo,
+    otp_app: :pop_stash,
+    adapter: Ecto.Adapters.Postgres
+
+  @doc """
+  Runs a transaction with automatic error handling.
+
+  The function should return {:ok, result} or {:error, reason}.
+  """
+  def transact(fun) when is_function(fun, 0) do
+    transaction(fn ->
+      case fun.() do
+        {:ok, result} -> result
+        {:error, reason} -> rollback(reason)
+      end
+    end)
+  end
+end
+```
+
+## Verification
+
+```bash
+# Test in IEx
+iex -S mix
+
+# Create org
+{:ok, user} = PopStash.Accounts.register_user(%{email: "test@example.com"})
+{:ok, org} = PopStash.Organizations.create("My Org", user.id)
+
+# Verify membership
+members = PopStash.Memberships.list_members(org.id)
+assert length(members) == 1
+assert hd(members).role == "owner"
+
+# Create scope
+{:ok, user} = PopStash.Accounts.select_org(user, org.id)
+{:ok, scope} = PopStash.Scope.from_user(user)
+assert scope.org_id == org.id
+assert scope.role == :owner
+```
+
+## Tests
+
+**File**: `test/pop_stash/organizations_test.exs`
+
+```elixir
+defmodule PopStash.OrganizationsTest do
+  use PopStash.DataCase
+
+  alias PopStash.Memberships
+  alias PopStash.Organizations
+
+  describe "create/3" do
+    test "creates org and adds creator as owner" do
+      user = insert(:user)
+
+      assert {:ok, org} = Organizations.create("Test Org", user.id)
+      assert org.name == "Test Org"
+      assert org.slug == "test-org"
+
+      assert Memberships.has_role?(org.id, user.id, :owner)
+    end
+  end
+end
+```
+
+## Dependencies
+- Step 0 completed (tables exist)
+- Step 1 completed (org_id columns exist)
+
+## Next Step
+Step 4 will create DAL wrappers (ProjectsDAL, MemoryDAL) that use these access control primitives.

@@ -1,0 +1,288 @@
+# Step 2: Passwordless Authentication
+
+## Overview
+Implement passwordless authentication using email magic links. Modify phx.gen.auth code to remove password field and implement token-based login.
+
+## Context
+phx.gen.auth generates password-based auth. We remove passwords and implement magic link tokens that expire in 1 hour.
+
+## Implementation
+
+### 1. Modify User Schema
+
+**File**: `lib/pop_stash/accounts/user.ex`
+
+```elixir
+defmodule PopStash.Accounts.User do
+  use PopStash.Schema
+  import Ecto.Changeset
+
+  alias PopStash.Organizations.Organization
+  alias PopStash.Organizations.OrgMember
+
+  schema "users" do
+    field :email, :string
+    field :confirmed_at, :utc_datetime_usec
+
+    # Organization relationships
+    belongs_to :selected_org, Organization
+    has_many :org_members, OrgMember
+    has_many :organizations, through: [:org_members, :organization]
+
+    timestamps()
+  end
+
+  def registration_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:email])
+    |> validate_email(opts)
+  end
+
+  def email_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:email])
+    |> validate_email(opts)
+  end
+
+  defp validate_email(changeset, opts) do
+    changeset
+    |> validate_required([:email])
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have @ sign and no spaces")
+    |> validate_length(:email, max: 160)
+    |> maybe_validate_unique_email(opts)
+  end
+
+  defp maybe_validate_unique_email(changeset, opts) do
+    if Keyword.get(opts, :validate_email, true) do
+      changeset
+      |> unsafe_validate_unique(:email, PopStash.Repo)
+      |> unique_constraint(:email)
+    else
+      changeset
+    end
+  end
+end
+```
+
+### 2. Update Accounts Context for Magic Links
+
+**File**: `lib/pop_stash/accounts.ex` (add to generated context)
+
+```elixir
+# Add to existing Accounts context
+
+def deliver_user_login_instructions(user, login_url_fun) when is_function(login_url_fun, 1) do
+  {encoded_token, user_token} = UserToken.build_email_token(user, "login")
+  Repo.insert!(user_token)
+  UserNotifier.deliver_login_instructions(user, login_url_fun.(encoded_token))
+end
+
+def get_user_by_login_token(token) do
+  with {:ok, query} <- UserToken.verify_email_token_query(token, "login"),
+       %User{} = user <- Repo.one(query) do
+    Repo.delete_all(UserToken.token_and_context_query(token, "login"))
+    {:ok, user}
+  else
+    _ -> :error
+  end
+end
+
+def select_org(user, org_id) do
+  user
+  |> Ecto.Changeset.change(selected_org_id: org_id)
+  |> Repo.update()
+end
+```
+
+### 3. Update UserToken for Login Context
+
+**File**: `lib/pop_stash/accounts/user_token.ex`
+
+Add login token support:
+
+```elixir
+# Add to existing UserToken module
+
+@login_token_validity_in_days 1/24  # 1 hour
+
+defp days_for_context("login"), do: @login_token_validity_in_days
+defp days_for_context(_), do: @login_token_validity_in_days
+```
+
+### 4. Create UserNotifier
+
+**File**: `lib/pop_stash/accounts/user_notifier.ex`
+
+```elixir
+defmodule PopStash.Accounts.UserNotifier do
+  import Swoosh.Email
+
+  alias PopStash.Mailer
+
+  defp deliver(recipient, subject, body) do
+    email =
+      new()
+      |> to(recipient)
+      |> from({"PopStash", "noreply@popstash.dev"})
+      |> subject(subject)
+      |> text_body(body)
+
+    with {:ok, _metadata} <- Mailer.deliver(email) do
+      {:ok, email}
+    end
+  end
+
+  def deliver_login_instructions(user, url) do
+    deliver(user.email, "Your PopStash login link", """
+    Hi #{user.email},
+
+    You requested a login link for PopStash.
+
+    Click the link below to sign in:
+
+    #{url}
+
+    This link will expire in 1 hour.
+
+    If you didn't request this link, you can safely ignore this email.
+    """)
+  end
+end
+```
+
+### 5. Create Login LiveView
+
+**File**: `lib/pop_stash_web/live/user_login_live.ex`
+
+```elixir
+defmodule PopStashWeb.UserLoginLive do
+  use PopStashWeb, :live_view
+
+  alias PopStash.Accounts
+
+  def mount(_params, _session, socket) do
+    email = Phoenix.Flash.get(socket.assigns.flash, :email)
+    form = to_form(%{"email" => email}, as: "user")
+    {:ok, assign(socket, form: form), temporary_assigns: [form: form]}
+  end
+
+  def handle_event("send_link", %{"user" => %{"email" => email}}, socket) do
+    case Accounts.get_user_by_email(email) do
+      nil ->
+        # Don't reveal if user exists
+        {:noreply,
+         socket
+         |> put_flash(:info, "If your email is registered, you'll receive a login link shortly.")
+         |> assign(form: to_form(%{"email" => ""}, as: "user"))}
+
+      user ->
+        Accounts.deliver_user_login_instructions(
+          user,
+          &url(~p"/users/log-in/#{&1}")
+        )
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Login link sent to #{email}")
+         |> assign(form: to_form(%{"email" => ""}, as: "user"))}
+    end
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="mx-auto max-w-sm">
+      <.header class="text-center">
+        Sign in to PopStash
+        <:subtitle>
+          We'll send a magic link to your email
+        </:subtitle>
+      </.header>
+
+      <.simple_form for={@form} id="login_form" phx-submit="send_link">
+        <.input field={@form[:email]} type="email" label="Email" required />
+        <:actions>
+          <.button phx-disable-with="Sending..." class="w-full">
+            Send login link
+          </.button>
+        </:actions>
+      </.simple_form>
+    </div>
+    """
+  end
+end
+```
+
+### 6. Update Session Controller
+
+**File**: `lib/pop_stash_web/controllers/user_session_controller.ex`
+
+Add token verification:
+
+```elixir
+def create(conn, %{"_action" => "verify_email_token", "token" => token}) do
+  case Accounts.get_user_by_login_token(token) do
+    {:ok, user} ->
+      conn
+      |> put_flash(:info, "Welcome back!")
+      |> UserAuth.log_in_user(user)
+
+    :error ->
+      conn
+      |> put_flash(:error, "Login link is invalid or expired.")
+      |> redirect(to: ~p"/users/log-in")
+  end
+end
+```
+
+## Verification
+
+```bash
+# Start server
+mix phx.server
+
+# Visit http://localhost:4000/users/log-in
+# Enter email
+# Check mailbox at http://localhost:4000/dev/mailbox
+# Click magic link
+# Verify login succeeds
+```
+
+## Tests
+
+**File**: `test/pop_stash_web/live/user_login_live_test.exs`
+
+```elixir
+defmodule PopStashWeb.UserLoginLiveTest do
+  use PopStashWeb.ConnCase
+  import Phoenix.LiveViewTest
+
+  test "sends magic link on form submit", %{conn: conn} do
+    user = insert(:user, email: "test@example.com")
+
+    {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+    lv
+    |> form("#login_form", user: %{email: "test@example.com"})
+    |> render_submit()
+
+    assert_email_sent(subject: "Your PopStash login link")
+  end
+
+  test "magic link logs user in", %{conn: conn} do
+    user = insert(:user)
+    {token, _} = Accounts.UserToken.build_email_token(user, "login")
+
+    conn = get(conn, ~p"/users/log-in/#{token}")
+
+    assert redirected_to(conn) == ~p"/"
+    assert get_session(conn, :user_token)
+  end
+end
+```
+
+## Dependencies
+- Step 0 completed (users table exists)
+- Swoosh configured for email delivery
+
+## Next Step
+Step 3 will create the Scope module and Organizations/Memberships contexts for access control.
