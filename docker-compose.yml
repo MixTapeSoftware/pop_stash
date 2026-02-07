@@ -14,8 +14,6 @@ services:
             interval: 5s
             timeout: 5s
             retries: 5
-        networks:
-            - popstash
 
     typesense:
         image: typesense/typesense:27.1
@@ -26,12 +24,7 @@ services:
             - "127.0.0.1:8108:8108"
         volumes:
             - pop-stash-typesense:/data
-        networks:
-            - popstash
 
-networks:
-    popstash:
-        name: popstash_network
 volumes:
     pop-stash-pgdata:
         driver: local
