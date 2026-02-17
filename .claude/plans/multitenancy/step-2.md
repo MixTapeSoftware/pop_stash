@@ -103,7 +103,9 @@ Add login token support:
 ```elixir
 # Add to existing UserToken module
 
-@login_token_validity_in_days 1/24  # 1 hour
+# Note: Must use float division (1.0 / 24.0) not integer division (1/24)
+# Integer division 1/24 evaluates to 0, which would expire tokens immediately
+@login_token_validity_in_days 1.0 / 24.0  # 1 hour
 
 defp days_for_context("login"), do: @login_token_validity_in_days
 defp days_for_context(_), do: @login_token_validity_in_days

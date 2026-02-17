@@ -4,7 +4,7 @@
 Create OrgPlug for LiveView on_mount, update router to remove BasicAuth and add UserAuth pipelines, create org selection LiveViews.
 
 ## Context
-This step connects authentication (Step 2) with access control (Step 3) via the router and OrgPlug. OrgPlug assigns current_scope to socket.assigns for use in LiveViews.
+This step connects authentication (Step 2) with access control (Step 3) via the router and OrgPlug. OrgPlug assigns current_scope to socket.assigns and calls `Repo.put_org_id` to activate `prepare_query` enforcement for LiveView processes.
 
 ## Implementation
 
@@ -63,6 +63,9 @@ defmodule PopStashWeb.OrgPlug do
   defp assign_current_scope(socket, user) do
     case Scope.from_user(user) do
       {:ok, scope} ->
+        # Set org_id in process dictionary for prepare_query enforcement
+        PopStash.Repo.put_org_id(scope.org_id)
+
         socket
         |> assign(:current_scope, scope)
         |> assign(:current_org_id, scope.org_id)
@@ -375,4 +378,4 @@ end
 - Step 3 completed (Scope, Organizations exist)
 
 ## Next Step
-Step 6 will update all dashboard LiveViews to use DAL modules and current_scope.
+Step 6 will update all dashboard LiveViews to use scoped context calls and current_scope.

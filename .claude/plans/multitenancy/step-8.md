@@ -1,10 +1,10 @@
-# Step 7: Testing & Polish
+# Step 8: Testing & Polish
 
 ## Overview
-Add comprehensive testing, verify cross-org isolation, performance testing, and final polish.
+Add comprehensive testing, verify cross-org isolation (including prepare_query enforcement), performance testing, and final polish.
 
 ## Context
-Final step to ensure quality, security, and performance before shipping multi-tenancy.
+Final step to ensure quality, security, and performance before shipping multi-tenancy. With `prepare_query` in place, we can now test that direct Repo queries are also automatically scoped.
 
 ## Implementation
 
@@ -130,8 +130,9 @@ end
 defmodule PopStash.CrossOrgIsolationTest do
   use PopStash.DataCase
 
-  alias PopStash.ProjectsDAL
-  alias PopStash.MemoryDAL
+  alias PopStash.Projects
+  alias PopStash.Memory
+  alias PopStash.Repo
   alias PopStash.Scope
 
   setup do
@@ -153,28 +154,55 @@ defmodule PopStash.CrossOrgIsolationTest do
   test "user cannot access projects from other org", %{scope1: scope1, org2: org2} do
     project2 = insert(:project, org_id: org2.id)
 
-    assert {:error, :unauthorized} = ProjectsDAL.get(scope1, project2.id)
+    Repo.put_org_id(scope1.org_id)
+    assert {:error, :not_found} = Projects.get(scope1, project2.id)
   end
 
   test "user cannot create insight in other org's project", %{scope1: scope1, org2: org2} do
     project2 = insert(:project, org_id: org2.id)
 
-    assert {:error, :unauthorized} =
-             MemoryDAL.create_insight(scope1, project2.id, "Test insight")
+    Repo.put_org_id(scope1.org_id)
+    assert {:error, :project_not_found} =
+             Memory.create_insight(scope1, project2.id, "Test insight")
   end
 
   test "user only sees their org's data in lists", %{scope1: scope1, scope2: scope2, org1: org1, org2: org2} do
     insert(:project, org_id: org1.id, name: "Org1 Project")
     insert(:project, org_id: org2.id, name: "Org2 Project")
 
-    projects1 = ProjectsDAL.list(scope1)
-    projects2 = ProjectsDAL.list(scope2)
+    Repo.put_org_id(scope1.org_id)
+    projects1 = Projects.list(scope1)
+
+    Repo.put_org_id(scope2.org_id)
+    projects2 = Projects.list(scope2)
 
     assert length(projects1) == 1
     assert hd(projects1).name == "Org1 Project"
 
     assert length(projects2) == 1
     assert hd(projects2).name == "Org2 Project"
+  end
+
+  test "prepare_query prevents direct Repo access to other org's data" do
+    org1 = insert(:organization)
+    org2 = insert(:organization)
+    insert(:project, org_id: org1.id, name: "Org1 Project")
+    insert(:project, org_id: org2.id, name: "Org2 Project")
+
+    # Even with direct Repo.all, prepare_query scopes by org_id
+    Repo.put_org_id(org1.id)
+    projects = Repo.all(PopStash.Projects.Project)
+
+    assert length(projects) == 1
+    assert hd(projects).name == "Org1 Project"
+  end
+
+  test "prepare_query raises when no org_id is set" do
+    Repo.put_org_id(nil)
+
+    assert_raise RuntimeError, ~r/expected org_id or skip_org_id/, fn ->
+      Repo.all(PopStash.Projects.Project)
+    end
   end
 end
 ```
@@ -228,7 +256,8 @@ end
 defmodule PopStash.PerformanceTest do
   use PopStash.DataCase
 
-  alias PopStash.ProjectsDAL
+  alias PopStash.Projects
+  alias PopStash.Repo
   alias PopStash.Scope
 
   @tag :performance
@@ -243,14 +272,11 @@ defmodule PopStash.PerformanceTest do
       insert(:project, org_id: org.id, name: "Project #{i}")
     end
 
-    # List should use single query with index
-    query_count = fn ->
-      ProjectsDAL.list(scope)
-    end
+    Repo.put_org_id(org.id)
 
-    # Capture query count
+    # List should use single query with index
     result = ExUnit.CaptureLog.capture_log(fn ->
-      query_count.()
+      Projects.list(scope)
     end)
 
     # Should be single SELECT query
@@ -293,10 +319,11 @@ mix phx.server
 defmodule PopStash.SecurityAuditTest do
   use PopStash.DataCase
 
-  alias PopStash.ProjectsDAL
+  alias PopStash.Projects
+  alias PopStash.Repo
   alias PopStash.Scope
 
-  test "cannot bypass org isolation with direct repo query" do
+  test "prepare_query enforces org isolation even on direct Repo queries" do
     org1 = insert(:organization)
     org2 = insert(:organization)
     user = insert(:user, selected_org_id: org1.id)
@@ -306,15 +333,26 @@ defmodule PopStash.SecurityAuditTest do
 
     scope = %Scope{org_id: org1.id, user_id: user.id, role: :member}
 
-    # DAL should block access
-    assert {:error, :unauthorized} = ProjectsDAL.get(scope, project.id)
+    # Context-level access blocked
+    Repo.put_org_id(org1.id)
+    assert {:error, :not_found} = Projects.get(scope, project.id)
 
-    # Direct Repo access bypasses DAL (this is why we need DAL everywhere)
-    direct_access = PopStash.Repo.get(PopStash.Projects.Project, project.id)
-    assert direct_access != nil
+    # Direct Repo access is ALSO scoped by prepare_query
+    # prepare_query enforces this at the Repo level automatically
+    direct_results = Repo.all(PopStash.Projects.Project)
+    refute Enum.any?(direct_results, &(&1.id == project.id))
+  end
 
-    # This test documents that DAL is the security boundary
-    # LiveViews MUST use DAL, never Repo directly
+  test "cannot query content tables without org_id" do
+    Repo.put_org_id(nil)
+
+    assert_raise RuntimeError, ~r/expected org_id or skip_org_id/, fn ->
+      Repo.all(PopStash.Projects.Project)
+    end
+
+    assert_raise RuntimeError, ~r/expected org_id or skip_org_id/, fn ->
+      Repo.all(PopStash.Memory.Insight)
+    end
   end
 end
 ```
@@ -353,14 +391,14 @@ mix run -e "PopStash.Repo.query!(\"EXPLAIN ANALYZE SELECT * FROM projects WHERE 
 ```
 
 ## Dependencies
-- Steps 0-6 completed
+- Steps 0-7 completed
 
 ## Success Criteria
 - [ ] All tests pass
-- [ ] Cross-org isolation verified
+- [ ] Cross-org isolation verified (both context-level and prepare_query-level)
 - [ ] No N+1 queries
 - [ ] Dashboard loads in <500ms
-- [ ] Security audit passed
+- [ ] Security audit passed (prepare_query raises on missing org_id)
 - [ ] MCP endpoint still works
 - [ ] User can complete full auth flow
 - [ ] User can switch between orgs
@@ -371,5 +409,5 @@ Multi-tenancy implementation is complete! Users can now:
 - Register with passwordless auth
 - Create multiple organizations
 - Switch between organizations
-- Access only their org's data
+- Access only their org's data (enforced at Repo level by prepare_query)
 - Collaborate with team members

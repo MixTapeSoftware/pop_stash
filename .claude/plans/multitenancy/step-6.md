@@ -1,10 +1,10 @@
 # Step 6: Update LiveViews
 
 ## Overview
-Update all dashboard LiveViews to use DAL modules instead of direct context calls, add current_scope to assigns, and update forms to pass org_id.
+Update all dashboard LiveViews to use Scope-aware context calls, using current_scope from assigns.
 
 ## Context
-With DAL layer (Step 4) and OrgPlug (Step 5) in place, LiveViews now have current_scope available in assigns. Update all LiveViews to use org-scoped DAL calls.
+With Scope-aware contexts (Step 4) and OrgPlug (Step 5) in place, LiveViews now have current_scope available in assigns. Update all LiveViews to pass scope to context functions.
 
 ## Implementation
 
@@ -28,13 +28,13 @@ end
 ```elixir
 def mount(_params, _session, socket) do
   scope = socket.assigns.current_scope
-  projects = PopStash.ProjectsDAL.list(scope)
+  projects = PopStash.Projects.list(scope)
   {:ok, assign(socket, projects: projects)}
 end
 
 def handle_event("create", %{"name" => name}, socket) do
   scope = socket.assigns.current_scope
-  case PopStash.ProjectsDAL.create(scope, name) do
+  case PopStash.Projects.create(scope, name) do
     {:ok, project} -> ...
   end
 end
@@ -47,11 +47,11 @@ end
 **File**: `lib/pop_stash_web/live/dashboard/projects_live.ex`
 
 Update all calls:
-- `Projects.list()` → `ProjectsDAL.list(scope)`
-- `Projects.create(name)` → `ProjectsDAL.create(scope, name)`
-- `Projects.get(id)` → `ProjectsDAL.get(scope, id)`
-- `Projects.update(id, attrs)` → `ProjectsDAL.update(scope, id, attrs)`
-- `Projects.delete(id)` → `ProjectsDAL.delete(scope, id)`
+- `Projects.list()` → `Projects.list(scope)`
+- `Projects.create(name)` → `Projects.create(scope, name)`
+- `Projects.get(id)` → `Projects.get(scope, id)`
+- `Projects.update(id, attrs)` → `Projects.update(scope, id, attrs)`
+- `Projects.delete(id)` → `Projects.delete(scope, id)`
 
 Add scope extraction at top of each function:
 ```elixir
@@ -63,24 +63,24 @@ scope = socket.assigns.current_scope
 **File**: `lib/pop_stash_web/live/dashboard/insights_live.ex`
 
 Update all calls:
-- `Memory.list_insights(project_id)` → `MemoryDAL.list_insights(scope, project_id)`
-- `Memory.create_insight(...)` → `MemoryDAL.create_insight(scope, ...)`
-- `Memory.get_insight(id)` → `MemoryDAL.get_insight(scope, id)`
+- `Memory.list_insights(project_id)` → `Memory.list_insights(scope, project_id)`
+- `Memory.create_insight(...)` → `Memory.create_insight(scope, ...)`
+- `Memory.get_insight(id)` → `Memory.get_insight(scope, id)`
 
 #### 3. Dashboard Decisions LiveView
 
 **File**: `lib/pop_stash_web/live/dashboard/decisions_live.ex`
 
 Update all calls:
-- `Memory.list_decisions(project_id)` → `MemoryDAL.list_decisions(scope, project_id)`
-- `Memory.create_decision(...)` → `MemoryDAL.create_decision(scope, ...)`
+- `Memory.list_decisions(project_id)` → `Memory.list_decisions(scope, project_id)`
+- `Memory.create_decision(...)` → `Memory.create_decision(scope, ...)`
 
 #### 4. Dashboard Activity LiveView
 
 **File**: `lib/pop_stash_web/live/dashboard/activity_live.ex`
 
 Update all calls:
-- `Activity.list_recent()` → `ActivityDAL.list_recent(scope)`
+- `Activity.list_recent()` → `Activity.list_recent(scope)`
 
 #### 5. All Other Dashboard LiveViews
 
@@ -94,11 +94,14 @@ Apply the same pattern to any other dashboard LiveViews.
 defmodule PopStashWeb.Dashboard.ProjectsLive do
   use PopStashWeb, :live_view
 
-  alias PopStash.ProjectsDAL
+  alias PopStash.Projects
 
   def mount(_params, _session, socket) do
+    scope = socket.assigns.current_scope
+
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(PopStash.PubSub, "projects:events")
+      # Subscribe to org-specific events only
+      Phoenix.PubSub.subscribe(PopStash.PubSub, "org:#{scope.org_id}:projects:events")
     end
 
     socket =
@@ -111,14 +114,14 @@ defmodule PopStashWeb.Dashboard.ProjectsLive do
 
   defp load_projects(socket) do
     scope = socket.assigns.current_scope
-    projects = ProjectsDAL.list(scope)
+    projects = Projects.list(scope)
     assign(socket, :projects, projects)
   end
 
   def handle_event("create", %{"name" => name}, socket) do
     scope = socket.assigns.current_scope
 
-    case ProjectsDAL.create(scope, name) do
+    case Projects.create(scope, name) do
       {:ok, _project} ->
         {:noreply,
          socket
@@ -133,7 +136,7 @@ defmodule PopStashWeb.Dashboard.ProjectsLive do
   def handle_event("delete", %{"id" => id}, socket) do
     scope = socket.assigns.current_scope
 
-    case ProjectsDAL.delete(scope, id) do
+    case Projects.delete(scope, id) do
       {:ok, _} ->
         {:noreply,
          socket
@@ -229,8 +232,13 @@ end
 ```
 
 ## Dependencies
-- Step 4 completed (DAL modules exist)
+- Step 4 completed (Contexts accept Scope parameter)
 - Step 5 completed (OrgPlug assigns current_scope)
 
 ## Next Step
 Step 7 will add comprehensive testing and polish.
+
+## Notes
+- **Scope in function heads**: Contexts accept `%Scope{}` directly — no indirection layer
+- **PubSub topics org-scoped**: All PubSub subscriptions/broadcasts include org_id (handled in Step 4 contexts)
+- **Update PubSub subscriptions**: Change LiveView subscriptions from `"projects:events"` to `"org:#{org_id}:projects:events"`
