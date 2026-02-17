@@ -129,8 +129,8 @@ defmodule PopStashWeb.Dashboard.InsightLive.Index do
   end
 
   defp insight_matches_query?(insight, query) do
-    matches_field?(insight.key, query) ||
-      matches_field?(insight.content, query) ||
+    matches_field?(insight.title, query) ||
+      matches_field?(insight.body, query) ||
       matches_tags?(insight.tags, query)
   end
 

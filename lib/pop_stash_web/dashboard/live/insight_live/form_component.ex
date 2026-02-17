@@ -27,14 +27,14 @@ defmodule PopStashWeb.Dashboard.InsightLive.FormComponent do
           />
 
           <.input
-            field={@form[:key]}
-            label="Key (optional)"
+            field={@form[:title]}
+            label="Title (optional)"
             placeholder="e.g., testing-strategy, code-style-preferences"
           />
 
           <.textarea
-            field={@form[:content]}
-            label="Content"
+            field={@form[:body]}
+            label="Body"
             rows={8}
             placeholder="Describe the insight, pattern, or learned knowledge..."
           />
@@ -69,8 +69,8 @@ defmodule PopStashWeb.Dashboard.InsightLive.FormComponent do
 
     form_data = %{
       "project_id" => insight.project_id,
-      "key" => insight.key,
-      "content" => insight.content,
+      "title" => insight.title,
+      "body" => insight.body,
       "tags" => tags_string
     }
 
@@ -94,16 +94,16 @@ defmodule PopStashWeb.Dashboard.InsightLive.FormComponent do
 
   defp save_insight(socket, :new, params) do
     project_id = params["project_id"]
-    content = params["content"]
+    body = params["body"]
 
     opts =
       [
-        key: normalize_key(params["key"]),
+        title: normalize_title(params["title"]),
         tags: parse_tags(params["tags"])
       ]
       |> Enum.reject(fn {_k, v} -> is_nil(v) end)
 
-    case Memory.create_insight(project_id, content, opts) do
+    case Memory.create_insight(project_id, body, opts) do
       {:ok, insight} ->
         {:noreply,
          socket
@@ -122,9 +122,9 @@ defmodule PopStashWeb.Dashboard.InsightLive.FormComponent do
   end
 
   defp save_insight(socket, :edit, params) do
-    content = params["content"]
+    body = params["body"]
 
-    case Memory.update_insight(socket.assigns.insight.id, content) do
+    case Memory.update_insight(socket.assigns.insight.id, body) do
       {:ok, insight} ->
         {:noreply,
          socket
@@ -142,9 +142,9 @@ defmodule PopStashWeb.Dashboard.InsightLive.FormComponent do
     end
   end
 
-  defp normalize_key(nil), do: nil
-  defp normalize_key(""), do: nil
-  defp normalize_key(key), do: String.trim(key)
+  defp normalize_title(nil), do: nil
+  defp normalize_title(""), do: nil
+  defp normalize_title(title), do: String.trim(title)
 
   defp parse_tags(nil), do: []
   defp parse_tags(""), do: []

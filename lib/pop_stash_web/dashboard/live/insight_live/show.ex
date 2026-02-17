@@ -25,7 +25,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
 
     socket =
       socket
-      |> assign(:page_title, insight.key || "Insight")
+      |> assign(:page_title, insight.title || "Insight")
       |> assign(:insight, insight)
       |> assign(:project, project)
       |> assign(:projects, Projects.list())
@@ -91,7 +91,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
       <.back_link navigate={~p"/insights"} label="Back to insights" />
 
       <div class="mt-4">
-        <.page_header title={@insight.key || "Insight"} subtitle={"Project: #{@project.name}"}>
+        <.page_header title={@insight.title || "Insight"} subtitle={"Project: #{@project.name}"}>
           <:actions>
             <.link_button navigate={~p"/insights/#{@insight.id}/edit"} variant="secondary">
               <.icon name="hero-pencil" class="size-4" /> Edit
@@ -111,7 +111,7 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
         <!-- Main Content -->
         <.card>
           <.section_header title="Content" />
-          <.markdown content={@insight.content} />
+          <.markdown content={@insight.body} />
         </.card>
         
     <!-- Details -->
@@ -121,11 +121,11 @@ defmodule PopStashWeb.Dashboard.InsightLive.Show do
               <span class="font-mono text-xs">{@insight.id}</span>
             </.detail_row>
 
-            <.detail_row label="Key">
-              <%= if @insight.key do %>
-                <span class="font-mono">{@insight.key}</span>
+            <.detail_row label="Title">
+              <%= if @insight.title do %>
+                <span class="font-mono">{@insight.title}</span>
               <% else %>
-                <span class="text-slate-400 text-sm">No key</span>
+                <span class="text-slate-400 text-sm">No title</span>
               <% end %>
             </.detail_row>
 
