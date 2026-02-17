@@ -1,5 +1,5 @@
 {
-  "plansDirectory": "./.claude/plans",
+  "plansDirectory": "../plans",
   "permissions": {
     "allow": [
       "Bash(*)",
