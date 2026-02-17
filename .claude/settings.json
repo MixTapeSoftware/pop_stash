@@ -9,12 +9,11 @@
       "WebSearch",
       "NotebookEdit(**)",
       "SlashCommand(*)",
-      "Skill(*)"
+      "Skill(*)",
+      "WebFetch(domain:hexdocs.pm)"
     ],
     "deny": [],
-    "ask": [
-      "WebFetch(*)"
-    ],
+    "ask": ["WebFetch(*)"],
     "defaultMode": "acceptEdits"
   },
   "env": {
@@ -25,5 +24,3 @@
   "hooks": {},
   "disableAllHooks": false
 }
-
-
